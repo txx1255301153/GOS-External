@@ -38,8 +38,6 @@
         local Core = _G.GamsteronCore
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     -- Load Prediction:                                                                                                                                       
-        local _Update = true
-        ------------------------------------------------------------------------------------------------------------------------------------------------
         if _Update then
             if not FileExist(COMMON_PATH .. "GamsteronPrediction.lua") then
                 DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua", COMMON_PATH .. "GamsteronPrediction.lua", function() end)
