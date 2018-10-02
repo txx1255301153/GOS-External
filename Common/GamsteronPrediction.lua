@@ -199,12 +199,13 @@
         local Radius = input.RealRadius
         -----------------------------------------------------------------------------------------------------------------------------
         if pathCount == 1 or not unitPath.hasMovePath or IsInRange(unitPos, To2D(unitPath.endPos), 25) then
-            if unit.visible and GameTimer() > data.LastMoveTimer + 0.5 then
+            if unit.visible and GameTimer() > data.LastMoveTimer + 0.5 and pathCount == 1 and not unitPath.hasMovePath then
                 if GameTimer() > data.StopMoveTimer + 3 and GameTimer() > data.LastMoveTimer + 3 then
                     return PredictionOutput({ Input = input, Hitchance = HITCHANCE_HIGH, CastPosition = unitPos, UnitPosition = unitPos })
                 end
                 return PredictionOutput({ Input = input, Hitchance = HITCHANCE_NORMAL, CastPosition = unitPos, UnitPosition = unitPos })
             end
+            PredictionOutput()
         -----------------------------------------------------------------------------------------------------------------------------
         elseif pathCount > 1 and Core:PathLength(path) > -Radius + (input.Delay * speed) then
         -----------------------------------------------------------------------------------------------------------------------------
