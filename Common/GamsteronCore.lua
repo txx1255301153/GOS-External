@@ -49,7 +49,7 @@
         if _Update then
             local args =
             {
-                version = 0.01,
+                version = 0.02,
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 scriptPath = COMMON_PATH .. "GamsteronCore.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
@@ -127,7 +127,7 @@
     -- Callbacks:                                                                                                                                       
         -- General:                                                                                                                                     
             local GeneralLoaded             = false
-            local GeneralLoadTimers         = { EndTime = 6, Active = false, PreActive = false }
+            local GeneralLoadTimers         = { EndTime = 3, Active = false, PreActive = false }
             local AddedCallbacks            = {}
             local DeletedCallbacks          = {}
             local OnPreLoadC                = {}
@@ -144,7 +144,7 @@
             local BuildingsLoad             =
             {
                 Performance                 = 0,
-                EndTime                     = 8,
+                EndTime                     = 5,
                 Turrets                     = {},
                 Nexuses                     = {},
                 Inhibitors                  = {},
