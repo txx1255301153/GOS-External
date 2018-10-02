@@ -183,6 +183,7 @@
         end
         return result
     end
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
     local function GetStandardPrediction(input)
         local unit = input.Unit
         local unitID = input.UnitID
@@ -462,6 +463,29 @@
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
         return result
+    end
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    function Prediction:CastSpell(spell, unit, from, spellData, hitChance)
+        if unit == nil and from == nil and spellData == nil then
+            if Control.CastSpell(spell) == true then
+                return true
+            end
+        else
+            if from ~= nil and spellData ~= nil then
+                hitChance = hitChance or 2
+                spellData.Unit = unit
+                local pred = self:GetPrediction(unit, spellData, from)
+                if pred.Hitchance >= hitChance then
+                    local pos = pred.CastPosition
+                    if Control.CastSpell(spell, Vector(pos.x, unit.pos.y, pos.y)) == true then
+                        return true
+                    end
+                end
+            elseif Control.CastSpell(spell, unit) == true then
+                return true
+            end
+        end
+        return false
     end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Load:                                                                                                                                                
