@@ -30,7 +30,7 @@
 		if _Update then
 			local args =
 			{
-				version = 20,
+				version = 0.01,
 				----------------------------------------------------------------------------------------------------------------------------------------
 				scriptPath = COMMON_PATH .. "GamsteronOrbwalker.lua",
 				scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.lua",
@@ -3326,95 +3326,93 @@
 	end)
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Load:																																				
-	Callback.Add("PreLoad", function()
-		_G.SDK =
-		{
-			DAMAGE_TYPE_PHYSICAL = 0,
-			DAMAGE_TYPE_MAGICAL = 1,
-			DAMAGE_TYPE_TRUE = 2,
-			ORBWALKER_MODE_NONE = -1,
-			ORBWALKER_MODE_COMBO = 0,
-			ORBWALKER_MODE_HARASS = 1,
-			ORBWALKER_MODE_LANECLEAR = 2,
-			ORBWALKER_MODE_JUNGLECLEAR = 3,
-			ORBWALKER_MODE_LASTHIT = 4,
-			ORBWALKER_MODE_FLEE = 5
-		}
-		_G.SDK.Spells = Spells
-		_G.SDK.ObjectManager = ObjectManager
-		_G.SDK.Damage = Damage
-		_G.SDK.TargetSelector = TargetSelector
-		_G.SDK.HealthPrediction = HealthPrediction
-		_G.SDK.Orbwalker = Orbwalker
-		----------------------------------------------------------------------------------------------------------------------------------------------------
-		Menu = MenuElement({name = "gsoOrbwalker", id = "gamsteronOrb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/rsz_gsoorbwalker.png" })
-		TargetSelector:CreateMenu()
-		Orbwalker:CreateMenu()
-		----------------------------------------------------------------------------------------------------------------------------------------------------
-		Menu:MenuElement({name = "Drawings", id = "gsodraw", leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/circles.png", type = _G.MENU })
-		Menu.gsodraw:MenuElement({name = "Enabled",  id = "enabled", value = true})
-		TargetSelector:CreateDrawMenu()
-		HealthPrediction:CreateDrawMenu()
-		CURSOR:CreateDrawMenu()
-		Orbwalker:CreateDrawMenu()
-		----------------------------------------------------------------------------------------------------------------------------------------------------
-		Core:OnEnemyHeroLoad(function(hero)
-			local name = hero.charName
-			if name == "Teemo" then
-				Orbwalker.IsTeemo = true
-			end
-			if name == "Kayle" then ObjectManager.UndyingBuffs["JudicatorIntervention"] = true
-			elseif name == "Taric" then ObjectManager.UndyingBuffs["TaricR"] = true
-			elseif name == "Kindred" then ObjectManager.UndyingBuffs["kindredrnodeathbuff"] = true
-			elseif name == "Zilean" then ObjectManager.UndyingBuffs["ChronoShift"] = true; ObjectManager.UndyingBuffs["chronorevive"] = true
-			elseif name == "Tryndamere" then ObjectManager.UndyingBuffs["UndyingRage"] = true
-			elseif name == "Jax" then ObjectManager.UndyingBuffs["JaxCounterStrike"] = true
-			elseif name == "Fiora" then ObjectManager.UndyingBuffs["FioraW"] = true
-			elseif name == "Aatrox" then ObjectManager.UndyingBuffs["aatroxpassivedeath"] = true
-			elseif name == "Vladimir" then ObjectManager.UndyingBuffs["VladimirSanguinePool"] = true
-			elseif name == "KogMaw" then ObjectManager.UndyingBuffs["KogMawIcathianSurprise"] = true
-			elseif name == "Karthus" then ObjectManager.UndyingBuffs["KarthusDeathDefiedBuff"] = true
-			end
-		end)
-		----------------------------------------------------------------------------------------------------------------------------------------------------
-		Callback.Add('Tick', function()
-			if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
-			if Orbwalker.IsTeemo then
-				local hasTeemoBlind = false
-				for i = 0, myHero.buffCount do
-					local buff = myHero:GetBuff(i)
-					if buff and buff.count > 0 and buff.name:lower() == "blindingdart" then
-						hasTeemoBlind = true
-						break
-					end
-				end
-				Orbwalker.IsBlindedByTeemo = hasTeemoBlind
-			end
-			HealthPrediction:Tick()
-			Spells:DisableAutoAttack()
-			if Spells.Work ~= nil then
-				if GameTimer() < Spells.WorkEndTime then
-					Spells.Work()
-					return
-				end
-				Spells.Work = nil
-			end
-		end)
-		----------------------------------------------------------------------------------------------------------------------------------------------------
-		Callback.Add('WndMsg', function(msg, wParam)
-			TargetSelector:WndMsg(msg, wParam)
-			Orbwalker:WndMsg(msg, wParam)
-			Spells:WndMsg(msg, wParam)
-		end)
-		----------------------------------------------------------------------------------------------------------------------------------------------------
-		Callback.Add('Draw', function()
-			if not Menu.gsodraw.enabled:Value() then return end
-			TargetSelector:Draw()
-			HealthPrediction:Draw()
-			CURSOR:Draw()
-			Orbwalker:Draw()
-		end)
-		----------------------------------------------------------------------------------------------------------------------------------------------------
+	_G.SDK =
+	{
+		DAMAGE_TYPE_PHYSICAL = 0,
+		DAMAGE_TYPE_MAGICAL = 1,
+		DAMAGE_TYPE_TRUE = 2,
+		ORBWALKER_MODE_NONE = -1,
+		ORBWALKER_MODE_COMBO = 0,
+		ORBWALKER_MODE_HARASS = 1,
+		ORBWALKER_MODE_LANECLEAR = 2,
+		ORBWALKER_MODE_JUNGLECLEAR = 3,
+		ORBWALKER_MODE_LASTHIT = 4,
+		ORBWALKER_MODE_FLEE = 5
+	}
+	_G.SDK.Spells = Spells
+	_G.SDK.ObjectManager = ObjectManager
+	_G.SDK.Damage = Damage
+	_G.SDK.TargetSelector = TargetSelector
+	_G.SDK.HealthPrediction = HealthPrediction
+	_G.SDK.Orbwalker = Orbwalker
+	----------------------------------------------------------------------------------------------------------------------------------------------------
+	Menu = MenuElement({name = "gsoOrbwalker", id = "gamsteronOrb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/rsz_gsoorbwalker.png" })
+	TargetSelector:CreateMenu()
+	Orbwalker:CreateMenu()
+	----------------------------------------------------------------------------------------------------------------------------------------------------
+	Menu:MenuElement({name = "Drawings", id = "gsodraw", leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/circles.png", type = _G.MENU })
+	Menu.gsodraw:MenuElement({name = "Enabled",  id = "enabled", value = true})
+	TargetSelector:CreateDrawMenu()
+	HealthPrediction:CreateDrawMenu()
+	CURSOR:CreateDrawMenu()
+	Orbwalker:CreateDrawMenu()
+	----------------------------------------------------------------------------------------------------------------------------------------------------
+	Core:OnEnemyHeroLoad(function(hero)
+		local name = hero.charName
+		if name == "Teemo" then
+			Orbwalker.IsTeemo = true
+		end
+		if name == "Kayle" then ObjectManager.UndyingBuffs["JudicatorIntervention"] = true
+		elseif name == "Taric" then ObjectManager.UndyingBuffs["TaricR"] = true
+		elseif name == "Kindred" then ObjectManager.UndyingBuffs["kindredrnodeathbuff"] = true
+		elseif name == "Zilean" then ObjectManager.UndyingBuffs["ChronoShift"] = true; ObjectManager.UndyingBuffs["chronorevive"] = true
+		elseif name == "Tryndamere" then ObjectManager.UndyingBuffs["UndyingRage"] = true
+		elseif name == "Jax" then ObjectManager.UndyingBuffs["JaxCounterStrike"] = true
+		elseif name == "Fiora" then ObjectManager.UndyingBuffs["FioraW"] = true
+		elseif name == "Aatrox" then ObjectManager.UndyingBuffs["aatroxpassivedeath"] = true
+		elseif name == "Vladimir" then ObjectManager.UndyingBuffs["VladimirSanguinePool"] = true
+		elseif name == "KogMaw" then ObjectManager.UndyingBuffs["KogMawIcathianSurprise"] = true
+		elseif name == "Karthus" then ObjectManager.UndyingBuffs["KarthusDeathDefiedBuff"] = true
+		end
 	end)
+	----------------------------------------------------------------------------------------------------------------------------------------------------
+	Callback.Add('Tick', function()
+		if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
+		if Orbwalker.IsTeemo then
+			local hasTeemoBlind = false
+			for i = 0, myHero.buffCount do
+				local buff = myHero:GetBuff(i)
+				if buff and buff.count > 0 and buff.name:lower() == "blindingdart" then
+					hasTeemoBlind = true
+					break
+				end
+			end
+			Orbwalker.IsBlindedByTeemo = hasTeemoBlind
+		end
+		HealthPrediction:Tick()
+		Spells:DisableAutoAttack()
+		if Spells.Work ~= nil then
+			if GameTimer() < Spells.WorkEndTime then
+				Spells.Work()
+				return
+			end
+			Spells.Work = nil
+		end
+	end)
+	----------------------------------------------------------------------------------------------------------------------------------------------------
+	Callback.Add('WndMsg', function(msg, wParam)
+		TargetSelector:WndMsg(msg, wParam)
+		Orbwalker:WndMsg(msg, wParam)
+		Spells:WndMsg(msg, wParam)
+	end)
+	----------------------------------------------------------------------------------------------------------------------------------------------------
+	Callback.Add('Draw', function()
+		if not Menu.gsodraw.enabled:Value() then return end
+		TargetSelector:Draw()
+		HealthPrediction:Draw()
+		CURSOR:Draw()
+		Orbwalker:Draw()
+	end)
+	----------------------------------------------------------------------------------------------------------------------------------------------------
 	_G.GamsteronOrbwalkerLoaded = true
 --------------------------------------------------------------------------------------------------------------------------------------------------------
