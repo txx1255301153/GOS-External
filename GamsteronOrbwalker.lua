@@ -63,6 +63,7 @@
 		local CONTROLL						= nil
 		local NEXT_CONTROLL					= 0
 		local MYHERO_IS_CAITLYN				= myHero.charName == "Caitlyn"
+		local ME_IS_KALISTA					= myHero.charName == "Kalista"
 		local GetTickCount					= GetTickCount
 		local myHero						= _G.myHero
 		local MeCharName					= myHero.charName
@@ -1455,7 +1456,7 @@
 			return result
 		end
 		function __TargetSelector:GetComboTarget()
-			--[[local targets = {}
+			local targets = {}
 			local range = myHero.range - 20
 			local bbox = myHero.boundingRadius
 			for i = 1, GameHeroCount() do
@@ -1472,8 +1473,11 @@
 					end
 				end
 			end
-			return self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)]]
-			local t = nil
+			local t = self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)]]
+			if not ME_IS_KALISTA then
+				return t
+			end
+			if t == nil then
 			local hp = MathHuge
 			for i = 1, GameHeroCount() do
 				local obj = GameHero(i)
