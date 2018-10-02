@@ -1478,12 +1478,13 @@
 				return t
 			end
 			if t == nil then
-			local hp = MathHuge
-			for i = 1, GameHeroCount() do
-				local obj = GameHero(i)
-				if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
-					t = obj
-					hp = obj.health
+				local hp = MathHuge
+				for i = 1, GameHeroCount() do
+					local obj = GameHero(i)
+					if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+						t = obj
+						hp = obj.health
+					end
 				end
 			end
 			if t == nil then
