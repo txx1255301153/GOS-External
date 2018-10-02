@@ -1455,7 +1455,7 @@
 			return result
 		end
 		function __TargetSelector:GetComboTarget()
-			local targets = {}
+			--[[local targets = {}
 			local range = myHero.range - 20
 			local bbox = myHero.boundingRadius
 			for i = 1, GameHeroCount() do
@@ -1472,7 +1472,37 @@
 					end
 				end
 			end
-			return self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)
+			return self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)]]
+			local t = nil
+			local hp = MathHuge
+			for i = 1, GameHeroCount() do
+				local obj = GameHero(i)
+				if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+					t = obj
+					hp = obj.health
+				end
+			end
+			if t == nil then
+				hp = MathHuge
+				for i = 1, GameMinionCount() do
+					local obj = GameMinion(i)
+					if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+						t = obj
+						hp = obj.health
+					end
+				end
+			end
+			if t == nil then
+				hp = MathHuge
+				for i = 1, GameTurretCount() do
+					local obj = GameTurret(i)
+					if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+						t = obj
+						hp = obj.health
+					end
+				end
+			end
+			return t
 		end
 		function __TargetSelector:WndMsg(msg, wParam)
 			if msg == WM_LBUTTONDOWN and MENU.ts.selected.enable:Value() and GetTickCount() > self.LastSelTick + 100 then
