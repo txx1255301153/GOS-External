@@ -27,7 +27,7 @@
         if _Update then
             local args =
             {
-                version = 0.02,
+                version = 0.03,
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 scriptPath = COMMON_PATH .. "GamsteronPrediction.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua",
@@ -51,8 +51,6 @@
 -- Locals:                                                                                                                                              
     local DebugMode                 = false
     local HighAccuracy              = 0.1
-    local PredictionInput           = Core:Class()
-    local PredictionOutput          = Core:Class()
     local Prediction                = Core:Class()
     local myHero                    = _G.myHero
     local MathSqrt                  = _G.math.sqrt
@@ -185,6 +183,95 @@
         return result
     end
     ----------------------------------------------------------------------------------------------------------------------------------------------------
+    -- Prediction Output:                                                                                                                                   
+        local function PredictionOutput(args)
+            args = args or {}
+            ------------------------------------------------------------------------------------
+            local result =
+            {
+                CastPosition           = args.CastPosition         or nil,
+                UnitPosition           = args.UnitPosition         or nil,
+                Hitchance              = args.Hitchance            or HITCHANCE_IMPOSSIBLE,
+                Input                  = args.Input                or nil,
+                ------------------------------------------------------------------------------------
+                CollisionObjects       = args.CollisionObjects     or {},
+                ------------------------------------------------------------------------------------
+                AoeTargetsHit          = args.AoeTargetsHit        or {},
+                AoeTargetsHitCount     = args.AoeTargetsHitCount   or 0
+            }
+            ------------------------------------------------------------------------------------
+            result.AoeTargetsHitCount = MathMax(result.AoeTargetsHitCount, #result.AoeTargetsHit)
+            return result
+        end
+    --------------------------------------------------------------------------------------------------------------------------------------------------------
+    -- Prediction Input:                                                                                                                                    
+        local function PredictionInput(args)
+            local result =
+            {
+                Aoe                = args.Aoe                  or false,
+                Collision          = args.Collision            or false,
+                Unit               = args.Unit                 or nil,
+                From               = args.From                 or myHero,
+                MaxCollision       = args.MaxCollision         or 0,
+                CollisionObjects   = args.CollisionObjects     or { Core.COLLISION_MINION, Core.COLLISION_YASUOWALL },
+                Delay              = args.Delay                or 0,
+                Radius             = args.Radius               or 1,
+                Range              = args.Range                or MathHuge,
+                Speed              = args.Speed                or MathHuge,
+                Type               = args.Type                 or SPELLTYPE_LINE
+            }
+            result.Valid = true
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            if args.UseBoundingRadius or result.Type == SPELLTYPE_LINE then
+                result.RealRadius = result.Radius + (result.Unit.boundingRadius*0.5)
+            else
+                result.RealRadius = result.Radius
+            end
+            result.RealRadius = result.RealRadius * 0.9
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            result.Delay = result.Delay + 0.06 + (Core:GetLatency() * 0.5)
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            if result.From == nil or result.Unit == nil or not result.Unit.valid or result.Unit.dead or not result.Unit.isTargetable then
+                result.Valid = false
+                return result
+            end
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            local from = To2D(myHero.pos)
+            if result.Collision then
+                result.ObjectsList = {}
+                for i = 1, #result.CollisionObjects do
+                    local CollisionType = result.CollisionObjects[i]
+                    if CollisionType == Core.COLLISION_MINION then
+                        result.ObjectsList.enemyMinions = GetEnemyMinions(from, 2000)
+                    elseif CollisionType ==  Core.COLLISION_ALLYHERO then
+                        result.ObjectsList.allyHeroes = GetAllyHeroes(from, 2000)
+                    elseif CollisionType == Core.COLLISION_ENEMYHERO then
+                        result.ObjectsList.enemyHeroes = GetEnemyHeroes(from, 2000)
+                    end
+                end
+            end
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            result.UnitID = result.Unit.networkID
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            result.UnitData = Core:GetHeroData(result.Unit)
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            if GameTimer() < result.UnitData.RemainingImmortal - result.Delay + 0.1 then
+                result.Valid = false
+                return result
+            end
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            result.From = To2D(result.From.pos)
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            if result.Range ~= MathHuge and not IsInRange(result.From, To2D(result.Unit.pos), result.Range * 1.5) then
+                result.Valid = false
+                return result
+            end
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            result.RangeCheckFrom = To2D(myHero.pos)
+            ------------------------------------------------------------------------------------------------------------------------------------------------
+            return result
+        end
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
     local function GetStandardPrediction(input)
         local unit = input.Unit
         local unitID = input.UnitID
@@ -298,89 +385,6 @@
             return PredictionOutput({ Input = input, Hitchance = HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
         end
         return PredictionOutput()
-    end
---------------------------------------------------------------------------------------------------------------------------------------------------------
--- Prediction Input:                                                                                                                                    
-    function PredictionInput:__init(args)
-        self.Valid              = true
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        self.Aoe                = args.Aoe                  or false
-        self.Collision          = args.Collision            or false
-        self.Unit               = args.Unit                 or nil
-        self.From               = args.From                 or myHero
-        self.MaxCollision       = args.MaxCollision         or 0
-        self.CollisionObjects   = args.CollisionObjects     or { Core.COLLISION_MINION, Core.COLLISION_YASUOWALL }
-        self.Delay              = args.Delay                or 0
-        self.Radius             = args.Radius               or 1
-        self.Range              = args.Range                or MathHuge
-        self.Speed              = args.Speed                or MathHuge
-        self.Type               = args.Type                 or SPELLTYPE_LINE
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        if args.UseBoundingRadius or self.Type == SPELLTYPE_LINE then
-            self.RealRadius = self.Radius + (self.Unit.boundingRadius*0.5)
-        else
-            self.RealRadius = self.Radius
-        end
-        self.RealRadius = self.RealRadius * 0.9
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        self.Delay = self.Delay + 0.06 + (Core:GetLatency() * 0.5)
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        if self.From == nil or self.Unit == nil or not self.Unit.valid or self.Unit.dead or not self.Unit.isTargetable then
-            self.Valid = false
-            return
-        end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        local from = To2D(myHero.pos)
-        if self.Collision then
-            self.ObjectsList = {}
-            for i = 1, #self.CollisionObjects do
-                local CollisionType = self.CollisionObjects[i]
-                if CollisionType == Core.COLLISION_MINION then
-                    self.ObjectsList.enemyMinions = GetEnemyMinions(from, 2000)
-                elseif CollisionType ==  Core.COLLISION_ALLYHERO then
-                    self.ObjectsList.allyHeroes = GetAllyHeroes(from, 2000)
-                elseif CollisionType == Core.COLLISION_ENEMYHERO then
-                    self.ObjectsList.enemyHeroes = GetEnemyHeroes(from, 2000)
-                end
-            end
-        end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        self.UnitID = self.Unit.networkID
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        self.UnitData = Core:GetHeroData(self.Unit)
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        if GameTimer() < self.UnitData.RemainingImmortal - self.Delay + 0.1 then
-            self.Valid = false
-            return
-        end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        self.From = To2D(self.From.pos)
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        if self.Range ~= MathHuge and not IsInRange(self.From, To2D(self.Unit.pos), self.Range * 1.5) then
-            self.Valid = false
-            return
-        end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        self.RangeCheckFrom = To2D(myHero.pos)
-    end
---------------------------------------------------------------------------------------------------------------------------------------------------------
--- Prediction Output:                                                                                                                                   
-    function PredictionOutput:__init(args)
-        ------------------------------------------------------------------------------------
-        args                        = args                      or {}
-        ------------------------------------------------------------------------------------
-        self.CastPosition           = args.CastPosition         or nil
-        self.UnitPosition           = args.UnitPosition         or nil
-        self.Hitchance              = args.Hitchance            or HITCHANCE_IMPOSSIBLE
-        self.Input                  = args.Input                or nil
-        ------------------------------------------------------------------------------------
-        self.CollisionObjects       = args.CollisionObjects     or {}
-        ------------------------------------------------------------------------------------
-        self.AoeTargetsHit          = args.AoeTargetsHit        or {}
-        self.AoeTargetsHitCount     = args.AoeTargetsHitCount   or 0
-        ------------------------------------------------------------------------------------
-        self.AoeTargetsHitCount     = MathMax(self.AoeTargetsHitCount, #self.AoeTargetsHit)
-        ------------------------------------------------------------------------------------
     end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Prediction:                                                                                                                                          
