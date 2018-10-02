@@ -44,7 +44,7 @@
             return false, args.version
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
-        local _Update = true
+        local _Update = false
         ------------------------------------------------------------------------------------------------------------------------------------------------
         if _Update then
             local args =
@@ -127,7 +127,7 @@
     -- Callbacks:                                                                                                                                       
         -- General:                                                                                                                                     
             local GeneralLoaded             = false
-            local GeneralLoadTimers         = { EndTime = 0, Active = false }
+            local GeneralLoadTimers         = { EndTime = 6, Active = false }
             local AddedCallbacks            = {}
             local DeletedCallbacks          = {}
             local OnLoadC                   = {}
@@ -143,8 +143,7 @@
             local BuildingsLoad             =
             {
                 Performance                 = 0,
-                StartTime                   = 0,
-                EndTime                     = 0,
+                EndTime                     = 8,
                 Turrets                     = {},
                 Nexuses                     = {},
                 Inhibitors                  = {},
@@ -161,8 +160,7 @@
             local HeroesLoad                =
             {
                 Performance                 = 0,
-                StartTime                   = 0,
-                EndTime                     = 0,
+                EndTime                     = 120,
                 Count                       = 0,
                 Heroes                      = {},
                 OnEnemyHeroLoadC            = {},
@@ -2219,121 +2217,101 @@
     end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Load:                                                                                                                                                
-    TableInsert(HeroesLoad.OnEnemyHeroLoadC, function(hero)
-        if charName == "Yasuo" then
-            IsYasuo = true
+    do
+        local load_active = true
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        TableInsert(HeroesLoad.OnEnemyHeroLoadC, function(hero)
+            if charName == "Yasuo" then
+                IsYasuo = true
+            end
+        end)
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        local function PreLoad()
+            if GameTimer() > 15 then
+                if not GeneralLoadTimers.Active then
+                    GeneralLoadTimers.Active = true
+                    GeneralLoadTimers.EndTime = GameTimer() + GeneralLoadTimers.EndTime
+                    BuildingsLoad.EndTime = GameTimer() + BuildingsLoad.EndTime
+                    HeroesLoad.EndTime = GameTimer() + HeroesLoad.EndTime
+                    return
+                end
+                if GeneralLoadTimers.Active and GameTimer() > GeneralLoadTimers.EndTime then
+                    GeneralLoaded = true
+                end
+            end
         end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("Load", function()
-        for i, cb in pairs(OnLoadC) do
-            cb()
-        end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("UnLoad", function()
-        -- Return:
-            if not GeneralLoaded then
-                if GameTimer() > 15 then
-                    if not GeneralLoadTimers.Active then
-                        GeneralLoadTimers.Active = true
-                        GeneralLoadTimers.EndTime = GameTimer() + 5
-                        BuildingsLoad.StartTime = GameTimer() + 6
-                        BuildingsLoad.EndTime = GameTimer() + 9
-                        HeroesLoad.StartTime = GameTimer() + 6
-                        HeroesLoad.EndTime = GameTimer() + 120
-                    elseif GameTimer() > GeneralLoadTimers.EndTime then
-                        GeneralLoaded = true
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        CallbackAdd("UnLoad", function()
+            -- Return:                                                                                                                                  
+                if not GeneralLoaded then
+                    PreLoad()
+                    return
+                end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            for i, cb in pairs(OnUnLoadC) do
+                cb()
+            end
+        end)
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        CallbackAdd("GameEnd", function()
+            -- Return:                                                                                                                                  
+                if not GeneralLoaded then
+                    PreLoad()
+                    return
+                end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            for i, cb in pairs(OnGameEndC) do
+                cb()
+            end
+        end)
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        CallbackAdd("Tick", function()
+            -- Delayed Actions:                                                                                                                         
+                for i, action in pairs(DelayedActions) do
+                    if GameTimer() > action[2] then
+                        action[1]()
+                        TableRemove(DelayedActions, i)
                     end
                 end
-                return
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        for i, cb in pairs(OnUnLoadC) do
-            cb()
-        end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("GameEnd", function()
-        -- Return:                                                                                                                                      
-            if not GeneralLoaded then
-                if GameTimer() > 15 then
-                    if not GeneralLoadTimers.Active then
-                        GeneralLoadTimers.Active = true
-                        GeneralLoadTimers.EndTime = GameTimer() + 5
-                        BuildingsLoad.StartTime = GameTimer() + 6
-                        BuildingsLoad.EndTime = GameTimer() + 9
-                        HeroesLoad.StartTime = GameTimer() + 6
-                        HeroesLoad.EndTime = GameTimer() + 120
-                    elseif GameTimer() > GeneralLoadTimers.EndTime then
-                        GeneralLoaded = true
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Tick Actions:                                                                                                                            
+                for i, action in pairs(TickActions) do
+                    if GameTimer() > action[2] or action[1]() == true then
+                        TableRemove(TickActions, i)
                     end
                 end
-                return
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        for i, cb in pairs(OnGameEndC) do
-            cb()
-        end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("Tick", function()
-        -- Return:                                                                                                                                      
-            if not GeneralLoaded then
-                if GameTimer() > 15 then
-                    if not GeneralLoadTimers.Active then
-                        GeneralLoadTimers.Active = true
-                        GeneralLoadTimers.EndTime = GameTimer() + 5
-                        BuildingsLoad.StartTime = GameTimer() + 6
-                        BuildingsLoad.EndTime = GameTimer() + 9
-                        HeroesLoad.StartTime = GameTimer() + 6
-                        HeroesLoad.EndTime = GameTimer() + 120
-                    elseif GameTimer() > GeneralLoadTimers.EndTime then
-                        GeneralLoaded = true
-                    end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Return:                                                                                                                                  
+                if not GeneralLoaded then
+                    PreLoad()
+                    return
                 end
-                return
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Load Buildings:                                                                                                                              
-            if not BuildingsLoaded then
-                if GameTimer() > BuildingsLoad.StartTime and GameTimer() > BuildingsLoad.Performance then
-                    for i = 1, GameObjectCount() do
-                        local obj = GameObject(i)
-                        if obj then
-                            local type = obj.type
-                            if type and (type == Obj_AI_Barracks or type == Obj_AI_Turret or type == Obj_AI_Nexus) then
-                                local team = obj.team
-                                local name = obj.name
-                                if team and name and #name > 0 then
-                                    local isnew = true
-                                    local isally = obj.team == TEAM_ALLY
-                                    ------------------------------------------------------------------------------------------------------------------------
-                                    if type == Obj_AI_Barracks then
-                                        for j, id in pairs(BuildingsLoad.Inhibitors) do
-                                            if name == id then
-                                                isnew = false
-                                                break
-                                            end
-                                        end
-                                        if isnew then
-                                            if team == TEAM_ALLY then
-                                                TableInsert(AllyInhibitors, obj)
-                                                for k, cb in pairs(BuildingsLoad.OnAllyInhibitorLoadC) do
-                                                    cb(obj)
-                                                end
-                                            else
-                                                TableInsert(EnemyInhibitors, obj)
-                                                for k, cb in pairs(BuildingsLoad.OnEnemyInhibitorLoadC) do
-                                                    cb(obj)
-                                                end
-                                            end
-                                            TableInsert(BuildingsLoad.Inhibitors, name)
-                                        end
-                                    ------------------------------------------------------------------------------------------------------------------------
-                                    elseif type == Obj_AI_Turret then
-                                        if name ~= "Turret_OrderTurretShrine_A" and name ~= "Turret_ChaosTurretShrine_A" then
-                                            for j, id in pairs(BuildingsLoad.Turrets) do
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Load:                                                                                                                                    
+                if load_active then
+                    print("loaded")
+                    for i, cb in pairs(OnLoadC) do
+                        cb()
+                    end
+                    load_active = false
+                end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Load Buildings:                                                                                                                          
+                if not BuildingsLoaded then
+                    if GameTimer() > BuildingsLoad.Performance then
+                        for i = 1, GameObjectCount() do
+                            local obj = GameObject(i)
+                            if obj then
+                                local type = obj.type
+                                if type and (type == Obj_AI_Barracks or type == Obj_AI_Turret or type == Obj_AI_Nexus) then
+                                    local team = obj.team
+                                    local name = obj.name
+                                    if team and name and #name > 0 then
+                                        local isnew = true
+                                        local isally = obj.team == TEAM_ALLY
+                                        ----------------------------------------------------------------------------------------------------------------
+                                        if type == Obj_AI_Barracks then
+                                            for j, id in pairs(BuildingsLoad.Inhibitors) do
                                                 if name == id then
                                                     isnew = false
                                                     break
@@ -2341,233 +2319,207 @@
                                             end
                                             if isnew then
                                                 if team == TEAM_ALLY then
-                                                    TableInsert(AllyTurrets, obj)
-                                                    for k, cb in pairs(BuildingsLoad.OnAllyTurretLoadC) do
+                                                    TableInsert(AllyInhibitors, obj)
+                                                    for k, cb in pairs(BuildingsLoad.OnAllyInhibitorLoadC) do
                                                         cb(obj)
                                                     end
                                                 else
-                                                    TableInsert(EnemyTurrets, obj)
-                                                    for k, cb in pairs(BuildingsLoad.OnEnemyTurretLoadC) do
+                                                    TableInsert(EnemyInhibitors, obj)
+                                                    for k, cb in pairs(BuildingsLoad.OnEnemyInhibitorLoadC) do
                                                         cb(obj)
                                                     end
                                                 end
-                                                TableInsert(BuildingsLoad.Turrets, name)
+                                                TableInsert(BuildingsLoad.Inhibitors, name)
                                             end
-                                        end
-                                    ------------------------------------------------------------------------------------------------------------------------
-                                    elseif type == Obj_AI_Nexus then
-                                        for j, id in pairs(BuildingsLoad.Nexuses) do
-                                            if name == id then
-                                                isnew = false
-                                                break
-                                            end
-                                        end
-                                        if isnew then
-                                            if team == TEAM_ALLY then
-                                                AllyNexus = obj
-                                                for k, cb in pairs(BuildingsLoad.OnAllyNexusLoadC) do
-                                                    cb(obj)
+                                        ----------------------------------------------------------------------------------------------------------------
+                                        elseif type == Obj_AI_Turret then
+                                            if name ~= "Turret_OrderTurretShrine_A" and name ~= "Turret_ChaosTurretShrine_A" then
+                                                for j, id in pairs(BuildingsLoad.Turrets) do
+                                                    if name == id then
+                                                        isnew = false
+                                                        break
+                                                    end
                                                 end
-                                            else
-                                                EnemyNexus = obj
-                                                for k, cb in pairs(BuildingsLoad.OnEnemyNexusLoadC) do
-                                                    cb(obj)
+                                                if isnew then
+                                                    if team == TEAM_ALLY then
+                                                        TableInsert(AllyTurrets, obj)
+                                                        for k, cb in pairs(BuildingsLoad.OnAllyTurretLoadC) do
+                                                            cb(obj)
+                                                        end
+                                                    else
+                                                        TableInsert(EnemyTurrets, obj)
+                                                        for k, cb in pairs(BuildingsLoad.OnEnemyTurretLoadC) do
+                                                            cb(obj)
+                                                        end
+                                                    end
+                                                    TableInsert(BuildingsLoad.Turrets, name)
                                                 end
                                             end
-                                            TableInsert(BuildingsLoad.Nexuses, name)
+                                        ----------------------------------------------------------------------------------------------------------------
+                                        elseif type == Obj_AI_Nexus then
+                                            for j, id in pairs(BuildingsLoad.Nexuses) do
+                                                if name == id then
+                                                    isnew = false
+                                                    break
+                                                end
+                                            end
+                                            if isnew then
+                                                if team == TEAM_ALLY then
+                                                    AllyNexus = obj
+                                                    for k, cb in pairs(BuildingsLoad.OnAllyNexusLoadC) do
+                                                        cb(obj)
+                                                    end
+                                                else
+                                                    EnemyNexus = obj
+                                                    for k, cb in pairs(BuildingsLoad.OnEnemyNexusLoadC) do
+                                                        cb(obj)
+                                                    end
+                                                end
+                                                TableInsert(BuildingsLoad.Nexuses, name)
+                                            end
                                         end
                                     end
                                 end
                             end
                         end
-                    end
-                    if GameTimer() > BuildingsLoad.EndTime then
-                        BuildingsLoaded = true
-                    else
-                        BuildingsLoad.Performance = GameTimer() + 0.5
+                        if GameTimer() > BuildingsLoad.EndTime then
+                            BuildingsLoaded = true
+                        else
+                            BuildingsLoad.Performance = GameTimer() + 0.5
+                        end
                     end
                 end
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Load Heroes:                                                                                                                                 
-            if not HeroesLoaded then
-                if GameTimer() > HeroesLoad.StartTime and GameTimer() > HeroesLoad.Performance then
-                    for i = 1, GameHeroCount() do
-                        local obj = GameHero(i)
-                        if obj then
-                            local name = obj.charName
-                            if name and #name > 0 then
-                                local objID = obj.networkID
-                                local isnew = true
-                                for i, id in pairs(HeroesLoad.Heroes) do
-                                    if objID == id then
-                                        isnew = false
-                                        break
-                                    end
-                                end
-                                if isnew then
-                                    HeroesLoad.Count = HeroesLoad.Count + 1
-                                    if obj.team == TEAM_ALLY then
-                                        for i, cb in pairs(HeroesLoad.OnAllyHeroLoadC) do
-                                            cb(obj)
-                                        end
-                                    else
-                                        for i, cb in pairs(HeroesLoad.OnEnemyHeroLoadC) do
-                                            cb(obj)
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Load Heroes:                                                                                                                             
+                if not HeroesLoaded then
+                    if GameTimer() > HeroesLoad.Performance then
+                        for i = 1, GameHeroCount() do
+                            local obj = GameHero(i)
+                            if obj then
+                                local name = obj.charName
+                                if name and #name > 0 then
+                                    local objID = obj.networkID
+                                    local isnew = true
+                                    for i, id in pairs(HeroesLoad.Heroes) do
+                                        if objID == id then
+                                            isnew = false
+                                            break
                                         end
                                     end
-                                    TableInsert(HeroesLoad.Heroes, objID)
+                                    if isnew then
+                                        HeroesLoad.Count = HeroesLoad.Count + 1
+                                        if obj.team == TEAM_ALLY then
+                                            for i, cb in pairs(HeroesLoad.OnAllyHeroLoadC) do
+                                                cb(obj)
+                                            end
+                                        else
+                                            for i, cb in pairs(HeroesLoad.OnEnemyHeroLoadC) do
+                                                cb(obj)
+                                            end
+                                        end
+                                        TableInsert(HeroesLoad.Heroes, objID)
+                                    end
                                 end
                             end
                         end
-                    end
-                    if HeroesLoad.Count >= 10 or GameTimer() > HeroesLoad.EndTime then
-                        HeroesLoaded = true
-                    else
-                        HeroesLoad.Performance = GameTimer() + 0.5
-                    end
-                end
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Refresh Heroes Data:                                                                                                                         
-            local YasuoChecked = false
-            for i = 1, GameHeroCount() do
-                local unit = GameHero(i)
-                if unit and unit.valid then
-                    Detector(unit, unit.networkID)
-                    if IsYasuo and not YasuoChecked and unit.charName == "Yasuo" then
-                        YasuoWallTick(unit)
-                        YasuoChecked = true
+                        if HeroesLoad.Count >= 10 or GameTimer() > HeroesLoad.EndTime then
+                            HeroesLoaded = true
+                        else
+                            HeroesLoad.Performance = GameTimer() + 0.5
+                        end
                     end
                 end
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        for i, cb in pairs(OnTickC) do
-            cb()
-        end
-        for i, cb in pairs(DeletedCallbacks) do
-            cb()
-            TableRemove(DeletedCallbacks, i)
-        end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Delayed Actions:                                                                                                                             
-            for i, action in pairs(DelayedActions) do
-                if GameTimer() > action[2] then
-                    TableRemove(DelayedActions, i)
-                else
-                    action[1]()
-                end
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Tick Actions:                                                                                                                                
-            for i, action in pairs(TickActions) do
-                if GameTimer() > action[2] or action[1]() == true then
-                    TableRemove(TickActions, i)
-                end
-            end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("Draw", function()
-        -- Return:                                                                                                                                      
-            if not GeneralLoaded then
-                if GameTimer() > 15 then
-                    if not GeneralLoadTimers.Active then
-                        GeneralLoadTimers.Active = true
-                        GeneralLoadTimers.EndTime = GameTimer() + 5
-                        BuildingsLoad.StartTime = GameTimer() + 6
-                        BuildingsLoad.EndTime = GameTimer() + 9
-                        HeroesLoad.StartTime = GameTimer() + 6
-                        HeroesLoad.EndTime = GameTimer() + 120
-                    elseif GameTimer() > GeneralLoadTimers.EndTime then
-                        GeneralLoaded = true
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Refresh Heroes Data:                                                                                                                     
+                local YasuoChecked = false
+                for i = 1, GameHeroCount() do
+                    local unit = GameHero(i)
+                    if unit and unit.valid then
+                        Detector(unit, unit.networkID)
+                        if IsYasuo and not YasuoChecked and unit.charName == "Yasuo" then
+                            YasuoWallTick(unit)
+                            YasuoChecked = true
+                        end
                     end
                 end
-                return
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            for i, cb in pairs(OnTickC) do
+                cb()
             end
+            for i, cb in pairs(DeletedCallbacks) do
+                cb()
+                TableRemove(DeletedCallbacks, i)
+            end
+        end)
         ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Refresh Heroes Data:                                                                                                                         
-            local YasuoChecked = false
-            for i = 1, GameHeroCount() do
-                local unit = GameHero(i)
-                if unit and unit.valid then
-                    Detector(unit, unit.networkID)
-                    if IsYasuo and not YasuoChecked and unit.charName == "Yasuo" then
-                        YasuoWallTick(unit)
-                        YasuoChecked = true
+        CallbackAdd("Draw", function()
+            -- Delayed Actions:                                                                                                                         
+                for i, action in pairs(DelayedActions) do
+                    if GameTimer() > action[2] then
+                        action[1]()
+                        TableRemove(DelayedActions, i)
                     end
                 end
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        for i, cb in pairs(OnDrawC) do
-            cb()
-        end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Delayed Actions:                                                                                                                             
-            for i, action in pairs(DelayedActions) do
-                if GameTimer() > action[2] then
-                    TableRemove(DelayedActions, i)
-                else
-                    action[1]()
-                end
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Tick Actions:                                                                                                                                
-            for i, action in pairs(TickActions) do
-                if GameTimer() > action[2] or action[1]() == true then
-                    TableRemove(TickActions, i)
-                end
-            end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("WndMsg", function(msg, wParam)
-        -- Return:                                                                                                                                      
-            if not GeneralLoaded then
-                if GameTimer() > 15 then
-                    if not GeneralLoadTimers.Active then
-                        GeneralLoadTimers.Active = true
-                        GeneralLoadTimers.EndTime = GameTimer() + 5
-                        BuildingsLoad.StartTime = GameTimer() + 6
-                        BuildingsLoad.EndTime = GameTimer() + 9
-                        HeroesLoad.StartTime = GameTimer() + 6
-                        HeroesLoad.EndTime = GameTimer() + 120
-                    elseif GameTimer() > GeneralLoadTimers.EndTime then
-                        GeneralLoaded = true
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Tick Actions:                                                                                                                            
+                for i, action in pairs(TickActions) do
+                    if GameTimer() > action[2] or action[1]() == true then
+                        TableRemove(TickActions, i)
                     end
                 end
-                return
-            end
-        ------------------------------------------------------------------------------------------------------------------------------------------------
-        for i, cb in pairs(OnWndMsgC) do
-            cb(msg, wParam)
-        end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    CallbackAdd("ProcessRecall", function(unit, proc)
-        -- Return:                                                                                                                                      
-            if not GeneralLoaded then
-                if GameTimer() > 15 then
-                    if not GeneralLoadTimers.Active then
-                        GeneralLoadTimers.Active = true
-                        GeneralLoadTimers.EndTime = GameTimer() + 5
-                        BuildingsLoad.StartTime = GameTimer() + 6
-                        BuildingsLoad.EndTime = GameTimer() + 9
-                        HeroesLoad.StartTime = GameTimer() + 6
-                        HeroesLoad.EndTime = GameTimer() + 120
-                    elseif GameTimer() > GeneralLoadTimers.EndTime then
-                        GeneralLoaded = true
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Return:                                                                                                                                  
+                if not GeneralLoaded then
+                    PreLoad()
+                    return
+                end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            -- Refresh Heroes Data:                                                                                                                     
+                local YasuoChecked = false
+                for i = 1, GameHeroCount() do
+                    local unit = GameHero(i)
+                    if unit and unit.valid then
+                        Detector(unit, unit.networkID)
+                        if IsYasuo and not YasuoChecked and unit.charName == "Yasuo" then
+                            YasuoWallTick(unit)
+                            YasuoChecked = true
+                        end
                     end
                 end
-                return
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            for i, cb in pairs(OnDrawC) do
+                cb()
             end
+        end)
         ------------------------------------------------------------------------------------------------------------------------------------------------
-        for i, cb in pairs(OnRecallC) do
-            cb(unit, proc)
-        end
-    end)
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    _G.GamsteronCore = Core()
-    ----------------------------------------------------------------------------------------------------------------------------------------------------
-    _G.GamsteronCoreLoaded = true
+        CallbackAdd("WndMsg", function(msg, wParam)
+            -- Return:                                                                                                                                  
+                if not GeneralLoaded then
+                    PreLoad()
+                    return
+                end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            for i, cb in pairs(OnWndMsgC) do
+                cb(msg, wParam)
+            end
+        end)
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        CallbackAdd("ProcessRecall", function(unit, proc)
+            -- Return:                                                                                                                                  
+                if not GeneralLoaded then
+                    PreLoad()
+                    return
+                end
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            for i, cb in pairs(OnRecallC) do
+                cb(unit, proc)
+            end
+        end)
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        _G.GamsteronCore = Core()
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+        _G.GamsteronCoreLoaded = true
+    end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Debug:                                                                                                                                               
     if false then
