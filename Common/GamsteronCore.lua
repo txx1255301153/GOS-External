@@ -44,7 +44,7 @@
             return false, args.version
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
-        local _Update = false
+        local _Update = true
         ------------------------------------------------------------------------------------------------------------------------------------------------
         if _Update then
             local args =
@@ -127,9 +127,10 @@
     -- Callbacks:                                                                                                                                       
         -- General:                                                                                                                                     
             local GeneralLoaded             = false
-            local GeneralLoadTimers         = { EndTime = 6, Active = false }
+            local GeneralLoadTimers         = { EndTime = 6, Active = false, PreActive = false }
             local AddedCallbacks            = {}
             local DeletedCallbacks          = {}
+            local OnPreLoadC                = {}
             local OnLoadC                   = {}
             local OnUnLoadC                 = {}
             local OnGameEndC                = {}
@@ -1549,12 +1550,12 @@
         end
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     -- Get Hero Data:                                                                                                                                   
-        function Core:GetHeroData(unit)
+        function Core:GetHeroData(unit, skip)
             unit = unit or myHero
             --------------------------------------------------------------------------------------------------------------------------------------------
             local unitID = unit.networkID
             --------------------------------------------------------------------------------------------------------------------------------------------
-            Detector(unit, unitID)
+            if not skip then Detector(unit, unitID) end
             --------------------------------------------------------------------------------------------------------------------------------------------
             return HeroData[unitID]
         end
@@ -2091,15 +2092,68 @@
             end
             return false
         end
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    -- Interrupter:                                                                                                                                     
+        function Core:Interrupter()
+            local c = {}
+            local result = {}
+            c.__index = c
+            setmetatable(result, c)
+            local cb = {}
+            local spells =
+            {
+                ["CaitlynAceintheHole"] = true,
+                ["Crowstorm"] = true,
+                ["DrainChannel"] = true,
+                ["GalioIdolOfDurand"] = true,
+                ["ReapTheWhirlwind"] = true,
+                ["KarthusFallenOne"] = true,
+                ["KatarinaR"] = true,
+                ["LucianR"] = true,
+                ["AlZaharNetherGrasp"] = true,
+                ["Meditate"] = true,
+                ["MissFortuneBulletTime"] = true,
+                ["AbsoluteZero"] = true,
+                ["PantheonRJump"] = true,
+                ["PantheonRFall"] = true,
+                ["ShenStandUnited"] = true,
+                ["Destiny"] = true,
+                ["UrgotSwap2"] = true,
+                ["VelkozR"] = true,
+                ["InfiniteDuress"] = true,
+                ["XerathLocusOfPower2"] = true
+            }
+            Callback.Add("Draw", function()
+                local mePos = To2D(myHero.pos)
+                for i = 1, GameHeroCount() do
+                    local o = GameHero(i)
+                    if o and o.valid and not o.dead and o.isTargetable and o.visible and IsInRange(mePos, To2D(o.pos), 1500) then
+                        local a = o.activeSpell
+                        if a and a.valid and a.isChanneling and spells[a.name] and a.castEndTime - GameTimer() > 0.33 then
+                            for j = 1, #cb do
+                                cb[j](o, a)
+                            end
+                        end
+                    end
+                end
+            end)
+            function c:OnInterrupt(cbb)
+                TableInsert(cb, cbb)
+            end
+            return result
+        end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- _G.Callback .Add .Del:                                                                                                                               
     _G.Callback.Add = function(callbackType, callback)
-        if callbackType == "Load" or callbackType == "UnLoad" or callbackType == "GameEnd" or callbackType == "Tick" or callbackType == "Draw" or callbackType == "WndMsg" or callbackType == "ProcessRecall" then
+        if callbackType == "PreLoad" or callbackType == "Load" or callbackType == "UnLoad" or callbackType == "GameEnd" or callbackType == "Tick" or callbackType == "Draw" or callbackType == "WndMsg" or callbackType == "ProcessRecall" then
             local callbackID = tostring(callback)
             --------------------------------------------------------------------------------------------------------------------------------------------
             AddedCallbacks[callbackID] = callbackType
             --------------------------------------------------------------------------------------------------------------------------------------------
-            if callbackType == "Load" then
+            if callbackType == "PreLoad" then
+                TableInsert(OnPreLoadC, callback)
+            --------------------------------------------------------------------------------------------------------------------------------------------
+            elseif callbackType == "Load" then
                 TableInsert(OnLoadC, callback)
             --------------------------------------------------------------------------------------------------------------------------------------------
             elseif callbackType == "UnLoad" then
@@ -2218,8 +2272,6 @@
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Load:                                                                                                                                                
     do
-        local load_active = true
-        ------------------------------------------------------------------------------------------------------------------------------------------------
         TableInsert(HeroesLoad.OnEnemyHeroLoadC, function(hero)
             if charName == "Yasuo" then
                 IsYasuo = true
@@ -2235,8 +2287,17 @@
                     HeroesLoad.EndTime = GameTimer() + HeroesLoad.EndTime
                     return
                 end
+                if not GeneralLoadTimers.PreActive and GeneralLoadTimers.Active and GameTimer() > GeneralLoadTimers.EndTime - 1 then
+                    for i, cb in pairs(OnPreLoadC) do
+                        cb()
+                    end
+                    GeneralLoadTimers.PreActive = true
+                end
                 if GeneralLoadTimers.Active and GameTimer() > GeneralLoadTimers.EndTime then
                     GeneralLoaded = true
+                    for i, cb in pairs(OnLoadC) do
+                        cb()
+                    end
                 end
             end
         end
@@ -2285,15 +2346,6 @@
                 if not GeneralLoaded then
                     PreLoad()
                     return
-                end
-            --------------------------------------------------------------------------------------------------------------------------------------------
-            -- Load:                                                                                                                                    
-                if load_active then
-                    print("loaded")
-                    for i, cb in pairs(OnLoadC) do
-                        cb()
-                    end
-                    load_active = false
                 end
             --------------------------------------------------------------------------------------------------------------------------------------------
             -- Load Buildings:                                                                                                                          
