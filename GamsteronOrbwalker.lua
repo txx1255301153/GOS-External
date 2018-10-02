@@ -33,10 +33,10 @@
 				version = 20,
 				----------------------------------------------------------------------------------------------------------------------------------------
 				scriptPath = COMMON_PATH .. "GamsteronOrbwalker.lua",
-				scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronOrbwalker.lua",
+				scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.lua",
 				----------------------------------------------------------------------------------------------------------------------------------------
 				versionPath = COMMON_PATH .. "GamsteronOrbwalker.version",
-				versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronOrbwalker.version"
+				versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.version"
 			}
 			--------------------------------------------------------------------------------------------------------------------------------------------
 			local success, version = Core:AutoUpdate(args)
@@ -56,7 +56,7 @@
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Locals:																																				
 	-- Variables:																																		
-		local MENU, MENU_CHAMP
+		local Menu, MenuChamp
 		local GAMSTERON_MODE_DMG = false
 		local CURSOR
 		local Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
@@ -844,28 +844,28 @@
 		end
 		local function GetHumanizer()
 			local humnum
-			if MENU.orb.humanizer.random.enabled:Value() then
-				local fromhum = MENU.orb.humanizer.random.from:Value()
-				local tohum = MENU.orb.humanizer.random.to:Value()
+			if Menu.orb.humanizer.random.enabled:Value() then
+				local fromhum = Menu.orb.humanizer.random.from:Value()
+				local tohum = Menu.orb.humanizer.random.to:Value()
 				if tohum <= fromhum then
 					humnum = fromhum * 0.001
 				else
 					humnum = MathRandom(fromhum, tohum) * 0.001
 				end
 			else
-				humnum = MENU.orb.humanizer.standard:Value() * 0.001
+				humnum = Menu.orb.humanizer.standard:Value() * 0.001
 			end
 			return humnum
 		end
 		local function ResetMenu()
-            MENU_CHAMP.lcore.enabled:Value(false)
-            MENU_CHAMP.lcore.response:Value(false)
-            MENU_CHAMP.lcore.extraw:Value(100)
-            MENU_CHAMP.hold.HoldRadius:Value(120)
-            MENU_CHAMP.spell.isaa:Value(true)
-			MENU_CHAMP.spell.baa:Value(false)
-			MENU_CHAMP.lclear.laneset:Value(true)
-			MENU_CHAMP.lclear.swait:Value(500)
+            MenuChamp.lcore.enabled:Value(false)
+            MenuChamp.lcore.response:Value(false)
+            MenuChamp.lcore.extraw:Value(100)
+            MenuChamp.hold.HoldRadius:Value(120)
+            MenuChamp.spell.isaa:Value(true)
+			MenuChamp.spell.baa:Value(false)
+			MenuChamp.lclear.laneset:Value(true)
+			MenuChamp.lclear.swait:Value(500)
         end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Cursor Class:																																		
@@ -915,7 +915,7 @@
 				if not self.IsReadyGlobal then
 					self.IsReadyGlobal = true
 				end
-				local extradelay = MENU.orb.excdelay:Value()
+				local extradelay = Menu.orb.excdelay:Value()
 				if extradelay == 0 then
 					self.EndTime = 0
 				else
@@ -933,15 +933,15 @@
 			self:CastKey()
 		end
 		function __Cursor:CreateDrawMenu(menu)
-			MENU.gsodraw:MenuElement({name = "Cursor Pos",  id = "cursor", type = _G.MENU})
-				MENU.gsodraw.cursor:MenuElement({name = "Enabled",  id = "enabled", value = true})
-				MENU.gsodraw.cursor:MenuElement({name = "Color",  id = "color", color = DrawColor(255, 153, 0, 76)})
-				MENU.gsodraw.cursor:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
-				MENU.gsodraw.cursor:MenuElement({name = "Radius",  id = "radius", value = 150, min = 1, max = 300})
+			Menu.gsodraw:MenuElement({name = "Cursor Pos",  id = "cursor", type = _G.MENU})
+				Menu.gsodraw.cursor:MenuElement({name = "Enabled",  id = "enabled", value = true})
+				Menu.gsodraw.cursor:MenuElement({name = "Color",  id = "color", color = DrawColor(255, 153, 0, 76)})
+				Menu.gsodraw.cursor:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
+				Menu.gsodraw.cursor:MenuElement({name = "Radius",  id = "radius", value = 150, min = 1, max = 300})
 		end
 		function __Cursor:Draw()
-			if MENU.gsodraw.cursor.enabled:Value() then
-				DrawCircle(mousePos, MENU.gsodraw.cursor.radius:Value(), MENU.gsodraw.cursor.width:Value(), MENU.gsodraw.cursor.color:Value())
+			if Menu.gsodraw.cursor.enabled:Value() then
+				DrawCircle(mousePos, Menu.gsodraw.cursor.radius:Value(), Menu.gsodraw.cursor.width:Value(), Menu.gsodraw.cursor.color:Value())
 			end
 		end
 		CURSOR = __Cursor()
@@ -1301,7 +1301,7 @@
 				return hp
 			end
 			function c:ShouldWait()
-				return GameTimer() <= self.ShouldWaitTime + MENU_CHAMP.lclear.swait:Value() * 0.001
+				return GameTimer() <= self.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001
 			end
 			function c:SetLastHitable(target, time, damage)
 				local hpPred = self:GetPrediction(target, time)
@@ -1361,9 +1361,9 @@
 		function __TargetSelector:GetTarget(a, dmgType, bb, validmode)
 			local SelectedID = -1
 			--selected:
-			if MENU.ts.selected.enable:Value() and self.SelectedTarget ~= nil and IsValidTarget(self.SelectedTarget) and not ObjectManager:IsHeroImmortal(self.SelectedTarget, false) and self.SelectedTarget.pos.onScreen then
+			if Menu.ts.selected.enable:Value() and self.SelectedTarget ~= nil and IsValidTarget(self.SelectedTarget) and not ObjectManager:IsHeroImmortal(self.SelectedTarget, false) and self.SelectedTarget.pos.onScreen then
 				SelectedID = self.SelectedTarget.networkID
-				if MENU.ts.selected.onlysel:Value() then
+				if Menu.ts.selected.onlysel:Value() then
 					if type(a) == "number" then
 						if GetDistanceSquared(myHero.pos, self.SelectedTarget.pos) <= a * a then
 							return self.SelectedTarget
@@ -1394,7 +1394,7 @@
 			if type(a) == "table" then
 				if #a == 1 then return a[1] end
 				local num = 10000000
-				local mode = MENU.ts.Mode:Value()
+				local mode = Menu.ts.Mode:Value()
 				for i = 1, #a do
 					local x
 					local unit = a[i]
@@ -1403,8 +1403,8 @@
 					elseif mode == 1 then
 						local unitName = unit.charName
 						local priority
-						if MENU.ts.priorities[unitName] then
-							priority = MENU.ts.priorities[unitName]:Value()
+						if Menu.ts.priorities[unitName] then
+							priority = Menu.ts.priorities[unitName]:Value()
 						else
 							priority = 1
 						end
@@ -1433,8 +1433,8 @@
 						x = unit.health
 					elseif mode == 4 then
 						local unitName = unit.charName
-						if MENU.ts.priorities[unitName] then
-							x = MENU.ts.priorities[unitName]:Value()
+						if Menu.ts.priorities[unitName] then
+							x = Menu.ts.priorities[unitName]:Value()
 						else
 							x = 1
 						end
@@ -1473,7 +1473,7 @@
 					end
 				end
 			end
-			local t = self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)]]
+			local t = self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)
 			if not ME_IS_KALISTA then
 				return t
 			end
@@ -1510,7 +1510,7 @@
 			return t
 		end
 		function __TargetSelector:WndMsg(msg, wParam)
-			if msg == WM_LBUTTONDOWN and MENU.ts.selected.enable:Value() and GetTickCount() > self.LastSelTick + 100 then
+			if msg == WM_LBUTTONDOWN and Menu.ts.selected.enable:Value() and GetTickCount() > self.LastSelTick + 100 then
 				self.SelectedTarget = nil
 				local num = 10000000
 				local enemyList = ObjectManager:GetEnemyHeroes(99999999, false, 2)
@@ -1526,9 +1526,9 @@
 			end
 		end
 		function __TargetSelector:Draw()
-			if MENU.gsodraw.selected.enabled:Value() then
+			if Menu.gsodraw.selected.enabled:Value() then
 				if self.SelectedTarget and not self.SelectedTarget.dead and self.SelectedTarget.isTargetable and self.SelectedTarget.visible and self.SelectedTarget.valid then
-					DrawCircle(self.SelectedTarget.pos, MENU.gsodraw.selected.radius:Value(), MENU.gsodraw.selected.width:Value(), MENU.gsodraw.selected.color:Value())
+					DrawCircle(self.SelectedTarget.pos, Menu.gsodraw.selected.radius:Value(), Menu.gsodraw.selected.width:Value(), Menu.gsodraw.selected.color:Value())
 				end
 			end
 		end
@@ -1539,23 +1539,23 @@
 			else
 				priority = 1
 			end
-			MENU.ts.priorities:MenuElement({ id = charName, name = charName, value = priority, min = 1, max = 5, step = 1 })
+			Menu.ts.priorities:MenuElement({ id = charName, name = charName, value = priority, min = 1, max = 5, step = 1 })
 		end
 		function __TargetSelector:CreateMenu()
-			MENU:MenuElement({name = "Target Selector", id = "ts", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/ts.png" })
-				MENU.ts:MenuElement({ id = "Mode", name = "Mode", value = 1, drop = { "Auto", "Closest", "Least Health", "Highest Priority" } })
-				MENU.ts:MenuElement({ id = "priorities", name = "Priorities", type = _G.MENU })
+			Menu:MenuElement({name = "Target Selector", id = "ts", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/ts.png" })
+				Menu.ts:MenuElement({ id = "Mode", name = "Mode", value = 1, drop = { "Auto", "Closest", "Least Health", "Highest Priority" } })
+				Menu.ts:MenuElement({ id = "priorities", name = "Priorities", type = _G.MENU })
 					Core:OnEnemyHeroLoad(function(hero) self:CreatePriorityMenu(hero.charName) end)
-				MENU.ts:MenuElement({ id = "selected", name = "Selected Target", type = _G.MENU })
-					MENU.ts.selected:MenuElement({ id = "enable", name = "Enabled", value = true })
-					MENU.ts.selected:MenuElement({ id = "onlysel", name = "Only Selected", value = false })
+				Menu.ts:MenuElement({ id = "selected", name = "Selected Target", type = _G.MENU })
+					Menu.ts.selected:MenuElement({ id = "enable", name = "Enabled", value = true })
+					Menu.ts.selected:MenuElement({ id = "onlysel", name = "Only Selected", value = false })
 		end
 		function __TargetSelector:CreateDrawMenu()
-			MENU.gsodraw:MenuElement({name = "Selected Target",  id = "selected", type = _G.MENU})
-				MENU.gsodraw.selected:MenuElement({name = "Enabled",  id = "enabled", value = true})
-				MENU.gsodraw.selected:MenuElement({name = "Color",  id = "color", color = DrawColor(255, 204, 0, 0)})
-				MENU.gsodraw.selected:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
-				MENU.gsodraw.selected:MenuElement({name = "Radius",  id = "radius", value = 150, min = 1, max = 300})
+			Menu.gsodraw:MenuElement({name = "Selected Target",  id = "selected", type = _G.MENU})
+				Menu.gsodraw.selected:MenuElement({name = "Enabled",  id = "enabled", value = true})
+				Menu.gsodraw.selected:MenuElement({name = "Color",  id = "color", color = DrawColor(255, 204, 0, 0)})
+				Menu.gsodraw.selected:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
+				Menu.gsodraw.selected:MenuElement({name = "Radius",  id = "radius", value = 150, min = 1, max = 300})
 		end
 		function __TargetSelector:GetPriority(target)
 			local x = Priorities[target.charName]
@@ -1570,9 +1570,11 @@
 -- _G.SDK.ObjectManager:																																
 	do
 		local __ObjectManager = Core:Class()
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:__init()
 			self.UndyingBuffs = { ["zhonyasringshield"] = true }
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:IsHeroImmortal(unit, jaxE)
 			local hp = 100 * ( unit.health / unit.maxHealth )
 			if self.UndyingBuffs["JaxCounterStrike"] ~= nil then self.UndyingBuffs["JaxCounterStrike"] = jaxE end
@@ -1587,6 +1589,7 @@
 			end
 			return false
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetEnemyBuildings(range, bb)
 			local result = {}
 			local turrets = Core:GetEnemyTurrets()
@@ -1612,6 +1615,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetMinionType(minion)
 			if minion.team == TEAM_JUNGLE then
 				return MINION_TYPE_MONSTER
@@ -1621,6 +1625,7 @@
 				return MINION_TYPE_LANE_MINION
 			end
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetMinions(range)
 			local result = {}
 			for i = 1, GameMinionCount() do
@@ -1633,6 +1638,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetAllyMinions(range, bb)
 			local result = {}
 			for i = 1, GameMinionCount() do
@@ -1644,6 +1650,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetEnemyMinions(range)
 			local result = {}
 			for i = 1, GameMinionCount() do
@@ -1655,6 +1662,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetEnemyMinionsInAutoAttackRange()
 			local result = {}
 			for i = 1, GameMinionCount() do
@@ -1667,6 +1675,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetOtherMinions(range)
 			local result = {}
 			for i = 1, GameWardCount() do
@@ -1679,6 +1688,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetOtherAllyMinions(range)
 			local result = {}
 			for i = 1, GameWardCount() do
@@ -1691,6 +1701,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetOtherEnemyMinions(range)
 			local result = {}
 			for i = 1, GameWardCount() do
@@ -1703,6 +1714,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetOtherEnemyMinionsInAutoAttackRange()
 			local result = {}
 			for i = 1, GameWardCount() do
@@ -1715,6 +1727,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetMonsters(range)
 			local result = {}
 			for i = 1, GameMinionCount() do
@@ -1727,6 +1740,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetMonstersInAutoAttackRange()
 			local result = {}
 			for i = 1, GameMinionCount() do
@@ -1739,6 +1753,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetHeroes(range)
 			local result = {}
 			for i = 1, GameHeroCount() do
@@ -1751,6 +1766,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetAllyHeroes(range)
 			local result = {}
 			for i = 1, GameHeroCount() do
@@ -1763,6 +1779,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetEnemyHeroes(range, bb, state)
 			local result = {}
 			state = state or 0
@@ -1787,6 +1804,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetEnemyHeroesInAutoAttackRange()
 			local result = {}
 			for i = 1, GameHeroCount() do
@@ -1799,9 +1817,11 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetTurrets(range)
 			return Join(self:GetAllyTurrets(range), self:GetEnemyTurrets(range))
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetAllyTurrets(range)
 			local result = {}
 			local turrets = Core:GetAllyTurrets()
@@ -1813,6 +1833,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		function __ObjectManager:GetEnemyTurrets(range)
 			local result = {}
 			local turrets = Core:GetEnemyTurrets()
@@ -1824,6 +1845,7 @@
 			end
 			return result
 		end
+		------------------------------------------------------------------------------------------------------------------------------------------------
 		ObjectManager = __ObjectManager()
 	end
 --------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2006,60 +2028,60 @@
 			self.CanMoveC = function() return true end
 		end
 		function __Orbwalker:CreateMenu()
-			MENU:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/orb.png" })
-				MENU_CHAMP = MENU.orb:MenuElement({name = MeCharName, id = MeCharName, type = _G.MENU})
-					MENU_CHAMP:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
-						MENU_CHAMP.spell:MenuElement({name = "Block if is attacking", id = "isaa", value = true })
-						MENU_CHAMP.spell:MenuElement({name = "Spells between attacks", id = "baa", value = false })
-					MENU_CHAMP:MenuElement({ name = "Orbwalker Core", id = "lcore", type = _G.MENU })
-						MENU_CHAMP.lcore:MenuElement({name = "Use at own risk ! There can be attack cancels !", id = "space", type = SPACE})
-						MENU_CHAMP.lcore:MenuElement({name = "ON - Local, OFF - Server", id = "enabled", value = false })
-						MENU_CHAMP.lcore:MenuElement({name = "Only Local (if Local ON)", id = "response", value = false })
-						MENU_CHAMP.lcore:MenuElement({ name = "Local Extra Windup", id = "extraw", value = 100, min = 0, max = 100, step = 10 })
-					MENU_CHAMP:MenuElement({ name = "LaneClear", id = "lclear", type = _G.MENU })
-						MENU_CHAMP.lclear:MenuElement({name = "Attack Heroes", id = "laneset", value = true })
-						MENU_CHAMP.lclear:MenuElement({name = "Should Wait Time", id = "swait", value = 500, min = 0, max = 1000, step = 100 })
-					MENU_CHAMP:MenuElement({ name = "Hold Radius", id = "hold", type = _G.MENU })
-						MENU_CHAMP.hold:MenuElement({ id = "HoldRadius", name = "Hold Radius", value = 120, min = 100, max = 250, step = 10 })
-							self.Menu.General.HoldRadius = MENU_CHAMP.hold.HoldRadius
-						MENU_CHAMP.hold:MenuElement({ id = "HoldPosButton", name = "Hold position button", key = string.byte("H"), tooltip = "Should be same in game keybinds", onKeyChange = function(kb) HoldPositionButton = kb; end });
-							HoldPositionButton = MENU_CHAMP.hold.HoldPosButton:Key()
-					MENU_CHAMP:MenuElement({ name = "Default Settings Key", id = "dkey", type = _G.MENU })
-						MENU_CHAMP.dkey:MenuElement({name = "Hold together !", id = "space", type = SPACE})
-						MENU_CHAMP.dkey:MenuElement({name = "1", id = "def1", key = string.byte("U"), callback = function() if MENU_CHAMP.dkey.def2:Value() then ResetMenu() end end})
-						MENU_CHAMP.dkey:MenuElement({name = "2", id = "def2", key = string.byte("Y"), callback = function() if MENU_CHAMP.dkey.def1:Value() then ResetMenu() end end})
-				MENU.orb:MenuElement({name = "Keys", id = "keys", type = _G.MENU})
-					MENU.orb.keys:MenuElement({name = "Combo Key", id = "combo", key = string.byte(" ")})
-						self:RegisterMenuKey(ORBWALKER_MODE_COMBO, MENU.orb.keys.combo)
-					MENU.orb.keys:MenuElement({name = "Harass Key", id = "harass", key = string.byte("C")})
-						self:RegisterMenuKey(ORBWALKER_MODE_HARASS, MENU.orb.keys.harass)
-					MENU.orb.keys:MenuElement({name = "LastHit Key", id = "lasthit", key = string.byte("X")})
-						self:RegisterMenuKey(ORBWALKER_MODE_LASTHIT, MENU.orb.keys.lasthit)
-					MENU.orb.keys:MenuElement({name = "LaneClear Key", id = "laneclear", key = string.byte("V")})
-						self:RegisterMenuKey(ORBWALKER_MODE_LANECLEAR, MENU.orb.keys.laneclear)
-					MENU.orb.keys:MenuElement({name = "Jungle Key", id = "jungle", key = string.byte("V")})
-						self:RegisterMenuKey(ORBWALKER_MODE_JUNGLECLEAR, MENU.orb.keys.jungle)
-					MENU.orb.keys:MenuElement({name = "Flee Key", id = "flee", key = string.byte("A")})
-						self:RegisterMenuKey(ORBWALKER_MODE_FLEE, MENU.orb.keys.flee)
-				MENU.orb:MenuElement({ name = "Humanizer", id = "humanizer", type = _G.MENU })
-					MENU.orb.humanizer:MenuElement({ name = "Random", id = "random", type = _G.MENU })
-						MENU.orb.humanizer.random:MenuElement({name = "Enabled", id = "enabled", value = true })
-						MENU.orb.humanizer.random:MenuElement({name = "From", id = "from", value = 150, min = 60, max = 300, step = 20 })
-						MENU.orb.humanizer.random:MenuElement({name = "To", id = "to", value = 220, min = 60, max = 400, step = 20 })
-					MENU.orb.humanizer:MenuElement({name = "Humanizer", id = "standard", value = 200, min = 60, max = 300, step = 10 })
-						self.Menu.General.MovementDelay = MENU.orb.humanizer.standard
-				MENU.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
-				MENU.orb:MenuElement({name = "Player Attack Move Click", id = "aamoveclick", key = string.byte("P")})
+			Menu:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/orb.png" })
+				MenuChamp = Menu.orb:MenuElement({name = MeCharName, id = MeCharName, type = _G.MENU})
+					MenuChamp:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
+						MenuChamp.spell:MenuElement({name = "Block if is attacking", id = "isaa", value = true })
+						MenuChamp.spell:MenuElement({name = "Spells between attacks", id = "baa", value = false })
+					MenuChamp:MenuElement({ name = "Orbwalker Core", id = "lcore", type = _G.MENU })
+						MenuChamp.lcore:MenuElement({name = "Use at own risk ! There can be attack cancels !", id = "space", type = SPACE})
+						MenuChamp.lcore:MenuElement({name = "ON - Local, OFF - Server", id = "enabled", value = false })
+						MenuChamp.lcore:MenuElement({name = "Only Local (if Local ON)", id = "response", value = false })
+						MenuChamp.lcore:MenuElement({ name = "Local Extra Windup", id = "extraw", value = 100, min = 0, max = 100, step = 10 })
+					MenuChamp:MenuElement({ name = "LaneClear", id = "lclear", type = _G.MENU })
+						MenuChamp.lclear:MenuElement({name = "Attack Heroes", id = "laneset", value = true })
+						MenuChamp.lclear:MenuElement({name = "Should Wait Time", id = "swait", value = 500, min = 0, max = 1000, step = 100 })
+					MenuChamp:MenuElement({ name = "Hold Radius", id = "hold", type = _G.MENU })
+						MenuChamp.hold:MenuElement({ id = "HoldRadius", name = "Hold Radius", value = 120, min = 100, max = 250, step = 10 })
+							self.Menu.General.HoldRadius = MenuChamp.hold.HoldRadius
+						MenuChamp.hold:MenuElement({ id = "HoldPosButton", name = "Hold position button", key = string.byte("H"), tooltip = "Should be same in game keybinds", onKeyChange = function(kb) HoldPositionButton = kb; end });
+							HoldPositionButton = MenuChamp.hold.HoldPosButton:Key()
+					MenuChamp:MenuElement({ name = "Default Settings Key", id = "dkey", type = _G.MENU })
+						MenuChamp.dkey:MenuElement({name = "Hold together !", id = "space", type = SPACE})
+						MenuChamp.dkey:MenuElement({name = "1", id = "def1", key = string.byte("U"), callback = function() if MenuChamp.dkey.def2:Value() then ResetMenu() end end})
+						MenuChamp.dkey:MenuElement({name = "2", id = "def2", key = string.byte("Y"), callback = function() if MenuChamp.dkey.def1:Value() then ResetMenu() end end})
+				Menu.orb:MenuElement({name = "Keys", id = "keys", type = _G.MENU})
+					Menu.orb.keys:MenuElement({name = "Combo Key", id = "combo", key = string.byte(" ")})
+						self:RegisterMenuKey(ORBWALKER_MODE_COMBO, Menu.orb.keys.combo)
+					Menu.orb.keys:MenuElement({name = "Harass Key", id = "harass", key = string.byte("C")})
+						self:RegisterMenuKey(ORBWALKER_MODE_HARASS, Menu.orb.keys.harass)
+					Menu.orb.keys:MenuElement({name = "LastHit Key", id = "lasthit", key = string.byte("X")})
+						self:RegisterMenuKey(ORBWALKER_MODE_LASTHIT, Menu.orb.keys.lasthit)
+					Menu.orb.keys:MenuElement({name = "LaneClear Key", id = "laneclear", key = string.byte("V")})
+						self:RegisterMenuKey(ORBWALKER_MODE_LANECLEAR, Menu.orb.keys.laneclear)
+					Menu.orb.keys:MenuElement({name = "Jungle Key", id = "jungle", key = string.byte("V")})
+						self:RegisterMenuKey(ORBWALKER_MODE_JUNGLECLEAR, Menu.orb.keys.jungle)
+					Menu.orb.keys:MenuElement({name = "Flee Key", id = "flee", key = string.byte("A")})
+						self:RegisterMenuKey(ORBWALKER_MODE_FLEE, Menu.orb.keys.flee)
+				Menu.orb:MenuElement({ name = "Humanizer", id = "humanizer", type = _G.MENU })
+					Menu.orb.humanizer:MenuElement({ name = "Random", id = "random", type = _G.MENU })
+						Menu.orb.humanizer.random:MenuElement({name = "Enabled", id = "enabled", value = true })
+						Menu.orb.humanizer.random:MenuElement({name = "From", id = "from", value = 150, min = 60, max = 300, step = 20 })
+						Menu.orb.humanizer.random:MenuElement({name = "To", id = "to", value = 220, min = 60, max = 400, step = 20 })
+					Menu.orb.humanizer:MenuElement({name = "Humanizer", id = "standard", value = 200, min = 60, max = 300, step = 10 })
+						self.Menu.General.MovementDelay = Menu.orb.humanizer.standard
+				Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
+				Menu.orb:MenuElement({name = "Player Attack Move Click", id = "aamoveclick", key = string.byte("P")})
 		end
 		function __Orbwalker:CreateDrawMenu(menu)
-			MENU.gsodraw:MenuElement({name = "MyHero Attack Range", id = "me", type = _G.MENU})
-				MENU.gsodraw.me:MenuElement({name = "Enabled",  id = "enabled", value = true})
-				MENU.gsodraw.me:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 49, 210, 0)})
-				MENU.gsodraw.me:MenuElement({name = "Width",  id = "width", value = 1, min = 1, max = 10})
-			MENU.gsodraw:MenuElement({name = "Enemy Attack Range", id = "he", type = _G.MENU})
-				MENU.gsodraw.he:MenuElement({name = "Enabled",  id = "enabled", value = true})
-				MENU.gsodraw.he:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 255, 0, 0)})
-				MENU.gsodraw.he:MenuElement({name = "Width",  id = "width", value = 1, min = 1, max = 10})
+			Menu.gsodraw:MenuElement({name = "MyHero Attack Range", id = "me", type = _G.MENU})
+				Menu.gsodraw.me:MenuElement({name = "Enabled",  id = "enabled", value = true})
+				Menu.gsodraw.me:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 49, 210, 0)})
+				Menu.gsodraw.me:MenuElement({name = "Width",  id = "width", value = 1, min = 1, max = 10})
+			Menu.gsodraw:MenuElement({name = "Enemy Attack Range", id = "he", type = _G.MENU})
+				Menu.gsodraw.he:MenuElement({name = "Enabled",  id = "enabled", value = true})
+				Menu.gsodraw.he:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 255, 0, 0)})
+				Menu.gsodraw.he:MenuElement({name = "Width",  id = "width", value = 1, min = 1, max = 10})
 		end
 		function __Orbwalker:OnPreAttack(func)
 			self.OnPreAttackC[#self.OnPreAttackC+1] = func
@@ -2077,15 +2099,15 @@
 			self.OnPreMoveC[#self.OnPreMoveC+1] = func
 		end
 		function __Orbwalker:Draw()
-			if MENU.gsodraw.me.enabled:Value() and myHero.pos:ToScreen().onScreen then
-				DrawCircle(myHero.pos, myHero.range + myHero.boundingRadius + 35, MENU.gsodraw.me.width:Value(), MENU.gsodraw.me.color:Value())
+			if Menu.gsodraw.me.enabled:Value() and myHero.pos:ToScreen().onScreen then
+				DrawCircle(myHero.pos, myHero.range + myHero.boundingRadius + 35, Menu.gsodraw.me.width:Value(), Menu.gsodraw.me.color:Value())
 			end
-			if MENU.gsodraw.he.enabled:Value() then
+			if Menu.gsodraw.he.enabled:Value() then
 				local enemyHeroes = ObjectManager:GetEnemyHeroes(99999999, false, 2)
 				for i = 1, #enemyHeroes do
 					local enemy = enemyHeroes[i]
 					if enemy.pos:ToScreen().onScreen then
-						DrawCircle(enemy.pos, enemy.range + enemy.boundingRadius + 35, MENU.gsodraw.he.width:Value(), MENU.gsodraw.he.color:Value())
+						DrawCircle(enemy.pos, enemy.range + enemy.boundingRadius + 35, Menu.gsodraw.he.width:Value(), Menu.gsodraw.he.color:Value())
 					end
 				end
 			end
@@ -2098,7 +2120,7 @@
 		end
 		function __Orbwalker:Attack(unit)
 			self.ResetAttack = false
-			local attackKey = MENU.orb.aamoveclick:Key()
+			local attackKey = Menu.orb.aamoveclick:Key()
 			CURSOR:SetCursor(_G.cursorPos, unit, attackKey, function()
 				ControlKeyDown(attackKey)
 				ControlKeyUp(attackKey)
@@ -2146,7 +2168,7 @@
 			if GameTimer() < Spells.ObjectEndTime then
 				return false
 			end
-			if MENU_CHAMP.lcore.enabled:Value() and MENU_CHAMP.lcore.response:Value() and GameTimer() < self.AttackLocalStart + self.AttackWindUp + 0.2 then
+			if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() < self.AttackLocalStart + self.AttackWindUp + 0.2 then
 				return false
 			end
 			if self.AttackCastEndTime > self.AttackLocalStart then
@@ -2161,14 +2183,14 @@
 			return true
 		end
 		function __Orbwalker:CanMoveSpell()
-			if MENU_CHAMP.lcore.enabled:Value() and MENU_CHAMP.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MENU_CHAMP.lcore.extraw:Value() * 0.001 then
+			if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
 				return true
 			end
 			if self.AttackCastEndTime > self.AttackLocalStart then
 				if GameTimer() >= self.AttackCastEndTime + 0.01 - Core:GetLatency() then
 					return true
 				end
-				if MENU_CHAMP.lcore.enabled:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MENU_CHAMP.lcore.extraw:Value() * 0.001 then
+				if MenuChamp.lcore.enabled:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
 					return true
 				end
 				return false
@@ -2198,7 +2220,7 @@
 			if self.ChampionCanMove[MeCharName] ~= nil and not self.ChampionCanMove[MeCharName]() then
 				return false
 			end
-			if MENU_CHAMP.lcore.enabled:Value() and MENU_CHAMP.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MENU_CHAMP.lcore.extraw:Value() * 0.001 then
+			if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
 				return true
 			end
 			if GetDistanceSquared(myHero.pos, _G.mousePos) < 15000 then
@@ -2208,7 +2230,7 @@
 				if GameTimer() >= self.AttackCastEndTime + extraDelay + 0.01 - Core:GetLatency() then
 					return true
 				end
-				if MENU_CHAMP.lcore.enabled:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MENU_CHAMP.lcore.extraw:Value() * 0.001 then
+				if MenuChamp.lcore.enabled:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
 					return true
 				end
 				return false
@@ -2271,7 +2293,7 @@
 		end
 		function __Orbwalker:WndMsg(msg, wParam)
 			if not CURSOR.IsReadyGlobal then
-				if wParam == MENU.orb.aamoveclick:Key() then
+				if wParam == Menu.orb.aamoveclick:Key() then
 					self.AttackLocalStart = GameTimer()
 					CURSOR.IsReadyGlobal = true
 					--print("attack")
@@ -2301,7 +2323,7 @@
 			elseif self.Modes[ORBWALKER_MODE_LANECLEAR] then
 				if HealthPrediction.IsLastHitable then
 					result = HealthPrediction:GetLastHitTarget()
-				elseif GameTimer() > HealthPrediction.ShouldWaitTime + MENU_CHAMP.lclear.swait:Value() * 0.001 then
+				elseif GameTimer() > HealthPrediction.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001 then
 					result = HealthPrediction:GetLaneClearTarget()
 				end
 			elseif self.Modes[ORBWALKER_MODE_FLEE] then
@@ -2339,7 +2361,7 @@
 			elseif self.Modes[ORBWALKER_MODE_LANECLEAR] then
 				if HealthPrediction.IsLastHitable then
 					self:AttackMove(HealthPrediction:GetLastHitTarget(), true)
-				elseif GameTimer() > HealthPrediction.ShouldWaitTime + MENU_CHAMP.lclear.swait:Value() * 0.001 then
+				elseif GameTimer() > HealthPrediction.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001 then
 					self:AttackMove(HealthPrediction:GetLaneClearTarget(), false, true)
 				else
 					self:AttackMove()
@@ -2434,7 +2456,7 @@
 			self.AttackEnabled = boolean
 		end
 		function __Orbwalker:ShouldWait()
-			return GameTimer() <= HealthPrediction.ShouldWaitTime + MENU_CHAMP.lclear.swait:Value() * 0.001
+			return GameTimer() <= HealthPrediction.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001
 		end
 		function __Orbwalker:IsEnabled()
 			return true
@@ -2500,16 +2522,16 @@
 			self.FarmMinions = {}
 		end
 		function __HealthPrediction:CreateDrawMenu()
-			MENU.gsodraw:MenuElement({name = "LastHitable Minion",  id = "lasthit", type = _G.MENU})
-				MENU.gsodraw.lasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
-				MENU.gsodraw.lasthit:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 255, 255, 255)})
-				MENU.gsodraw.lasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
-				MENU.gsodraw.lasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
-			MENU.gsodraw:MenuElement({name = "Almost LastHitable Minion",  id = "almostlasthit", type = _G.MENU})
-				MENU.gsodraw.almostlasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
-				MENU.gsodraw.almostlasthit:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 239, 159, 55)})
-				MENU.gsodraw.almostlasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
-				MENU.gsodraw.almostlasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
+			Menu.gsodraw:MenuElement({name = "LastHitable Minion",  id = "lasthit", type = _G.MENU})
+				Menu.gsodraw.lasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
+				Menu.gsodraw.lasthit:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 255, 255, 255)})
+				Menu.gsodraw.lasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
+				Menu.gsodraw.lasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
+			Menu.gsodraw:MenuElement({name = "Almost LastHitable Minion",  id = "almostlasthit", type = _G.MENU})
+				Menu.gsodraw.almostlasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
+				Menu.gsodraw.almostlasthit:MenuElement({name = "Color",  id = "color", color = DrawColor(150, 239, 159, 55)})
+				Menu.gsodraw.almostlasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
+				Menu.gsodraw.almostlasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
 		end
 		function __HealthPrediction:GetJungleTarget()
 			local result = nil
@@ -2539,12 +2561,12 @@
 		function __HealthPrediction:GetLaneClearTarget()
 			local enemyTurrets = ObjectManager:GetEnemyBuildings(myHero.range+myHero.boundingRadius - 35, true)
 			if #enemyTurrets >= 1 then return enemyTurrets[1] end
-			if MENU_CHAMP.lclear.laneset:Value() then
+			if MenuChamp.lclear.laneset:Value() then
 				local result = TargetSelector:GetComboTarget()
 				if result then return result end
 			end
 			local result = nil
-			if GameTimer() > self.ShouldWaitTime + MENU_CHAMP.lclear.swait:Value() * 0.001 then
+			if GameTimer() > self.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001 then
 				local min = 10000000
 				for i = 1, #self.FarmMinions do
 					local target = self.FarmMinions[i]
@@ -2759,14 +2781,14 @@
 		end
 		function __HealthPrediction:Draw()
 			if Orbwalker.Modes[ORBWALKER_MODE_COMBO] then return end
-			if MENU.gsodraw.lasthit.enabled:Value() or MENU.gsodraw.almostlasthit.enabled:Value() then
+			if Menu.gsodraw.lasthit.enabled:Value() or Menu.gsodraw.almostlasthit.enabled:Value() then
 				local tm = self.FarmMinions
 				for i = 1, #tm do
 					local minion = tm[i]
-					if minion.LastHitable and MENU.gsodraw.lasthit.enabled:Value() then
-						DrawCircle(minion.Minion.pos,MENU.gsodraw.lasthit.radius:Value(),MENU.gsodraw.lasthit.width:Value(),MENU.gsodraw.lasthit.color:Value())
-					elseif minion.AlmostLastHitable and MENU.gsodraw.almostlasthit.enabled:Value() then
-						DrawCircle(minion.Minion.pos,MENU.gsodraw.almostlasthit.radius:Value(),MENU.gsodraw.almostlasthit.width:Value(),MENU.gsodraw.almostlasthit.color:Value())
+					if minion.LastHitable and Menu.gsodraw.lasthit.enabled:Value() then
+						DrawCircle(minion.Minion.pos,Menu.gsodraw.lasthit.radius:Value(),Menu.gsodraw.lasthit.width:Value(),Menu.gsodraw.lasthit.color:Value())
+					elseif minion.AlmostLastHitable and Menu.gsodraw.almostlasthit.enabled:Value() then
+						DrawCircle(minion.Minion.pos,Menu.gsodraw.almostlasthit.radius:Value(),Menu.gsodraw.almostlasthit.width:Value(),Menu.gsodraw.almostlasthit.color:Value())
 					end
 				end
 			end
@@ -3245,7 +3267,7 @@
             if position ~= nil and not CURSOR.IsReady then
                 return false
 			end
-			if position ~= nil and MENU_CHAMP.spell.isaa:Value() and Orbwalker:IsAutoAttacking(myHero) then
+			if position ~= nil and MenuChamp.spell.isaa:Value() and Orbwalker:IsAutoAttacking(myHero) then
 				return false
 			end
 			if spell == _Q then
@@ -3276,7 +3298,7 @@
 			NEXT_CONTROLL = GameTimer()
 			CONTROLL = function()
 				if position then
-                    if spell ~= nil and MENU_CHAMP.spell.baa:Value() then
+                    if spell ~= nil and MenuChamp.spell.baa:Value() then
                         Spells.CanNext = false
 					end
 					CURSOR:SetCursor(_G.cursorPos, position, key, function()
@@ -3304,93 +3326,95 @@
 	end)
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Load:																																				
-	_G.SDK =
-	{
-		DAMAGE_TYPE_PHYSICAL = 0,
-		DAMAGE_TYPE_MAGICAL = 1,
-		DAMAGE_TYPE_TRUE = 2,
-		ORBWALKER_MODE_NONE = -1,
-		ORBWALKER_MODE_COMBO = 0,
-		ORBWALKER_MODE_HARASS = 1,
-		ORBWALKER_MODE_LANECLEAR = 2,
-		ORBWALKER_MODE_JUNGLECLEAR = 3,
-		ORBWALKER_MODE_LASTHIT = 4,
-		ORBWALKER_MODE_FLEE = 5
-	}
-	_G.SDK.Spells = Spells
-	_G.SDK.ObjectManager = ObjectManager
-	_G.SDK.Damage = Damage
-	_G.SDK.TargetSelector = TargetSelector
-	_G.SDK.HealthPrediction = HealthPrediction
-	_G.SDK.Orbwalker = Orbwalker
-	----------------------------------------------------------------------------------------------------------------------------------------------------
-	MENU = MenuElement({name = "gsoOrbwalker", id = "gamsteronOrb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/rsz_gsoorbwalker.png" })
-	TargetSelector:CreateMenu()
-	Orbwalker:CreateMenu()
-	----------------------------------------------------------------------------------------------------------------------------------------------------
-	MENU:MenuElement({name = "Drawings", id = "gsodraw", leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/circles.png", type = _G.MENU })
-	MENU.gsodraw:MenuElement({name = "Enabled",  id = "enabled", value = true})
-	TargetSelector:CreateDrawMenu()
-	HealthPrediction:CreateDrawMenu()
-	CURSOR:CreateDrawMenu()
-	Orbwalker:CreateDrawMenu()
-	----------------------------------------------------------------------------------------------------------------------------------------------------
-	Core:OnEnemyHeroLoad(function(hero)
-		local name = hero.charName
-		if name == "Teemo" then
-			Orbwalker.IsTeemo = true
-		end
-		if name == "Kayle" then ObjectManager.UndyingBuffs["JudicatorIntervention"] = true
-		elseif name == "Taric" then ObjectManager.UndyingBuffs["TaricR"] = true
-		elseif name == "Kindred" then ObjectManager.UndyingBuffs["kindredrnodeathbuff"] = true
-		elseif name == "Zilean" then ObjectManager.UndyingBuffs["ChronoShift"] = true; ObjectManager.UndyingBuffs["chronorevive"] = true
-		elseif name == "Tryndamere" then ObjectManager.UndyingBuffs["UndyingRage"] = true
-		elseif name == "Jax" then ObjectManager.UndyingBuffs["JaxCounterStrike"] = true
-		elseif name == "Fiora" then ObjectManager.UndyingBuffs["FioraW"] = true
-		elseif name == "Aatrox" then ObjectManager.UndyingBuffs["aatroxpassivedeath"] = true
-		elseif name == "Vladimir" then ObjectManager.UndyingBuffs["VladimirSanguinePool"] = true
-		elseif name == "KogMaw" then ObjectManager.UndyingBuffs["KogMawIcathianSurprise"] = true
-		elseif name == "Karthus" then ObjectManager.UndyingBuffs["KarthusDeathDefiedBuff"] = true
-		end
-	end)
-	----------------------------------------------------------------------------------------------------------------------------------------------------
-	Callback.Add('Tick', function()
-		if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
-		if Orbwalker.IsTeemo then
-			local hasTeemoBlind = false
-			for i = 0, myHero.buffCount do
-				local buff = myHero:GetBuff(i)
-				if buff and buff.count > 0 and buff.name:lower() == "blindingdart" then
-					hasTeemoBlind = true
-					break
+	Callback.Add("PreLoad", function()
+		_G.SDK =
+		{
+			DAMAGE_TYPE_PHYSICAL = 0,
+			DAMAGE_TYPE_MAGICAL = 1,
+			DAMAGE_TYPE_TRUE = 2,
+			ORBWALKER_MODE_NONE = -1,
+			ORBWALKER_MODE_COMBO = 0,
+			ORBWALKER_MODE_HARASS = 1,
+			ORBWALKER_MODE_LANECLEAR = 2,
+			ORBWALKER_MODE_JUNGLECLEAR = 3,
+			ORBWALKER_MODE_LASTHIT = 4,
+			ORBWALKER_MODE_FLEE = 5
+		}
+		_G.SDK.Spells = Spells
+		_G.SDK.ObjectManager = ObjectManager
+		_G.SDK.Damage = Damage
+		_G.SDK.TargetSelector = TargetSelector
+		_G.SDK.HealthPrediction = HealthPrediction
+		_G.SDK.Orbwalker = Orbwalker
+		----------------------------------------------------------------------------------------------------------------------------------------------------
+		Menu = MenuElement({name = "gsoOrbwalker", id = "gamsteronOrb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/rsz_gsoorbwalker.png" })
+		TargetSelector:CreateMenu()
+		Orbwalker:CreateMenu()
+		----------------------------------------------------------------------------------------------------------------------------------------------------
+		Menu:MenuElement({name = "Drawings", id = "gsodraw", leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/circles.png", type = _G.MENU })
+		Menu.gsodraw:MenuElement({name = "Enabled",  id = "enabled", value = true})
+		TargetSelector:CreateDrawMenu()
+		HealthPrediction:CreateDrawMenu()
+		CURSOR:CreateDrawMenu()
+		Orbwalker:CreateDrawMenu()
+		----------------------------------------------------------------------------------------------------------------------------------------------------
+		Core:OnEnemyHeroLoad(function(hero)
+			local name = hero.charName
+			if name == "Teemo" then
+				Orbwalker.IsTeemo = true
+			end
+			if name == "Kayle" then ObjectManager.UndyingBuffs["JudicatorIntervention"] = true
+			elseif name == "Taric" then ObjectManager.UndyingBuffs["TaricR"] = true
+			elseif name == "Kindred" then ObjectManager.UndyingBuffs["kindredrnodeathbuff"] = true
+			elseif name == "Zilean" then ObjectManager.UndyingBuffs["ChronoShift"] = true; ObjectManager.UndyingBuffs["chronorevive"] = true
+			elseif name == "Tryndamere" then ObjectManager.UndyingBuffs["UndyingRage"] = true
+			elseif name == "Jax" then ObjectManager.UndyingBuffs["JaxCounterStrike"] = true
+			elseif name == "Fiora" then ObjectManager.UndyingBuffs["FioraW"] = true
+			elseif name == "Aatrox" then ObjectManager.UndyingBuffs["aatroxpassivedeath"] = true
+			elseif name == "Vladimir" then ObjectManager.UndyingBuffs["VladimirSanguinePool"] = true
+			elseif name == "KogMaw" then ObjectManager.UndyingBuffs["KogMawIcathianSurprise"] = true
+			elseif name == "Karthus" then ObjectManager.UndyingBuffs["KarthusDeathDefiedBuff"] = true
+			end
+		end)
+		----------------------------------------------------------------------------------------------------------------------------------------------------
+		Callback.Add('Tick', function()
+			if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
+			if Orbwalker.IsTeemo then
+				local hasTeemoBlind = false
+				for i = 0, myHero.buffCount do
+					local buff = myHero:GetBuff(i)
+					if buff and buff.count > 0 and buff.name:lower() == "blindingdart" then
+						hasTeemoBlind = true
+						break
+					end
 				end
+				Orbwalker.IsBlindedByTeemo = hasTeemoBlind
 			end
-			Orbwalker.IsBlindedByTeemo = hasTeemoBlind
-		end
-		HealthPrediction:Tick()
-		Spells:DisableAutoAttack()
-		if Spells.Work ~= nil then
-			if GameTimer() < Spells.WorkEndTime then
-				Spells.Work()
-				return
+			HealthPrediction:Tick()
+			Spells:DisableAutoAttack()
+			if Spells.Work ~= nil then
+				if GameTimer() < Spells.WorkEndTime then
+					Spells.Work()
+					return
+				end
+				Spells.Work = nil
 			end
-			Spells.Work = nil
-		end
+		end)
+		----------------------------------------------------------------------------------------------------------------------------------------------------
+		Callback.Add('WndMsg', function(msg, wParam)
+			TargetSelector:WndMsg(msg, wParam)
+			Orbwalker:WndMsg(msg, wParam)
+			Spells:WndMsg(msg, wParam)
+		end)
+		----------------------------------------------------------------------------------------------------------------------------------------------------
+		Callback.Add('Draw', function()
+			if not Menu.gsodraw.enabled:Value() then return end
+			TargetSelector:Draw()
+			HealthPrediction:Draw()
+			CURSOR:Draw()
+			Orbwalker:Draw()
+		end)
+		----------------------------------------------------------------------------------------------------------------------------------------------------
 	end)
-	----------------------------------------------------------------------------------------------------------------------------------------------------
-	Callback.Add('WndMsg', function(msg, wParam)
-		TargetSelector:WndMsg(msg, wParam)
-		Orbwalker:WndMsg(msg, wParam)
-		Spells:WndMsg(msg, wParam)
-	end)
-	----------------------------------------------------------------------------------------------------------------------------------------------------
-	Callback.Add('Draw', function()
-		if not MENU.gsodraw.enabled:Value() then return end
-		TargetSelector:Draw()
-		HealthPrediction:Draw()
-		CURSOR:Draw()
-		Orbwalker:Draw()
-	end)
-	----------------------------------------------------------------------------------------------------------------------------------------------------
 	_G.GamsteronOrbwalkerLoaded = true
 --------------------------------------------------------------------------------------------------------------------------------------------------------
