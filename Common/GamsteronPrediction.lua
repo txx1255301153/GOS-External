@@ -27,7 +27,7 @@
         if _Update then
             local args =
             {
-                version = 0.01,
+                version = 0.02,
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 scriptPath = COMMON_PATH .. "GamsteronPrediction.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua",
@@ -50,6 +50,7 @@
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Locals:                                                                                                                                              
     local DebugMode                 = false
+    local HighAccuracy              = 0.1
     local PredictionInput           = Core:Class()
     local PredictionOutput          = Core:Class()
     local Prediction                = Core:Class()
@@ -131,7 +132,7 @@
             local result = {}
 			for i = 1, GameHeroCount() do
 				local hero = GameHero(i)
-				if IsValidTarget(hero) and hero.team == TEAM_ALLY then
+				if hero and IsValidTarget(hero) and hero.team == TEAM_ALLY then
 					if IsInRange(from, To2D(hero.pos), range) then
 						TableInsert(result, hero)
 					end
@@ -144,7 +145,7 @@
             local result = {}
 			for i = 1, GameHeroCount() do
 				local hero = GameHero(i)
-				if IsValidTarget(hero) and hero.team ~= TEAM_ALLY then
+				if hero and IsValidTarget(hero) and hero.team ~= TEAM_ALLY then
 					if IsInRange(from, To2D(hero.pos), range) then
 						TableInsert(result, hero)
 					end
@@ -197,7 +198,7 @@
         local path = GetWaypoints(unit, unitID)
         local pathCount = #path
         local Radius = input.RealRadius
-        -----------------------------------------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------------------------------------------------------------
         if pathCount == 1 or not unitPath.hasMovePath or IsInRange(unitPos, To2D(unitPath.endPos), 25) then
             if unit.visible and GameTimer() > data.LastMoveTimer + 0.5 and pathCount == 1 and not unitPath.hasMovePath then
                 if GameTimer() > data.StopMoveTimer + 3 and GameTimer() > data.LastMoveTimer + 3 then
@@ -206,11 +207,11 @@
                 return PredictionOutput({ Input = input, Hitchance = HITCHANCE_NORMAL, CastPosition = unitPos, UnitPosition = unitPos })
             end
             PredictionOutput()
-        -----------------------------------------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------------------------------------------------------------
         elseif pathCount > 1 and Core:PathLength(path) > -Radius + (input.Delay * speed) then
-        -----------------------------------------------------------------------------------------------------------------------------
-            local HitChance = (GameTimer() < data.LastMoveTimer + 0.1) and HITCHANCE_HIGH or HITCHANCE_NORMAL
-            -----------------------------------------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------------------------------------------------------------
+            local HitChance = (GameTimer() < data.LastMoveTimer + HighAccuracy) and HITCHANCE_HIGH or HITCHANCE_NORMAL
+            --------------------------------------------------------------------------------------------------------------------------------------------
             if input.Speed == MathHuge then
                 local tDistance = (input.Delay * speed) - Radius
                 for i = 1, #path - 1 do
@@ -225,7 +226,7 @@
                     end
                     tDistance = tDistance - d
                 end
-            -----------------------------------------------------------------------------------------------------------------------------
+            --------------------------------------------------------------------------------------------------------------------------------------------
             else
                 local d = (input.Delay * speed) - Radius
                 if input.Type == SPELLTYPE_LINE or input.Type == SPELLTYPE_CONE then
@@ -397,6 +398,7 @@
         self.SPELLTYPE_CONE             = 2
         ------------------------------------------------------------------------------------------------------------------------------------------------
         self.menu = MenuElement({name = "Gamsteron Prediction", id = "gsopred", type = _G.MENU })
+            self.menu:MenuElement({id = "PredHighAccuracy", name = "High Accuracy [ last move ms ]", value = 100, min = 25, max = 100, step = 5, callback = function(value) HighAccuracy = value * 0.001 end })
             self.menu:MenuElement({id = "PredMaxRange", name = "Max Range %", value = 100, min = 70, max = 100, step = 1, callback = function(value) self.MaxRangeMulipier = value * 0.01 end })
             self.MaxRangeMulipier = self.menu.PredMaxRange:Value() * 0.01
     end
@@ -521,7 +523,7 @@
                         --end
                     end
                 end
-                if DebugPrediction and false then
+                if DebugPrediction then
                     for i = 1, Game.HeroCount() do
                         local Hero = Game.Hero(i)
                         if Hero and Hero.isEnemy and Hero.valid and Hero.alive and not Hero.dead then
@@ -536,7 +538,7 @@
                     end
                 end
             end)
-            local debugOnProcessSpell = true
+            local debugOnProcessSpell = false
             if debugOnProcessSpell then
                 local currentPath = {}
                 local predPos = nil
