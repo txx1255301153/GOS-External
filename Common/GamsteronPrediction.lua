@@ -27,7 +27,7 @@
         if _Update then
             local args =
             {
-                version = 0.03,
+                version = 0.04,
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 scriptPath = COMMON_PATH .. "GamsteronPrediction.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua",
@@ -84,6 +84,7 @@
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
         local function IsInRange(vec1, vec2, range)
+            if not vec2 then return false end
             local dx = vec1.x - vec2.x
             local dy = vec1.y - vec2.y
             return dx * dx + dy * dy <= range * range
@@ -126,11 +127,11 @@
 			return result
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
-		local function GetAllyHeroes(from, range)
+		local function GetAllyHeroes(from, range, unitID)
             local result = {}
 			for i = 1, GameHeroCount() do
 				local hero = GameHero(i)
-				if hero and IsValidTarget(hero) and hero.team == TEAM_ALLY then
+				if hero and IsValidTarget(hero) and unitID ~= hero.networkID and hero.team == TEAM_ALLY then
 					if IsInRange(from, To2D(hero.pos), range) then
 						TableInsert(result, hero)
 					end
@@ -139,11 +140,11 @@
 			return result
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
-		local function GetEnemyHeroes(from, range)
+		local function GetEnemyHeroes(from, range, unitID)
             local result = {}
 			for i = 1, GameHeroCount() do
 				local hero = GameHero(i)
-				if hero and IsValidTarget(hero) and hero.team ~= TEAM_ALLY then
+				if hero and IsValidTarget(hero) and unitID ~= hero.networkID and hero.team ~= TEAM_ALLY then
 					if IsInRange(from, To2D(hero.pos), range) then
 						TableInsert(result, hero)
 					end
@@ -236,6 +237,8 @@
                 return result
             end
             ------------------------------------------------------------------------------------------------------------------------------------------------
+            result.UnitID = result.Unit.networkID
+            ------------------------------------------------------------------------------------------------------------------------------------------------
             local from = To2D(myHero.pos)
             if result.Collision then
                 result.ObjectsList = {}
@@ -244,14 +247,12 @@
                     if CollisionType == Core.COLLISION_MINION then
                         result.ObjectsList.enemyMinions = GetEnemyMinions(from, 2000)
                     elseif CollisionType ==  Core.COLLISION_ALLYHERO then
-                        result.ObjectsList.allyHeroes = GetAllyHeroes(from, 2000)
+                        result.ObjectsList.allyHeroes = GetAllyHeroes(from, 2000, result.UnitID)
                     elseif CollisionType == Core.COLLISION_ENEMYHERO then
-                        result.ObjectsList.enemyHeroes = GetEnemyHeroes(from, 2000)
+                        result.ObjectsList.enemyHeroes = GetEnemyHeroes(from, 2000, result.UnitID)
                     end
                 end
             end
-            ------------------------------------------------------------------------------------------------------------------------------------------------
-            result.UnitID = result.Unit.networkID
             ------------------------------------------------------------------------------------------------------------------------------------------------
             result.UnitData = Core:GetHeroData(result.Unit)
             ------------------------------------------------------------------------------------------------------------------------------------------------
