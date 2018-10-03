@@ -27,7 +27,7 @@
         if _Update then
             local args =
             {
-                version = 0.04,
+                version = 0.05,
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 scriptPath = COMMON_PATH .. "GamsteronPrediction.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua",
@@ -437,6 +437,22 @@
         ------------------------------------------------------------------------------------------------------------------------------------------------
         if result == nil then
             result = GetStandardPrediction(input)
+            if result.Hitchance ~= HITCHANCE_IMPOSSIBLE then
+                local isOK = false
+                local castPos = result.CastPosition
+                local path = input.UnitData.Path
+                for i = 1, #path - 1 do
+                    local v1, v2 = path[i], path[i+1]
+                    local isOnSegment, pointSegment, pointLine = Core:ProjectOn(castPos, v1, v2)
+                    if Core:IsInRange(pointSegment, castPos, 10) then
+                        isOK = true
+                        break
+                    end
+                end
+                if not isOK then
+                    result.Hitchance = HITCHANCE_IMPOSSIBLE
+                end
+            end
         end
         ------------------------------------------------------------------------------------------------------------------------------------------------
         if result.Hitchance ~= HITCHANCE_IMPOSSIBLE then
