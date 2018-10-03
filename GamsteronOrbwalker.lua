@@ -30,12 +30,12 @@
 		if _Update then
 			local args =
 			{
-				version = 0.01,
+				version = 0.02,
 				----------------------------------------------------------------------------------------------------------------------------------------
-				scriptPath = COMMON_PATH .. "GamsteronOrbwalker.lua",
+				scriptPath = SCRIPT_PATH .. "GamsteronOrbwalker.lua",
 				scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.lua",
 				----------------------------------------------------------------------------------------------------------------------------------------
-				versionPath = COMMON_PATH .. "GamsteronOrbwalker.version",
+				versionPath = SCRIPT_PATH .. "GamsteronOrbwalker.version",
 				versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.version"
 			}
 			--------------------------------------------------------------------------------------------------------------------------------------------
@@ -867,6 +867,12 @@
 			MenuChamp.lclear.laneset:Value(true)
 			MenuChamp.lclear.swait:Value(500)
         end
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Constants:
+	local SPELLCAST_ATTACK          = 0
+	local SPELLCAST_DASH            = 1
+	local SPELLCAST_IMMOBILE        = 2
+	local SPELLCAST_OTHER           = 3
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Cursor Class:																																		
 	do
@@ -2376,43 +2382,54 @@
 		end
 		function __Orbwalker:Tick()
 			-- COMMENTED FOR FUTURE USAGE ! Calculate Animation & WindUp AttackTime
-				--local baseAnimationTime = myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed)
-				--local baseWindUpTime = myHero.attackData.windUpTime / myHero.attackData.animationTime
-				--local animationTime = 1 / baseAnimationTime
-				--local windUpTime = animationTime * baseWindUpTime
-				--print(tostring(animationTime) .. " " .. tostring(myHero.attackData.animationTime))
-				--print(tostring(windUpTime) .. " " .. tostring(myHero.attackData.windUpTime))
+			--local baseAnimationTime = myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed)
+			--local baseWindUpTime = myHero.attackData.windUpTime / myHero.attackData.animationTime
+			--local animationTime = 1 / baseAnimationTime
+			--local windUpTime = animationTime * baseWindUpTime
+			--print(tostring(animationTime) .. " " .. tostring(myHero.attackData.animationTime))
+			--print(tostring(windUpTime) .. " " .. tostring(myHero.attackData.windUpTime))
 			-- Get AttackData from myHero.attackData
-				if self.AttackSpeed == 0 and myHero.attackSpeed then self.AttackSpeed = myHero.attackSpeed end
-				if self.AttackWindUp == 0 and myHero.attackData.windUpTime then self.AttackWindUp = myHero.attackData.windUpTime end
-				if self.AttackAnim == 0 and myHero.attackData.animationTime then self.AttackAnim = myHero.attackData.animationTime end
-				if self.AttackProjSpeed == -1 and myHero.attackData.projectileSpeed then self.AttackProjSpeed = myHero.attackData.projectileSpeed end
+			if self.AttackSpeed == 0 and myHero.attackSpeed then self.AttackSpeed = myHero.attackSpeed end
+			if self.AttackWindUp == 0 and myHero.attackData.windUpTime then self.AttackWindUp = myHero.attackData.windUpTime end
+			if self.AttackAnim == 0 and myHero.attackData.animationTime then self.AttackAnim = myHero.attackData.animationTime end
+			if self.AttackProjSpeed == -1 and myHero.attackData.projectileSpeed then self.AttackProjSpeed = myHero.attackData.projectileSpeed end
 			-- Get AttackData from myHero.activeSpell
-				local spell = myHero.activeSpell
-				if spell and spell.valid and not NoAutoAttacks[spell.name] and spell.castEndTime > self.AttackCastEndTime and (not myHero.isChanneling or SpecialAutoAttacks[spell.name]) then
-					for i = 1, #self.OnAttackC do
-						self.OnAttackC[i]()
+			local spell = myHero.activeSpell
+			if spell and spell.valid and not NoAutoAttacks[spell.name] and spell.castEndTime > self.AttackCastEndTime and (not myHero.isChanneling or SpecialAutoAttacks[spell.name]) then
+				for i = 1, #self.OnAttackC do
+					self.OnAttackC[i]()
+				end
+				self.AttackCastEndTime = spell.castEndTime
+				self.AttackSpeed = myHero.attackSpeed
+				self.AttackWindUp = spell.windup
+				self.AttackAnim = spell.animation
+				self.AttackStartTime = spell.startTime
+				self.AttackEndTime = spell.endTime
+				self.AttackProjSpeed = spell.speed
+				if GAMSTERON_MODE_DMG then
+					if self.TestCount == 0 then
+						self.TestStartTime = GameTimer()
 					end
-					self.AttackCastEndTime = spell.castEndTime
-					self.AttackSpeed = myHero.attackSpeed
-					self.AttackWindUp = spell.windup
-					self.AttackAnim = spell.animation
-					self.AttackStartTime = spell.startTime
-					self.AttackEndTime = spell.endTime
-					self.AttackProjSpeed = spell.speed
-					if GAMSTERON_MODE_DMG then
-						if self.TestCount == 0 then
-							self.TestStartTime = GameTimer()
-						end
-						self.TestCount = self.TestCount + 1
-						if self.TestCount == 5 then
-							print("5 attacks in time: " .. tostring(GameTimer() - self.TestStartTime) .. "[sec]")
-							self.TestCount = 0
-							self.TestStartTime = 0
-						end
+					self.TestCount = self.TestCount + 1
+					if self.TestCount == 5 then
+						print("5 attacks in time: " .. tostring(GameTimer() - self.TestStartTime) .. "[sec]")
+						self.TestCount = 0
+						self.TestStartTime = 0
 					end
 				end
-				self.AttackWindUp = GetWindup()
+			end
+			self.AttackWindUp = GetWindup()
+			--[[
+			local data = Core:GetHeroData(myHero, true)
+			for name, s in pairs(data.ActiveSpells) do
+				if s.type == SPELLCAST_ATTACK and s.completed then
+					local as = s.spell
+					if as ~= nil and as.spellWasCast ~= nil and as.spellWasCast == false and GameTimer() > as.castEndTime and GameTimer() < as.castEndTime + 0.075 then
+						self:__OnAutoAttackReset()
+						print("reset attack")
+					end
+				end
+			end]]
 			self:Orbwalk()
 		end
 		------------------------------------------------------------------------------------------------------------------------------------------------
