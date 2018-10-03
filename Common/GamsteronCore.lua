@@ -49,7 +49,7 @@
         if _Update then
             local args =
             {
-                version = 0.02,
+                version = 0.03,
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 scriptPath = COMMON_PATH .. "GamsteronCore.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
@@ -1014,6 +1014,10 @@
                 ["XenZhaoThrust2"] = true,
                 ["XenZhaoThrust3"] = true
             }
+            local NoAutoAttacks =
+            {
+                ["GravesAutoAttackRecoil"] = true
+            }
                     -- 1. Camille (before Cassiopeia)
                     -- 2. Draven (before Ekko)
                     -- 3. Elise (before Evelynn)
@@ -1276,7 +1280,7 @@
                         local activeSpells = data.ActiveSpells
                         if not activeSpells[name] or startTime > activeSpells[name].startTime then
                             local endTime, spellCastType
-                            if not unit.isChanneling or ATTACK_SPELLS[name] then
+                            if not NoAutoAttacks[name] and (not unit.isChanneling or ATTACK_SPELLS[name]) then
                                 endTime = spell.castEndTime
                                 if endTime > GameTimer() and endTime > data.ExpireImmobile then
                                     HeroData[unitID].ExpireImmobile = endTime
@@ -1663,7 +1667,7 @@
             local length = MathSqrt(vec.x * vec.x + vec.y * vec.y)
             if length > 0 then
                 local inv = 1.0 / length
-                return { x = vec.x * inv, y = vec.y * inv }
+                return { x = (vec.x * inv), y = (vec.y * inv) }
             end
             return nil
         end
@@ -1970,6 +1974,9 @@
         ------------------------------------------------------------------------------------------------------------------------------------------------
         function Core:GetCollision(from, to, speed, delay, radius, collisionObjects, objectsList)
             local result = {}
+            local direction = self:Normalized(to, from)
+            to = self:Extended(to, direction, 35)
+            from = self:Extended(from, direction, -35)
             for i = 1, #collisionObjects do
                 local objectType = collisionObjects[i]
                 ----------------------------------------------------------------------------------------------------------------------------------------
@@ -1980,14 +1987,14 @@
                         local HasMovePath, CastPos = self:GetCollisionPrediction(object, from, speed, delay)
                         local isOnSegment, pointSegment, pointLine = self:ProjectOn(CastPos, from, to)
                         local IsCollisionable = false
-                        if IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
+                        if isOnSegment and IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
                             TableInsert(result, object)
                             IsCollisionable = true
                         end
                         if HasMovePath and not IsCollisionable then
                             local objectPos = To2D(object.pos)
                             isOnSegment, pointSegment, pointLine = self:ProjectOn(objectPos, from, to)
-                            if IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
+                            if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
                                 TableInsert(result, object)
                             end
                         end
@@ -2000,14 +2007,14 @@
                         local HasMovePath, CastPos = self:GetCollisionPrediction(object, from, speed, delay)
                         local isOnSegment, pointSegment, pointLine = self:ProjectOn(CastPos, from, to)
                         local IsCollisionable = false
-                        if IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
+                        if isOnSegment and IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
                             TableInsert(result, object)
                             IsCollisionable = true
                         end
                         if HasMovePath and not IsCollisionable then
                             local objectPos = To2D(object.pos)
                             isOnSegment, pointSegment, pointLine = self:ProjectOn(objectPos, from, to)
-                            if IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
+                            if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
                                 TableInsert(result, object)
                             end
                         end
@@ -2020,14 +2027,14 @@
                         local HasMovePath, CastPos = self:GetCollisionPrediction(object, from, speed, delay)
                         local isOnSegment, pointSegment, pointLine = self:ProjectOn(CastPos, from, to)
                         local IsCollisionable = false
-                        if IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
+                        if isOnSegment and IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
                             TableInsert(result, object)
                             IsCollisionable = true
                         end
                         if HasMovePath and not IsCollisionable then
                             local objectPos = To2D(object.pos)
                             isOnSegment, pointSegment, pointLine = self:ProjectOn(objectPos, from, to)
-                            if IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
+                            if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
                                 TableInsert(result, object)
                             end
                         end
