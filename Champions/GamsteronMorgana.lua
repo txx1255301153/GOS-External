@@ -45,12 +45,12 @@
         if _Update then
             local args =
             {
-                version = 0.01,
+                version = 0.02,
                 ----------------------------------------------------------------------------------------------------------------------------------------
-                scriptPath = COMMON_PATH .. "GamsteronMorgana.lua",
+                scriptPath = SCRIPT_PATH .. "GamsteronMorgana.lua",
                 scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Champions/GamsteronMorgana.lua",
                 ----------------------------------------------------------------------------------------------------------------------------------------
-                versionPath = COMMON_PATH .. "GamsteronMorgana.version",
+                versionPath = SCRIPT_PATH .. "GamsteronMorgana.version",
                 versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Champions/GamsteronMorgana.version"
             }
             --------------------------------------------------------------------------------------------------------------------------------------------
