@@ -1,4 +1,56 @@
-if _G.GamsteronCoreLoaded == true then return end
+function DownloadFile(url, path)
+    DownloadFileAsync(url, path, function() end)
+    while not FileExist(path) do end
+end
+
+function Trim(s)
+    local from = s:match"^%s*()"
+    return from > #s and "" or s:match(".*%S", from)
+end
+
+function ReadFile(path)
+    local result = {}
+    local file = io.open(path, "r")
+    if file then
+        for line in file:lines() do
+            local str = Trim(line)
+            if #str > 0 then
+                table.insert(result, str)
+            end
+        end
+        file:close()
+    end
+    return result
+end
+
+function AutoUpdate(args)
+    DownloadFile(args.versionUrl, args.versionPath)
+    local fileResult = ReadFile(args.versionPath)
+    local newVersion = tonumber(fileResult[1])
+    if newVersion > args.version then
+        DownloadFile(args.scriptUrl, args.scriptPath)
+        return true, newVersion
+    end
+    return false, args.version
+end
+
+do
+    if _G.GamsteronCoreLoaded == true then return end
+
+    local success, version = AutoUpdate({
+        version = 0.05,
+        scriptPath = COMMON_PATH .. "GamsteronCore.lua",
+        scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
+        versionPath = COMMON_PATH .. "GamsteronCore.version",
+        versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.version"
+    })
+    
+    if success then
+        print("GamsteronCore updated to version " .. version .. ". Please Reload with 2x F6 !")
+        _G.GamsteronCoreUpdated = true
+        return
+    end
+end
 
 local MathSqrt                      = _G.math.sqrt
 local MathMax                       = _G.math.max
@@ -61,7 +113,7 @@ local HeroesLoad                    =
 }
 
 local OnLoadC                       = {}
-local OnProcessRecallC              = {}
+local OnProcessRecallC2              = {}
 local OnProcessSpellCastC           = {}
 local OnProcessSpellCompleteC       = {}
 local OnProcessWaypointC            = {}
@@ -365,57 +417,6 @@ function CastSpell(spell, unit, from, spellData, hitChance)
         end
     end
     return false
-end
-
-function DownloadFile(url, path)
-    DownloadFileAsync(url, path, function() end)
-    while not FileExist(path) do end
-end
-
-function Trim(s)
-    local from = s:match"^%s*()"
-    return from > #s and "" or s:match(".*%S", from)
-end
-
-function ReadFile(path)
-    local result = {}
-    local file = io.open(path, "r")
-    if file then
-        for line in file:lines() do
-            local str = Trim(line)
-            if #str > 0 then
-                table.insert(result, str)
-            end
-        end
-        file:close()
-    end
-    return result
-end
-
-function AutoUpdate(args)
-    DownloadFile(args.versionUrl, args.versionPath)
-    local fileResult = ReadFile(args.versionPath)
-    local newVersion = tonumber(fileResult[1])
-    if newVersion > args.version then
-        DownloadFile(args.scriptUrl, args.scriptPath)
-        return true, newVersion
-    end
-    return false, args.version
-end
-
-do
-    local success, version = AutoUpdate({
-        version = 0.04,
-        scriptPath = COMMON_PATH .. "GamsteronCore.lua",
-        scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
-        versionPath = COMMON_PATH .. "GamsteronCore.version",
-        versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.version"
-    })
-    if success then
-        print("GamsteronCore updated to version " .. version .. ". Please Reload with 2x F6 !")
-        _G.GamsteronCoreUpdated = true
-        return
-    end
 end
 
 _G.HEROES_SPELL                     = 0
@@ -2303,14 +2304,14 @@ function Detector(unit, unitID)
             local name = buff.name
             if duration and name and #name > 0 and #name < 30 then
                 TableInsert(ActiveBuffs, { buff = buff, name = name })
-                for i, cb in pairs(OnUpdateBuffC) do
+                for k, cb in pairs(OnUpdateBuffC) do
                     cb(unit, buff)
                 end
                 if DASH_BUFFS[name] then
                     if duration > HeroData[unitID].RemainingDash then HeroData[unitID].RemainingDash = duration end
                 elseif STUN_BUFFS[name] then
                     if name == "recall" then
-                        for i, cb in pairs(OnProcessRecallC) do
+                        for k, cb in pairs(OnProcessRecallC2) do
                             cb(unit, buff)
                         end
                     end
@@ -2737,8 +2738,8 @@ function OnAllyHeroLoad(cb)
     TableInsert(HeroesLoad.OnAllyHeroLoadC, cb)
 end
 
-function OnProcessRecall(cb)
-    TableInsert(OnProcessRecallC, cb)
+function OnProcessRecall2(cb)
+    TableInsert(OnProcessRecallC2, cb)
 end
 
 function OnProcessSpellCast(cb)
