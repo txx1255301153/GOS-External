@@ -404,15 +404,13 @@ function AutoUpdate(args)
 end
 
 do
-    local args =
-    {
+    local success, version = AutoUpdate({
         version = 0.04,
-        scriptPath = COMMON_PATH .. "Gamsteronlua",
+        scriptPath = COMMON_PATH .. "GamsteronCore.lua",
         scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
-        versionPath = COMMON_PATH .. "Gamsteronversion",
+        versionPath = COMMON_PATH .. "GamsteronCore.version",
         versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.version"
-    }
-    local success, version = AutoUpdate(args)
+    })
     if success then
         print("GamsteronCore updated to version " .. version .. ". Please Reload with 2x F6 !")
         _G.GamsteronCoreUpdated = true
