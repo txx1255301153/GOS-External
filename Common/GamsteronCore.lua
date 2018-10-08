@@ -38,7 +38,7 @@ do
     if _G.GamsteronCoreLoaded == true then return end
 
     local success, version = AutoUpdate({
-        version = 0.05,
+        version = 0.06,
         scriptPath = COMMON_PATH .. "GamsteronCore.lua",
         scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
         versionPath = COMMON_PATH .. "GamsteronCore.version",
@@ -214,8 +214,6 @@ local function PredictionInput(args)
         result.Valid = false
         return result
     end
-    assert(result.From.pos, "result.From.pos")
-    assert(result.Unit.pos, "result.Unit.pos")
     result.From = To2D(result.From.pos)
     if result.Range ~= MathHuge and not IsInRange(result.From, To2D(result.Unit.pos), result.Range * 1.5) then
         result.Valid = false
@@ -228,7 +226,6 @@ end
 local function GetStandardPrediction(input)
     local unit = input.Unit
     local unitID = input.UnitID
-    assert(unit.pos, "unit.pos")
     local unitPos = To2D(unit.pos)
     local unitPath = unit.pathing
     local speed = unit.ms
@@ -239,7 +236,6 @@ local function GetStandardPrediction(input)
     local path = GetWaypoints(unit, unitID)
     local pathCount = #path
     local Radius = input.RealRadius
-    assert(unitPath.endPos, "unitPath.endPos")
     if pathCount == 1 or not unitPath.hasMovePath or IsInRange(unitPos, To2D(unitPath.endPos), 25) then
         if unit.visible and GameTimer() > data.LastMoveTimer + 0.5 and pathCount == 1 and not unitPath.hasMovePath and IsInRange(unitPos, To2D(unitPath.endPos), 25) then
             if GameTimer() > data.StopMoveTimer + 3 and GameTimer() > data.LastMoveTimer + 3 then
@@ -280,7 +276,6 @@ local function GetDashingPrediction(input)
     if #path ~= 2 then
         return PredictionOutput()
     end
-    assert(unit.pos, "unit.pos")
     local startPos = To2D(unit.pos)
     local endPos = path[2]
     if IsInRange(startPos, endPos, 25) then
@@ -306,7 +301,6 @@ local function GetDashingPrediction(input)
 end
 
 local function GetImmobilePrediction(input, remainingTime)
-    assert(input.Unit.pos, "input.Unit.pos")
     local pos = To2D(input.Unit.pos)
     local interceptTime = input.Delay + (GetDistance(input.From, pos) / input.Speed) - (input.RealRadius / input.Unit.ms)
     if remainingTime + 0.1 >= interceptTime then
@@ -363,8 +357,6 @@ function GetPrediction(unit, args, from)
     end
     if result.Hitchance ~= HITCHANCE_IMPOSSIBLE then
         if input.Range ~= MathHuge then
-            assert(unit.pos, "unit.pos")
-            assert(myHero.pos, "myHero.pos")
             if result.Hitchance >= HITCHANCE_HIGH and not IsInRange(input.RangeCheckFrom, To2D(unit.pos), input.Range + input.RealRadius * 3 / 4) then
                 result.Hitchance = HITCHANCE_NORMAL
             end
@@ -2208,11 +2200,9 @@ end
 function GetWaypoints(unit, unitID)
     local result = {}
     if unit.visible then
-        assert(unit.pos, "unit.pos")
         TableInsert(result, To2D(unit.pos))
         local path = unit.pathing
         for i = path.pathIndex, path.pathCount do
-            assert(unit:GetPath(i), "unit:GetPath(i)")
             TableInsert(result, To2D(unit:GetPath(i)))
         end
     else
@@ -2225,7 +2215,6 @@ function GetWaypoints(unit, unitID)
 end
 
 function Detector(unit, unitID)
-    assert(unit.pathing.endPos, "unit.pathing.endPos")
     if not HeroData[unitID] then
         HeroData[unitID] =
         {
@@ -2253,8 +2242,6 @@ function Detector(unit, unitID)
         local path = unit.pathing
         local startpos = To2D(unit.pos)
         local endpos = To2D(path.endPos)
-        assert(unit.pos, "unit.pos")
-        assert(path.endPos, "path.endPos")
         if not IsInRange(startpos, endpos, 50) and not IsInRange(data.EndPos, endpos, 10) then
             HeroData[unitID].LastMoveTimer = GameTimer()
             HeroData[unitID].EndPos = endpos
@@ -2476,7 +2463,6 @@ function YasuoWallTick(unit)
                     local name = obj.name:lower()
                     if name:find("yasuo") and name:find("_w_") and name:find("windwall") then
                         if name:find("activate") then
-                            assert(obj.pos, "obj.pos")
                             Yasuo.StartPos = To2D(obj.pos)
                         else
                             Yasuo.Wall = obj
@@ -2597,8 +2583,6 @@ function GetAutoAttackRange(from, target)
 end
 
 function IsInAutoAttackRange(from, target)
-    assert(from.pos, "from.pos")
-    assert(target.pos, "target.pos")
 	return IsInRange(To2D(from.pos), To2D(target.pos), GetAutoAttackRange(from, target))
 end
 
@@ -2819,7 +2803,6 @@ end
 
 function IsYasuoWallCollision(startPos, endPos, speed, delay)
     if not IsYasuo or not IsYasuoWall() then return false end
-    assert(Yasuo.Wall.pos, "Yasuo.Wall.pos")
     local Pos = To2D(Yasuo.Wall.pos)
     local Width = 300 + 50 * Yasuo.Level
     local Direction = Perpendicular(Normalized(Pos, Yasuo.StartPos))
@@ -2865,11 +2848,9 @@ end
 
 function GetCollisionWaypoints(unit)
     local result = {}
-    assert(unit.pos, "unit.pos")
     TableInsert(result, To2D(unit.pos))
     local path = unit.pathing
     for i = path.pathIndex, path.pathCount do
-        assert(unit:GetPath(i), "unit:GetPath(i)")
         TableInsert(result, To2D(unit:GetPath(i)))
     end
     return result
@@ -2942,10 +2923,8 @@ function GetCollisionPrediction(unit, from, spellspeed, spelldelay)
     local path = GetCollisionWaypoints(unit)
     local pathCount = #path
     if pathCount <= 1 or not unit.pathing.hasMovePath then
-        assert(unit.pos, "unit.pos")
         return false, To2D(unit.pos)
     else
-        assert(unit:GetPrediction(spellspeed, spelldelay), "unit:GetPrediction(spellspeed, spelldelay)")
         return true, To2D(unit:GetPrediction(spellspeed, spelldelay))
     end
 end
@@ -2969,7 +2948,6 @@ function GetCollision(from, to, speed, delay, radius, collisionObjects, objectsL
                     IsCollisionable = true
                 end
                 if HasMovePath and not IsCollisionable then
-                    assert(object.pos, "object.pos")
                     local objectPos = To2D(object.pos)
                     isOnSegment, pointSegment, pointLine = ProjectOn(objectPos, from, to)
                     if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
@@ -2989,7 +2967,6 @@ function GetCollision(from, to, speed, delay, radius, collisionObjects, objectsL
                     IsCollisionable = true
                 end
                 if HasMovePath and not IsCollisionable then
-                    assert(object.pos, "object.pos")
                     local objectPos = To2D(object.pos)
                     isOnSegment, pointSegment, pointLine = ProjectOn(objectPos, from, to)
                     if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
@@ -3009,7 +2986,6 @@ function GetCollision(from, to, speed, delay, radius, collisionObjects, objectsL
                     IsCollisionable = true
                 end
                 if HasMovePath and not IsCollisionable then
-                    assert(object.pos, "object.pos")
                     local objectPos = To2D(object.pos)
                     isOnSegment, pointSegment, pointLine = ProjectOn(objectPos, from, to)
                     if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
@@ -3019,7 +2995,6 @@ function GetCollision(from, to, speed, delay, radius, collisionObjects, objectsL
             end
         --elseif objectType == CollisionableObjects.Walls then
         elseif IsYasuo and objectType == COLLISION_YASUOWALL and IsYasuoWall() then
-            assert(Yasuo.Wall.pos, "Yasuo.Wall.pos")
             local Pos = To2D(Yasuo.Wall.pos)
             local Width = 300 + 50 * Yasuo.Level
             local Direction = Perpendicular(Normalized(Pos, Yasuo.StartPos))
@@ -3088,10 +3063,8 @@ function __Interrupter()
     }
     Callback.Add("Draw", function()
         local mePos = To2D(myHero.pos)
-        assert(myHero.pos, "myHero.pos")
         for i = 1, GameHeroCount() do
             local o = GameHero(i)
-            assert(o.pos, "o.pos")
             if o and o.valid and not o.dead and o.isTargetable and o.visible and IsInRange(mePos, To2D(o.pos), 1500) then
                 local a = o.activeSpell
                 if a and a.valid and a.isChanneling and spells[a.name] and a.castEndTime - GameTimer() > 0.33 then
@@ -3110,12 +3083,10 @@ end
 
 function GetEnemyMinions(from, range)
     local result = {}
-    assert(from.pos, "from.pos")
     from = To2D(from.pos)
     for i = 1, GameMinionCount() do
         local minion = GameMinion(i)
         local mr = bb and range + minion.boundingRadius or range
-        assert(minion.pos, "minion.pos")
         if minion and minion.team ~= TEAM_ALLY and IsValidTarget(minion) and IsInRange(from, To2D(minion.pos), mr) then
             result[#result+1] = minion
         end
@@ -3139,12 +3110,10 @@ end
 
 function GetEnemyHeroes(from, range, unitID)
     local result = {}
-    assert(from.pos, "from.pos")
     from = To2D(from.pos)
     for i = 1, GameHeroCount() do
         local hero = GameHero(i)
         if hero and IsValidTarget(hero) and unitID ~= hero.networkID and hero.team ~= TEAM_ALLY then
-            assert(hero.pos, "hero.pos")
             if IsInRange(from, To2D(hero.pos), range) then
                 TableInsert(result, hero)
             end
