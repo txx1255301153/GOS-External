@@ -1,3 +1,6 @@
+local GamsteronMorganaVer = 0.04
+local LocalCore, Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
+
 do
     if _G.GamsteronMorganaLoaded or myHero.charName ~= "Morgana" then
         return
@@ -12,9 +15,10 @@ do
     if _G.GamsteronCoreUpdated then
         return
     end
+    LocalCore = _G.GamsteronCore
 
-    local success, version = AutoUpdate({
-        version = 0.03,
+    local success, version = LocalCore:AutoUpdate({
+        version = GamsteronMorganaVer,
         scriptPath = SCRIPT_PATH .. "GamsteronMorgana.lua",
         scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Champions/GamsteronMorgana.lua",
         versionPath = SCRIPT_PATH .. "GamsteronMorgana.version",
@@ -27,8 +31,6 @@ do
         return
     end
 end
-
-local Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
 
 local pairs							= _G.pairs
 local myHero						= _G.myHero
@@ -68,13 +70,13 @@ local R_COMBO_RANGEX                = 300
 
 local QData                         =
 {
-    Type = SPELLTYPE_LINE, Aoe = false, From = myHero,
+    Type = LocalCore.SPELLTYPE_LINE, Aoe = false, From = myHero,
     Delay = 0.25, Radius = 70, Range = 1175, Speed = 1200,
-    Collision = true, MaxCollision = 0, CollisionObjects = { COLLISION_MINION, COLLISION_YASUOWALL }
+    Collision = true, MaxCollision = 0, CollisionObjects = { LocalCore.COLLISION_MINION, LocalCore.COLLISION_YASUOWALL }
 }
 local WData                         =
 {
-    Type = SPELLTYPE_CIRCLE, Aoe = false, Collision = false, From = myHero,
+    Type = LocalCore.SPELLTYPE_CIRCLE, Aoe = false, Collision = false, From = myHero,
     Delay = 0.25, Radius = 150, Range = 900, Speed = math.huge
 }
 local EData                         =
@@ -103,14 +105,14 @@ local function LoadMenu()
             Menu.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
                 Menu.qset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) Q_AUTO_ON = value end})
                 Menu.qset.auto:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
-                    OnEnemyHeroLoad(function(hero) Menu.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
+                    LocalCore:OnEnemyHeroLoad(function(hero) Menu.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
                 Menu.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_AUTO_HITCHANCE = value end })
             -- Combo / Harass
             Menu.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
                 Menu.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true, callback = function(value) Q_COMBO_ON = value end})
                 Menu.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false, callback = function(value) Q_HARASS_ON = value end})
                 Menu.qset.comhar:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
-                    OnEnemyHeroLoad(function(hero) Menu.qset.comhar.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
+                    LocalCore:OnEnemyHeroLoad(function(hero) Menu.qset.comhar.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
                 Menu.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_COMBO_HITCHANCE = value end })
         -- W
         Menu:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
@@ -153,6 +155,7 @@ local function LoadMenu()
                 Menu.rset.comhar:MenuElement({id = "harass", name = "Use R Harass", value = false, callback = function(value) R_HARASS_ON = value end})
                 Menu.rset.comhar:MenuElement({id = "xenemies", name = ">= X enemies near morgana", value = 2, min = 1, max = 4, step = 1, callback = function(value) R_COMBO_ENEMIESX = value end})
                 Menu.rset.comhar:MenuElement({id = "xrange", name = "< X distance enemies to morgana", value = 300, min = 100, max = 550, step = 50, callback = function(value) R_COMBO_RANGEX = value end})
+        Menu:MenuElement({name = "Version " .. tostring(GamsteronMorganaVer), type = _G.SPACE, id = "vermorgspace"})
 end
 
 local function QLogic()
@@ -167,14 +170,14 @@ local function QLogic()
             if qDmg > Q_KS_MINHP then
                 for i = 1, #EnemyHeroes do
                     local qTarget = EnemyHeroes[i]
-                    if qTarget.health > Q_KS_MINHP and qTarget.health < Damage:CalculateDamage(myHero, qTarget, DAMAGE_TYPE_MAGICAL, qDmg) and CastSpell(HK_Q, qTarget, myHero, QData, Q_KS_HITCHANCE) then
+                    if qTarget.health > Q_KS_MINHP and qTarget.health < Damage:CalculateDamage(myHero, qTarget, LocalCore.DAMAGE_TYPE_MAGICAL, qDmg) and LocalCore:CastSpell(HK_Q, qTarget, myHero, QData, Q_KS_HITCHANCE) then
                         return
                     end
                 end
             end
         end
 
-        if (Orbwalker.Modes[ORBWALKER_MODE_COMBO] and Q_COMBO_ON) or (Orbwalker.Modes[ORBWALKER_MODE_HARASS] and Q_HARASS_ON) then
+        if (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] and Q_COMBO_ON) or (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_HARASS] and Q_HARASS_ON) then
             local qList = {}
             for i = 1, #EnemyHeroes do
                 local hero = EnemyHeroes[i]
@@ -183,8 +186,8 @@ local function QLogic()
                     qList[#qList+1] = hero
                 end
             end
-            local qTarget = TargetSelector:GetTarget(qList, DAMAGE_TYPE_MAGICAL)
-            if qTarget and CastSpell(HK_Q, qTarget, myHero, QData, Q_COMBO_HITCHANCE) then
+            local qTarget = TargetSelector:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL)
+            if qTarget and LocalCore:CastSpell(HK_Q, qTarget, myHero, QData, Q_COMBO_HITCHANCE) then
                 return
             end
         elseif Q_AUTO_ON then
@@ -196,8 +199,8 @@ local function QLogic()
                     qList[#qList+1] = hero
                 end
             end
-            local qTarget = TargetSelector:GetTarget(qList, DAMAGE_TYPE_MAGICAL)
-            if qTarget and CastSpell(HK_Q, qTarget, myHero, QData, Q_AUTO_HITCHANCE) then
+            local qTarget = TargetSelector:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL)
+            if qTarget and LocalCore:CastSpell(HK_Q, qTarget, myHero, QData, Q_AUTO_HITCHANCE) then
                 return
             end
         end
@@ -216,32 +219,32 @@ local function WLogic()
             if wDmg > W_KS_MINHP then
                 for i = 1, #EnemyHeroes do
                     local wTarget = EnemyHeroes[i]
-                    if wTarget.health > W_KS_MINHP and wTarget.health < Damage:CalculateDamage(myHero, wTarget, DAMAGE_TYPE_MAGICAL, wDmg) and CastSpell(HK_W, wTarget, myHero, WData, 3) then
+                    if wTarget.health > W_KS_MINHP and wTarget.health < Damage:CalculateDamage(myHero, wTarget, LocalCore.DAMAGE_TYPE_MAGICAL, wDmg) and LocalCore:CastSpell(HK_W, wTarget, myHero, WData, 3) then
                         return
                     end
                 end
             end
         end
 
-        if (Orbwalker.Modes[ORBWALKER_MODE_COMBO] and W_COMBO_ON) or (Orbwalker.Modes[ORBWALKER_MODE_HARASS] and W_HARASS_ON) then
+        if (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] and W_COMBO_ON) or (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_HARASS] and W_HARASS_ON) then
             for i = 1, #EnemyHeroes do
                 local unit = EnemyHeroes[i]
-                if CastSpell(HK_W, unit, myHero, WData, 3) then
+                if LocalCore:CastSpell(HK_W, unit, myHero, WData, 3) then
                     return
                 end
             end
         end
 
-        if (Orbwalker.Modes[ORBWALKER_MODE_LANECLEAR] and W_CLEAR_ON) then
+        if (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] and W_CLEAR_ON) then
             local target = nil
             local BestHit = 0
             local CurrentCount = 0
             local eMinions = ObjectManager:GetEnemyMinions(WData.Range + 200)
             for i, minion in pairs(eMinions) do
                 CurrentCount = 0
-                local minionPos = To2D(minion.pos)
+                local minionPos = LocalCore:To2D(minion.pos)
                 for j, minion2 in pairs(eMinions) do
-                    if IsInRange(minionPos, To2D(minion2.pos), 250) then
+                    if LocalCore:IsInRange(minionPos, LocalCore:To2D(minion2.pos), 250) then
                         CurrentCount = CurrentCount + 1
                     end
                 end
@@ -258,9 +261,9 @@ local function WLogic()
         if W_AUTO_ON then
             for i = 1, #EnemyHeroes do
                 local unit = EnemyHeroes[i]
-                local data = GetHeroData(unit, true)
+                local data = LocalCore:GetHeroData(unit, true)
                 local remainingTime = MathMax(data.RemainingImmobile, data.ExpireImmobile - GameTimer())
-                if remainingTime > 0.5 and not unit.pathing.isDashing and CastSpell(HK_W, unit, myHero, WData, 4) then
+                if remainingTime > 0.5 and not unit.pathing.isDashing and LocalCore:CastSpell(HK_W, unit, myHero, WData, 4) then
                     return
                 end
             end
@@ -272,24 +275,24 @@ local function ELogic()
     if E_AUTO_ON and (E_ALLY_ON or E_SELF_ON) and Spells:IsReady(_E, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
         local EnemyHeroes = ObjectManager:GetEnemyHeroes(2500, false, HEROES_IMMORTAL)
         for i, hero in pairs(EnemyHeroes) do
-            local heroPos = To2D(hero.pos)
+            local heroPos = LocalCore:To2D(hero.pos)
             local currSpell = hero.activeSpell
             if currSpell and currSpell.valid and hero.isChanneling then
                 local AllyHeroes = ObjectManager:GetAllyHeroes(EData.Range)
                 for j, ally in pairs(AllyHeroes) do
                     local isMe = ally.isMe
                     if (E_SELF_ON and isMe) or (not canUse and E_ALLY_ON and not isMe) then
-                        local allyPos = To2D(ally.pos)
+                        local allyPos = LocalCore:To2D(ally.pos)
                         local canUse = false
                         if currSpell.target == ally.handle then
                             canUse = true
                         else
-                            local spellPos = To2D(currSpell.placementPos)
+                            local spellPos = LocalCore:To2D(currSpell.placementPos)
                             local endPos = spellPos--(currSpell.range > 0) and Extended(heroPos, Normalized(spellPos, heroPos), currSpell.range) or spellPos
                             local width = ally.boundingRadius + 100
                             if currSpell.width > 0 then width = width + currSpell.width end
-                            local isOnSegment, pointSegment, pointLine = ProjectOn(allyPos, endPos, heroPos)
-                            if IsInRange(pointSegment, allyPos, width) then
+                            local isOnSegment, pointSegment, pointLine = LocalCore:ProjectOn(allyPos, endPos, heroPos)
+                            if LocalCore:IsInRange(pointSegment, allyPos, width) then
                                 canUse = true
                             end
                         end
@@ -315,37 +318,37 @@ local function RLogic()
             if rDmg > R_KS_MINHP then
                 for i = 1, #EnemyHeroes do
                     local rTarget = EnemyHeroes[i]
-                    if rTarget.health > R_KS_MINHP and rTarget.health < Damage:CalculateDamage(myHero, rTarget, DAMAGE_TYPE_MAGICAL, rDmg) and CastSpell(HK_R) then
+                    if rTarget.health > R_KS_MINHP and rTarget.health < Damage:CalculateDamage(myHero, rTarget, LocalCore.DAMAGE_TYPE_MAGICAL, rDmg) and LocalCore:CastSpell(HK_R) then
                         return
                     end
                 end
             end
         end
 
-        if (Orbwalker.Modes[ORBWALKER_MODE_COMBO] and R_COMBO_ON) or (Orbwalker.Modes[ORBWALKER_MODE_HARASS] and R_HARASS_ON) then
+        if (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] and R_COMBO_ON) or (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_HARASS] and R_HARASS_ON) then
             local count = 0
-            local mePos = To2D(myHero.pos)
+            local mePos = LocalCore:To2D(myHero.pos)
             for i = 1, #EnemyHeroes do
                 local unit = EnemyHeroes[i]
-                if IsInRange(mePos, To2D(unit.pos), R_COMBO_RANGEX) then
+                if LocalCore:IsInRange(mePos, LocalCore:To2D(unit.pos), R_COMBO_RANGEX) then
                     count = count + 1
                 end
             end
-            if count >= R_COMBO_ENEMIESX and CastSpell(HK_R) then
+            if count >= R_COMBO_ENEMIESX and LocalCore:CastSpell(HK_R) then
                 return
             end
         end
         
         if R_AUTO_ON then
             local count = 0
-            local mePos = To2D(myHero.pos)
+            local mePos = LocalCore:To2D(myHero.pos)
             for i = 1, #EnemyHeroes do
                 local unit = EnemyHeroes[i]
-                if GetDistance(mePos, To2D(unit.pos)) < R_AUTO_RANGEX then
+                if LocalCore:GetDistance(mePos, LocalCore:To2D(unit.pos)) < R_AUTO_RANGEX then
                     count = count + 1
                 end
             end
-            if count >= R_AUTO_ENEMIESX and CastSpell(HK_R) then
+            if count >= R_AUTO_ENEMIESX and LocalCore:CastSpell(HK_R) then
                 return
             end
         end
@@ -357,10 +360,10 @@ AddLoadCallback(function()
 
     LoadMenu()
 
-    local Interrupter = __Interrupter()
+    local Interrupter = LocalCore:__Interrupter()
     Interrupter:OnInterrupt(function(enemy, activeSpell)
         if Q_INTERRUPTER_ON and Spells:IsReady(_Q, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
-            CastSpell(HK_Q, enemy, myHero, QData, 4)
+            LocalCore:CastSpell(HK_Q, enemy, myHero, QData, 4)
         end
     end)
 
@@ -369,7 +372,7 @@ AddLoadCallback(function()
             return false
         end
         -- LastHit, LaneClear
-        if not Orbwalker.Modes[ORBWALKER_MODE_COMBO] and not Orbwalker.Modes[ORBWALKER_MODE_HARASS] then
+        if not Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] and not Orbwalker.Modes[LocalCore.ORBWALKER_MODE_HARASS] then
             return true
         end
         -- Q
