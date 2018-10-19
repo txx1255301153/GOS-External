@@ -1,7 +1,11 @@
-if _G.GamsteronOrbwalkerLoaded == true then return end
-if _G.SDK and _G.SDK.Orbwalker then	return end
+local GamsteronOrbVer = 0.04
+local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
 do
+	if _G.GamsteronOrbwalkerLoaded == true then return end
+	
+	if _G.SDK and _G.SDK.Orbwalker then return end
+
 	if not FileExist(COMMON_PATH .. "GamsteronCore.lua") then
 		DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua", COMMON_PATH .. "GamsteronCore.lua", function() end)
 		while not FileExist(COMMON_PATH .. "GamsteronCore.lua") do end
@@ -9,9 +13,10 @@ do
 
 	require('GamsteronCore')
 	if _G.GamsteronCoreUpdated then return end
+	LocalCore = _G.GamsteronCore
 
-	local success, version = AutoUpdate({
-		version = 0.03,
+	local success, version = LocalCore:AutoUpdate({
+		version = GamsteronOrbVer,
 		scriptPath = SCRIPT_PATH .. "GamsteronOrbwalker.lua",
 		scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.lua",
 		versionPath = SCRIPT_PATH .. "GamsteronOrbwalker.version",
@@ -25,8 +30,6 @@ do
 
 	math.randomseed(os.clock())
 end
-
-local Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
 local MAXIMUM_MOUSE_DISTANCE		= 120 * 120
 local GAMSTERON_MODE_DMG			= false
@@ -79,11 +82,11 @@ local TableInsert					= _G.table.insert
 local TableRemove					= _G.table.remove
 
 local function GetProjSpeed()
-	if IsMelee[MeCharName] or (SpecialMelees[MeCharName] ~= nil and SpecialMelees[MeCharName]()) then
+	if LocalCore.IsMelee[MeCharName] or (LocalCore.SpecialMelees[MeCharName] ~= nil and LocalCore.SpecialMelees[MeCharName]()) then
 		return math.huge
 	end
-	if SpecialMissileSpeeds[MeCharName] ~= nil then
-		local projectileSpeed = SpecialMissileSpeeds[MeCharName](myHero)
+	if LocalCore.SpecialMissileSpeeds[MeCharName] ~= nil then
+		local projectileSpeed = LocalCore.SpecialMissileSpeeds[MeCharName](myHero)
 		if projectileSpeed then
 			return projectileSpeed
 		end
@@ -97,8 +100,8 @@ local function GetProjSpeed()
 end
 
 local function GetWindup()
-	if SpecialWindUpTimes[MeCharName] ~= nil then
-		local SpecialWindUpTime = SpecialWindUpTimes[MeCharName](myHero)
+	if LocalCore.SpecialWindUpTimes[MeCharName] ~= nil then
+		local SpecialWindUpTime = LocalCore.SpecialWindUpTimes[MeCharName](myHero)
 		if SpecialWindUpTime then
 			return SpecialWindUpTime
 		end
@@ -139,7 +142,7 @@ local function ResetMenu()
 end
 
 do
-	local __Cursor = Class()
+	local __Cursor = LocalCore:Class()
 
 	function __Cursor:__init()
 		self.StartTime = 0
@@ -163,7 +166,7 @@ do
 			newpos = self.CastPos:To2D()
 		end
 		ControlSetCursorPos(newpos.x, newpos.y)
-		if self.Work ~= nil then--and GetDistanceSquared(newpos, _G.cursorPos) <= MAXIMUM_MOUSE_DISTANCE then
+		if self.Work ~= nil then--and LocalCore:GetDistanceSquared(newpos, _G.cursorPos) <= MAXIMUM_MOUSE_DISTANCE then
 			self.Work()
 			self.Work = nil
 		end
@@ -198,7 +201,7 @@ do
 		end
 		if self.WorkDone and GameTimer() > self.EndTime then
 			ControlSetCursorPos(self.CursorPos.x, self.CursorPos.y)
-			if GetDistanceSquared(self.CursorPos, _G.cursorPos) <= MAXIMUM_MOUSE_DISTANCE then
+			if LocalCore:GetDistanceSquared(self.CursorPos, _G.cursorPos) <= MAXIMUM_MOUSE_DISTANCE then
 				self.IsReady = true
 			end
 			return
@@ -224,7 +227,7 @@ do
 end
 
 do
-	local __Spells = Class()
+	local __Spells = LocalCore:Class()
 
 	function __Spells:__init()
 		self.LastQ = 0
@@ -287,7 +290,7 @@ do
 
 	function __Spells:DisableAutoAttack()
 		local a = myHero.activeSpell
-		if a and a.valid and a.startTime > self.StartTime and myHero.isChanneling and not SpecialAutoAttacks[a.name] then
+		if a and a.valid and a.startTime > self.StartTime and myHero.isChanneling and not LocalCore.SpecialAutoAttacks[a.name] then
 			local name = a.name
 			if self.Work == nil and GameTimer() > self.WorkEndTime and self.WorkList[name] ~= nil then
 				self.WorkEndTime = GameTimer() + self.WorkList[name][1]
@@ -456,7 +459,7 @@ do
 			setmetatable(result, c)
 		function c:GetLastHitTargets()
 			local result = {}
-			if self.IsLastHitable and not Orbwalker.IsNone and not Orbwalker.Modes[ORBWALKER_MODE_COMBO] then
+			if self.IsLastHitable and not Orbwalker.IsNone and not Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] then
 				for i, minion in pairs(self.FarmMinions) do
 					if minion.LastHitable then
 						local unit = minion.Minion
@@ -470,7 +473,7 @@ do
 		end
 		function c:GetLaneClearTargets()
 			local result = {}
-			if Orbwalker.Modes[ORBWALKER_MODE_LANECLEAR] and self:CanLaneClear() then
+			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] and self:CanLaneClear() then
 				for i, minion in pairs(self.FarmMinions) do
 					local unit = minion.Minion
 					if unit.handle ~= HealthPrediction.LastLCHandle and not unit.dead then
@@ -481,11 +484,11 @@ do
 			return result
 		end
 		function c:GetObjects(team)
-			if team == TEAM_ALLY then
+			if team == LocalCore.TEAM_ALLY then
 				return HealthPrediction.CachedTeamAlly
-			elseif team == TEAM_ENEMY then
+			elseif team == LocalCore.TEAM_ENEMY then
 				return HealthPrediction.CachedTeamEnemy
-			elseif team == TEAM_JUNGLE then
+			elseif team == LocalCore.TEAM_JUNGLE then
 				return HealthPrediction.CachedTeamJungle
 			end
 		end
@@ -500,7 +503,7 @@ do
 				-- charName
 				local name = target.charName
 				-- set attacks
-				local pos = To2D(target.pos)
+				local pos = LocalCore:To2D(target.pos)
 				-- cached objects
 				HealthPrediction:SetObjects(team)
 				local attackers = self:GetObjects(team)
@@ -511,10 +514,10 @@ do
 						HealthPrediction.CachedAttackData[objname] = {}
 					end
 					if HealthPrediction.CachedAttackData[objname][name] == nil then
-						HealthPrediction.CachedAttackData[objname][name] = { Range = GetAutoAttackRange(obj, target), Damage = 0 }
+						HealthPrediction.CachedAttackData[objname][name] = { Range = LocalCore:GetAutoAttackRange(obj, target), Damage = 0 }
 					end
 					local range = HealthPrediction.CachedAttackData[objname][name].Range + 100
-					if IsInRange(To2D(obj.pos), pos, range) then
+					if LocalCore:IsInRange(LocalCore:To2D(obj.pos), pos, range) then
 						if HealthPrediction.CachedAttackData[objname][name].Damage == 0 then
 							HealthPrediction.CachedAttackData[objname][name].Damage = Damage:GetAutoAttackDamage(obj, target)
 						end
@@ -546,9 +549,9 @@ do
 			self:SetAttacks(target)
 			local handle = target.handle
 			local attacks = HealthPrediction.CachedAttacks[handle]
-			local hp = TotalShieldHealth(target)
+			local hp = LocalCore:TotalShieldHealth(target)
 			if #attacks == 0 then return hp end
-			local pos = To2D(target.pos)
+			local pos = LocalCore:To2D(target.pos)
 			for i = 1, #attacks do
 				local attack = attacks[i]
 				local attacker = attack.Attacker
@@ -567,7 +570,7 @@ do
 					end
 					local flyTime
 					if attacker.attackData.projectileSpeed and attacker.attackData.projectileSpeed > 0 then
-						flyTime = GetDistance(To2D(attacker.pos), pos) / attacker.attackData.projectileSpeed
+						flyTime = LocalCore:GetDistance(LocalCore:To2D(attacker.pos), pos) / attacker.attackData.projectileSpeed
 					else
 						flyTime = 0
 					end
@@ -614,17 +617,17 @@ do
 			if GameCanUseSpell(spell) ~= 0 and myHero:GetSpellData(spell).currentCd > 0.5 then
 				return
 			end
-			if Orbwalker.Modes[ORBWALKER_MODE_COMBO] or Orbwalker.IsNone then
+			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] or Orbwalker.IsNone then
 				return
 			end
 			local targets = ObjectManager:GetEnemyMinions(self.Range - 35, false)
 			local projectileSpeed = self.Speed
 			local winduptime = self.Delay
 			local latency = LATENCY * 0.5
-			local pos = To2D(myHero.pos)
+			local pos = LocalCore:To2D(myHero.pos)
 			for i = 1, #targets do
 				local target = targets[i]
-				local FlyTime = GetDistance(pos, To2D(target.pos)) / projectileSpeed
+				local FlyTime = LocalCore:GetDistance(pos, LocalCore:To2D(target.pos)) / projectileSpeed
 				self.FarmMinions[#self.FarmMinions+1] = self:SetLastHitable(target, winduptime + FlyTime + latency, damagefunc())
 			end
 			self.CanCheckTurret = false
@@ -636,7 +639,7 @@ do
 end
 
 do
-	local __TargetSelector = Class()
+	local __TargetSelector = LocalCore:Class()
 
 	function __TargetSelector:__init()
 		self.SelectedTarget = nil
@@ -645,13 +648,13 @@ do
 
 	function __TargetSelector:GetTarget(a, dmgType, bb, validmode)
 		local SelectedID = -1
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		--selected:
-		if Menu.ts.selected.enable:Value() and self.SelectedTarget ~= nil and IsValidTarget(self.SelectedTarget) and not ObjectManager:IsHeroImmortal(self.SelectedTarget, false) and self.SelectedTarget.pos.onScreen then
+		if Menu.ts.selected.enable:Value() and self.SelectedTarget ~= nil and LocalCore:IsValidTarget(self.SelectedTarget) and not ObjectManager:IsHeroImmortal(self.SelectedTarget, false) and self.SelectedTarget.pos.onScreen then
 			SelectedID = self.SelectedTarget.networkID
 			if Menu.ts.selected.onlysel:Value() then
 				if type(a) == "number" then
-					if IsInRange(mePos, To2D(self.SelectedTarget.pos), a) then
+					if LocalCore:IsInRange(mePos, LocalCore:To2D(self.SelectedTarget.pos), a) then
 						return self.SelectedTarget
 					end
 				elseif type(a) == "table" then
@@ -659,13 +662,13 @@ do
 					for i = 1, #a do
 						local u = a[i]
 						if u then
-							local dist = GetDistanceSquared(mePos, To2D(u.pos))
+							local dist = LocalCore:GetDistanceSquared(mePos, LocalCore:To2D(u.pos))
 							if dist > x then
 								x = dist
 							end
 						end
 					end
-					if IsInRange(mePos, To2D(self.SelectedTarget.pos), x) then
+					if LocalCore:IsInRange(mePos, LocalCore:To2D(self.SelectedTarget.pos), x) then
 						return self.SelectedTarget
 					end
 				end
@@ -694,19 +697,19 @@ do
 					else
 						priority = 1
 					end
-					local multiplier = PriorityMultiplier[priority]
+					local multiplier = LocalCore.PriorityMultiplier[priority]
 					local def
-					if dmgType == DAMAGE_TYPE_MAGICAL then
+					if dmgType == LocalCore.DAMAGE_TYPE_MAGICAL then
 						def = multiplier * (unit.magicResist - myHero.magicPen)
-					elseif dmgType == DAMAGE_TYPE_PHYSICAL then
+					elseif dmgType == LocalCore.DAMAGE_TYPE_PHYSICAL then
 						def = multiplier * (unit.armor - myHero.armorPen)
 					else
 						def = 0
 					end
 					if def and def > 0 then
-						if dmgType == DAMAGE_TYPE_MAGICAL then
+						if dmgType == LocalCore.DAMAGE_TYPE_MAGICAL then
 							def = myHero.magicPenPercent * def
-						elseif dmgType == DAMAGE_TYPE_PHYSICAL then
+						elseif dmgType == LocalCore.DAMAGE_TYPE_PHYSICAL then
 							def = myHero.bonusArmorPenPercent * def
 						else
 							def = 0
@@ -714,7 +717,7 @@ do
 					end
 					x = ( ( unit.health * multiplier * ( ( 100 + def ) / 100 ) ) - ( unit.totalDamage * unit.attackSpeed * 2 ) ) - unit.ap
 				elseif mode == 2 then
-					x = GetDistance(To2D(unit.pos), mePos)
+					x = LocalCore:GetDistance(LocalCore:To2D(unit.pos), mePos)
 				elseif mode == 3 then
 					x = unit.health
 				elseif mode == 4 then
@@ -746,22 +749,22 @@ do
 		local targets = {}
 		local range = myHero.range - 20
 		local bbox = myHero.boundingRadius
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if hero and hero.team == TEAM_ENEMY and IsValidTarget(hero) and not ObjectManager:IsHeroImmortal(hero, true) then
+			if hero and hero.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(hero) and not ObjectManager:IsHeroImmortal(hero, true) then
 				local herorange = range
-				if ME_CAITLYN and HasBuff(hero, "caitlynyordletrapinternal") then
+				if ME_CAITLYN and LocalCore:HasBuff(hero, "caitlynyordletrapinternal") then
 					herorange = herorange + 600
 				else
 					herorange = herorange + bbox + hero.boundingRadius
 				end
-				if IsInRange(mePos, To2D(hero.pos), herorange) then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(hero.pos), herorange) then
 					targets[#targets+1] = hero
 				end
 			end
 		end
-		local t = self:GetTarget(targets, DAMAGE_TYPE_PHYSICAL)
+		local t = self:GetTarget(targets, LocalCore.DAMAGE_TYPE_PHYSICAL)
 		if not ME_KALISTA then
 			return t
 		end
@@ -769,7 +772,7 @@ do
 			local hp = MathHuge
 			for i = 1, GameHeroCount() do
 				local obj = GameHero(i)
-				if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+				if LocalCore:IsValidTarget(obj) and not obj.isAlly and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
 					t = obj
 					hp = obj.health
 				end
@@ -779,7 +782,7 @@ do
 			hp = MathHuge
 			for i = 1, GameMinionCount() do
 				local obj = GameMinion(i)
-				if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+				if LocalCore:IsValidTarget(obj) and not obj.isAlly and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
 					t = obj
 					hp = obj.health
 				end
@@ -789,7 +792,7 @@ do
 			hp = MathHuge
 			for i = 1, GameTurretCount() do
 				local obj = GameTurret(i)
-				if IsValidTarget(obj) and not obj.isAlly and IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+				if LocalCore:IsValidTarget(obj) and not obj.isAlly and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
 					t = obj
 					hp = obj.health
 				end
@@ -803,10 +806,10 @@ do
 			self.SelectedTarget = nil
 			local num = 10000000
 			local enemyList = ObjectManager:GetEnemyHeroes(99999999, false, 2)
-			local pos = To2D(_G.mousePos)
+			local pos = LocalCore:To2D(_G.mousePos)
 			for i = 1, #enemyList do
 				local unit = enemyList[i]
-				local distance = GetDistance(pos, To2D(unit.pos))
+				local distance = LocalCore:GetDistance(pos, LocalCore:To2D(unit.pos))
 				if distance < 150 and distance < num then
 					self.SelectedTarget = unit
 					num = distance
@@ -826,8 +829,8 @@ do
 
 	function __TargetSelector:CreatePriorityMenu(charName)
 		local priority
-		if Priorities[charName] ~= nil then
-			priority = Priorities[charName]
+		if LocalCore.Priorities[charName] ~= nil then
+			priority = LocalCore.Priorities[charName]
 		else
 			priority = 1
 		end
@@ -838,7 +841,7 @@ do
 		Menu:MenuElement({name = "Target Selector", id = "ts", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/ts.png" })
 			Menu.ts:MenuElement({ id = "Mode", name = "Mode", value = 1, drop = { "Auto", "Closest", "Least Health", "Highest Priority" } })
 			Menu.ts:MenuElement({ id = "priorities", name = "Priorities", type = _G.MENU })
-				OnEnemyHeroLoad(function(hero) self:CreatePriorityMenu(hero.charName) end)
+				LocalCore:OnEnemyHeroLoad(function(hero) self:CreatePriorityMenu(hero.charName) end)
 			Menu.ts:MenuElement({ id = "selected", name = "Selected Target", type = _G.MENU })
 				Menu.ts.selected:MenuElement({ id = "enable", name = "Enabled", value = true })
 				Menu.ts.selected:MenuElement({ id = "onlysel", name = "Only Selected", value = false })
@@ -853,7 +856,7 @@ do
 	end
 
 	function __TargetSelector:GetPriority(target)
-		local x = Priorities[target.charName]
+		local x = LocalCore.Priorities[target.charName]
 		if x ~= nil then
 			return x
 		end
@@ -864,7 +867,7 @@ do
 end
 
 do
-	local __ObjectManager = Class()
+	local __ObjectManager = LocalCore:Class()
 
 	function __ObjectManager:__init()
 		self.UndyingBuffs = { ["zhonyasringshield"] = true }
@@ -887,48 +890,48 @@ do
 
 	function __ObjectManager:GetEnemyBuildings(range, bb)
 		local result = {}
-		local turrets = GetEnemyTurrets()
-		local inhibitors = GetEnemyInhibitors()
-		local nexus = GetEnemyNexus()
+		local turrets = LocalCore:GetEnemyTurrets()
+		local inhibitors = LocalCore:GetEnemyInhibitors()
+		local nexus = LocalCore:GetEnemyNexus()
 		local br = bb and range + 270 - 30 or range --myHero.range + 270 bbox
 		local nr = bb and range + 380 - 30 or range --myHero.range + 380 bbox
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, #turrets do
 			local turret = turrets[i]
 			local tr = bb and range + turret.boundingRadius * 0.75 or range
-			if turret and IsValidTarget(turret) and IsInRange(mePos, To2D(turret.pos), tr) then
+			if turret and LocalCore:IsValidTarget(turret) and LocalCore:IsInRange(mePos, LocalCore:To2D(turret.pos), tr) then
 				result[#result+1] = turret
 			end
 		end
 		for i = 1, #inhibitors do
 			local barrack = inhibitors[i]
-			if barrack and barrack.isTargetable and barrack.visible and IsInRange(mePos, To2D(barrack.pos), br) then
+			if barrack and barrack.isTargetable and barrack.visible and LocalCore:IsInRange(mePos, LocalCore:To2D(barrack.pos), br) then
 				result[#result+1] = barrack
 			end
 		end
-		if nexus and nexus.isTargetable and nexus.visible and IsInRange(mePos, To2D(nexus.pos), nr) then
+		if nexus and nexus.isTargetable and nexus.visible and LocalCore:IsInRange(mePos, LocalCore:To2D(nexus.pos), nr) then
 			result[#result+1] = nexus
 		end
 		return result
 	end
 
 	function __ObjectManager:GetMinionType(minion)
-		if minion.team == TEAM_JUNGLE then
-			return MINION_TYPE_MONSTER
+		if minion.team == LocalCore.TEAM_JUNGLE then
+			return LocalCore.MINION_TYPE_MONSTER
 		elseif minion.maxHealth <= 6 then
-			return MINION_TYPE_OTHER_MINION
+			return LocalCore.MINION_TYPE_OTHER_MINION
 		else
-			return MINION_TYPE_LANE_MINION
+			return LocalCore.MINION_TYPE_LANE_MINION
 		end
 	end
 
 	function __ObjectManager:GetMinions(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			if IsValidTarget(minion) and self:GetMinionType(minion) == MINION_TYPE_LANE_MINION then
-				if IsInRange(mePos, To2D(minion.pos), range) then
+			if LocalCore:IsValidTarget(minion) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
 			end
@@ -938,11 +941,11 @@ do
 
 	function __ObjectManager:GetAllyMinions(range, bb)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
 			local mr = bb and range + minion.boundingRadius or range
-			if minion and minion.team == TEAM_ALLY and IsValidTarget(minion) and self:GetMinionType(minion) == MINION_TYPE_LANE_MINION and IsInRange(mePos, To2D(minion.pos), mr) then
+			if minion and minion.team == LocalCore.TEAM_ALLY and LocalCore:IsValidTarget(minion) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION and LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), mr) then
 				result[#result+1] = minion
 			end
 		end
@@ -951,11 +954,11 @@ do
 
 	function __ObjectManager:GetEnemyMinions(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
 			local mr = bb and range + minion.boundingRadius or range
-			if minion and minion.team == TEAM_ENEMY and IsValidTarget(minion) and IsInRange(mePos, To2D(minion.pos), mr) and self:GetMinionType(minion) == MINION_TYPE_LANE_MINION then
+			if minion and minion.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(minion) and LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), mr) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION then
 				result[#result+1] = minion
 			end
 		end
@@ -966,8 +969,8 @@ do
 		local result = {}
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			if IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == MINION_TYPE_LANE_MINION then
-				if IsInAutoAttackRange(myHero, minion) then
+			if LocalCore:IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION then
+				if LocalCore:IsInAutoAttackRange(myHero, minion) then
 					TableInsert(result, minion)
 				end
 			end
@@ -977,11 +980,11 @@ do
 
 	function __ObjectManager:GetOtherMinions(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if IsValidTarget(minion) and self:GetMinionType(minion) == MINION_TYPE_OTHER_MINION then
-				if IsInRange(mePos, To2D(minion.pos), range) then
+			if LocalCore:IsValidTarget(minion) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
 			end
@@ -991,11 +994,11 @@ do
 
 	function __ObjectManager:GetOtherAllyMinions(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if IsValidTarget(minion) and minion.isAlly and self:GetMinionType(minion) == MINION_TYPE_OTHER_MINION then
-				if IsInRange(mePos, To2D(minion.pos), range) then
+			if LocalCore:IsValidTarget(minion) and minion.isAlly and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
 			end
@@ -1005,11 +1008,11 @@ do
 
 	function __ObjectManager:GetOtherEnemyMinions(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == MINION_TYPE_OTHER_MINION then
-				if IsInRange(mePos, To2D(minion.pos), range) then
+			if LocalCore:IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
 			end
@@ -1021,8 +1024,8 @@ do
 		local result = {}
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == MINION_TYPE_OTHER_MINION then
-				if IsInAutoAttackRange(myHero, minion) then
+			if LocalCore:IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+				if LocalCore:IsInAutoAttackRange(myHero, minion) then
 					TableInsert(result, minion)
 				end
 			end
@@ -1032,11 +1035,11 @@ do
 
 	function __ObjectManager:GetMonsters(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			if IsValidTarget(minion) and self:GetMinionType(minion) == MINION_TYPE_MONSTER then
-				if IsInRange(mePos, To2D(minion.pos), range) then
+			if LocalCore:IsValidTarget(minion) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_MONSTER then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
 			end
@@ -1048,8 +1051,8 @@ do
 		local result = {}
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			if IsValidTarget(minion) and self:GetMinionType(minion) == MINION_TYPE_MONSTER then
-				if IsInAutoAttackRange(myHero, minion) then
+			if LocalCore:IsValidTarget(minion) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_MONSTER then
+				if LocalCore:IsInAutoAttackRange(myHero, minion) then
 					TableInsert(result, minion)
 				end
 			end
@@ -1059,11 +1062,11 @@ do
 
 	function __ObjectManager:GetHeroes(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if IsValidTarget(hero) then
-				if IsInRange(mePos, To2D(hero.pos), range) then
+			if LocalCore:IsValidTarget(hero) then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(hero.pos), range) then
 					TableInsert(result, hero)
 				end
 			end
@@ -1073,11 +1076,11 @@ do
 
 	function __ObjectManager:GetAllyHeroes(range)
 		local result = {}
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if IsValidTarget(hero) and hero.isAlly then
-				if IsInRange(mePos, To2D(hero.pos), range) then
+			if LocalCore:IsValidTarget(hero) and hero.isAlly then
+				if LocalCore:IsInRange(mePos, LocalCore:To2D(hero.pos), range) then
 					TableInsert(result, hero)
 				end
 			end
@@ -1092,11 +1095,11 @@ do
 		--state "spell" = 0
 		--state "attack" = 1
 		--state "immortal" = 2
-		local mePos = To2D(myHero.pos)
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
 			local r = bb and range + hero.boundingRadius or range
-			if hero and hero.team == TEAM_ENEMY and IsValidTarget(hero) and IsInRange(mePos, To2D(hero.pos), r) then
+			if hero and hero.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(hero) and LocalCore:IsInRange(mePos, LocalCore:To2D(hero.pos), r) then
 				local immortal = false
 				if state == 0 then
 					immortal = self:IsHeroImmortal(hero, false)
@@ -1115,8 +1118,8 @@ do
 		local result = {}
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if IsValidTarget(hero) and hero.isEnemy then
-				if IsInAutoAttackRange(myHero, hero) then
+			if LocalCore:IsValidTarget(hero) and hero.isEnemy then
+				if LocalCore:IsInAutoAttackRange(myHero, hero) then
 					TableInsert(result, hero)
 				end
 			end
@@ -1125,16 +1128,16 @@ do
 	end
 
 	function __ObjectManager:GetTurrets(range)
-		return Join(self:GetAllyTurrets(range), self:GetEnemyTurrets(range))
+		return LocalCore:Join(self:GetAllyTurrets(range), self:GetEnemyTurrets(range))
 	end
 
 	function __ObjectManager:GetAllyTurrets(range)
 		local result = {}
-		local turrets = GetAllyTurrets()
-		local mePos = To2D(myHero.pos)
+		local turrets = LocalCore:GetAllyTurrets()
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, #turrets do
 			local turret = turrets[i]
-			if IsValidTarget(turret) and IsInRange(mePos, To2D(turret.pos), range) then
+			if LocalCore:IsValidTarget(turret) and LocalCore:IsInRange(mePos, LocalCore:To2D(turret.pos), range) then
 				TableInsert(result, turret)
 			end
 		end
@@ -1143,11 +1146,11 @@ do
 
 	function __ObjectManager:GetEnemyTurrets(range)
 		local result = {}
-		local turrets = GetEnemyTurrets()
-		local mePos = To2D(myHero.pos)
+		local turrets = LocalCore:GetEnemyTurrets()
+		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, #turrets do
 			local turret = turrets[i]
-			if IsValidTarget(turret) and IsInRange(mePos, To2D(turret.pos), range) then
+			if LocalCore:IsValidTarget(turret) and LocalCore:IsInRange(mePos, LocalCore:To2D(turret.pos), range) then
 				TableInsert(result, turret)
 			end
 		end
@@ -1158,7 +1161,7 @@ do
 end
 
 do
-	local __Orbwalker = Class()
+	local __Orbwalker = LocalCore:Class()
 
 	function __Orbwalker:__init()																																	
 		self.Menu =
@@ -1177,21 +1180,21 @@ do
 		self.ForceTarget = nil
 		self.MenuKeys =
 		{
-			[ORBWALKER_MODE_COMBO] = {},
-			[ORBWALKER_MODE_HARASS] = {},
-			[ORBWALKER_MODE_LANECLEAR] = {},
-			[ORBWALKER_MODE_JUNGLECLEAR] = {},
-			[ORBWALKER_MODE_LASTHIT] = {},
-			[ORBWALKER_MODE_FLEE] = {}
+			[LocalCore.ORBWALKER_MODE_COMBO] = {},
+			[LocalCore.ORBWALKER_MODE_HARASS] = {},
+			[LocalCore.ORBWALKER_MODE_LANECLEAR] = {},
+			[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] = {},
+			[LocalCore.ORBWALKER_MODE_LASTHIT] = {},
+			[LocalCore.ORBWALKER_MODE_FLEE] = {}
 		}
 		self.Modes =
 		{
-			[ORBWALKER_MODE_COMBO] = false,
-			[ORBWALKER_MODE_HARASS] = false,
-			[ORBWALKER_MODE_LANECLEAR] = false,
-			[ORBWALKER_MODE_JUNGLECLEAR] = false,
-			[ORBWALKER_MODE_LASTHIT] = false,
-			[ORBWALKER_MODE_FLEE] = false
+			[LocalCore.ORBWALKER_MODE_COMBO] = false,
+			[LocalCore.ORBWALKER_MODE_HARASS] = false,
+			[LocalCore.ORBWALKER_MODE_LANECLEAR] = false,
+			[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] = false,
+			[LocalCore.ORBWALKER_MODE_LASTHIT] = false,
+			[LocalCore.ORBWALKER_MODE_FLEE] = false
 		}
 		self.ChampionCanMove =
 		{
@@ -1270,17 +1273,17 @@ do
 					MenuChamp.dkey:MenuElement({name = "2", id = "def2", key = string.byte("Y"), callback = function() if MenuChamp.dkey.def1:Value() then ResetMenu() end end})
 			Menu.orb:MenuElement({name = "Keys", id = "keys", type = _G.MENU})
 				Menu.orb.keys:MenuElement({name = "Combo Key", id = "combo", key = string.byte(" ")})
-					self:RegisterMenuKey(ORBWALKER_MODE_COMBO, Menu.orb.keys.combo)
+					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_COMBO, Menu.orb.keys.combo)
 				Menu.orb.keys:MenuElement({name = "Harass Key", id = "harass", key = string.byte("C")})
-					self:RegisterMenuKey(ORBWALKER_MODE_HARASS, Menu.orb.keys.harass)
+					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_HARASS, Menu.orb.keys.harass)
 				Menu.orb.keys:MenuElement({name = "LastHit Key", id = "lasthit", key = string.byte("X")})
-					self:RegisterMenuKey(ORBWALKER_MODE_LASTHIT, Menu.orb.keys.lasthit)
+					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_LASTHIT, Menu.orb.keys.lasthit)
 				Menu.orb.keys:MenuElement({name = "LaneClear Key", id = "laneclear", key = string.byte("V")})
-					self:RegisterMenuKey(ORBWALKER_MODE_LANECLEAR, Menu.orb.keys.laneclear)
+					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_LANECLEAR, Menu.orb.keys.laneclear)
 				Menu.orb.keys:MenuElement({name = "Jungle Key", id = "jungle", key = string.byte("V")})
-					self:RegisterMenuKey(ORBWALKER_MODE_JUNGLECLEAR, Menu.orb.keys.jungle)
+					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_JUNGLECLEAR, Menu.orb.keys.jungle)
 				Menu.orb.keys:MenuElement({name = "Flee Key", id = "flee", key = string.byte("A")})
-					self:RegisterMenuKey(ORBWALKER_MODE_FLEE, Menu.orb.keys.flee)
+					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_FLEE, Menu.orb.keys.flee)
 			Menu.orb:MenuElement({ name = "Humanizer", id = "humanizer", type = _G.MENU })
 				Menu.orb.humanizer:MenuElement({ name = "Random", id = "random", type = _G.MENU })
 					Menu.orb.humanizer.random:MenuElement({name = "Enabled", id = "enabled", value = true })
@@ -1289,7 +1292,7 @@ do
 				Menu.orb.humanizer:MenuElement({name = "Humanizer", id = "standard", value = 200, min = 60, max = 300, step = 10 })
 					self.Menu.General.MovementDelay = Menu.orb.humanizer.standard
 			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
-			Menu.orb:MenuElement({name = "Player Attack Move Click", id = "aamoveclick", key = string.byte("P")})
+			Menu.orb:MenuElement({name = "Player Attack Only Click", id = "aamoveclick", key = string.byte("U")})
 	end
 
 	function __Orbwalker:CreateDrawMenu(menu)
@@ -1384,10 +1387,10 @@ do
 		if ExtLibEvade and ExtLibEvade.Evading then
 			return false
 		end
-		if IsChanneling(myHero) then
+		if LocalCore:IsChanneling(myHero) then
 			return false
 		end
-		if DisableAutoAttack[MeCharName] ~= nil and DisableAutoAttack[MeCharName](myHero) then
+		if LocalCore.DisableAutoAttack[MeCharName] ~= nil and LocalCore.DisableAutoAttack[MeCharName](myHero) then
 			return false
 		end
 		if Spells:DisableAutoAttack() then
@@ -1445,8 +1448,8 @@ do
 		if not myHero.pathing.hasMovePath then
 			self.LastMoveLocal = 0
 		end
-		if IsChanneling(myHero) then
-			if AllowMovement[MeCharName] == nil or (not AllowMovement[MeCharName](myHero)) then
+		if LocalCore:IsChanneling(myHero) then
+			if LocalCore.AllowMovement[MeCharName] == nil or (not LocalCore.AllowMovement[MeCharName](myHero)) then
 				return false
 			end
 		end
@@ -1456,8 +1459,8 @@ do
 		if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
 			return true
 		end
-		local mePos = To2D(myHero.pos)
-		if IsInRange(mePos, To2D(_G.mousePos), 120) then
+		local mePos = LocalCore:To2D(myHero.pos)
+		if LocalCore:IsInRange(mePos, LocalCore:To2D(_G.mousePos), 120) then
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
@@ -1545,37 +1548,37 @@ do
 
 	function __Orbwalker:GetTarget()
 		local result = nil
-		if IsValidTarget(self.ForceTarget) then
+		if LocalCore:IsValidTarget(self.ForceTarget) then
 			result = self.ForceTarget
-		elseif self.Modes[ORBWALKER_MODE_COMBO] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_COMBO] then
 			result = TargetSelector:GetComboTarget()
-		elseif self.Modes[ORBWALKER_MODE_HARASS] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_HARASS] then
 			if HealthPrediction.IsLastHitable then
 				result = HealthPrediction:GetLastHitTarget()
 			else
 				result = TargetSelector:GetComboTarget()
 			end
-		elseif self.Modes[ORBWALKER_MODE_LASTHIT] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_LASTHIT] then
 			result = HealthPrediction:GetLastHitTarget()
-		elseif self.Modes[ORBWALKER_MODE_LANECLEAR] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] then
 			if HealthPrediction.IsLastHitable then
 				result = HealthPrediction:GetLastHitTarget()
 			elseif GameTimer() > HealthPrediction.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001 then
 				result = HealthPrediction:GetLaneClearTarget()
 			end
-			if result == nil and self.Modes[ORBWALKER_MODE_JUNGLECLEAR] then
+			if result == nil and self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 				result = HealthPrediction:GetJungleTarget()
 			end
-		elseif self.Modes[ORBWALKER_MODE_JUNGLECLEAR] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 			result = HealthPrediction:GetJungleTarget()
-		elseif self.Modes[ORBWALKER_MODE_FLEE] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_FLEE] then
 			result = nil
 		end
 		return result
 	end
 
 	function __Orbwalker:Orbwalk()
-		self.IsNone = self:HasMode(ORBWALKER_MODE_NONE)
+		self.IsNone = self:HasMode(LocalCore.ORBWALKER_MODE_NONE)
 		self.Modes = self:GetModes()
 		if self.IsNone then
 			if GameTimer() < self.LastMouseDown + 1 then
@@ -1587,41 +1590,41 @@ do
 		if GameIsChatOpen() or (ExtLibEvade and ExtLibEvade.Evading) or not Cursor.IsReady or (not GameIsOnTop()) then
 			return
 		end
-		if IsValidTarget(self.ForceTarget) then
+		if LocalCore:IsValidTarget(self.ForceTarget) then
 			self:AttackMove(self.ForceTarget)
-		elseif self.Modes[ORBWALKER_MODE_COMBO] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_COMBO] then
 			self:AttackMove(TargetSelector:GetComboTarget())
-		elseif self.Modes[ORBWALKER_MODE_HARASS] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_HARASS] then
 			if HealthPrediction.IsLastHitable then
 				self:AttackMove(HealthPrediction:GetLastHitTarget(), true)
 			else
 				self:AttackMove(TargetSelector:GetComboTarget())
 			end
-		elseif self.Modes[ORBWALKER_MODE_LASTHIT] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_LASTHIT] then
 			self:AttackMove(HealthPrediction:GetLastHitTarget())
-		elseif self.Modes[ORBWALKER_MODE_LANECLEAR] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] then
 			if HealthPrediction.IsLastHitable then
 				local result = HealthPrediction:GetLastHitTarget()
 				if result ~= nil then
 					self:AttackMove(result, true)
-				elseif self.Modes[ORBWALKER_MODE_JUNGLECLEAR] then
+				elseif self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 					self:AttackMove(HealthPrediction:GetJungleTarget())
 				end
 			elseif GameTimer() > HealthPrediction.ShouldWaitTime + MenuChamp.lclear.swait:Value() * 0.001 then
 				local result = HealthPrediction:GetLaneClearTarget()
 				if result ~= nil then
 					self:AttackMove(result, false, true)
-				elseif self.Modes[ORBWALKER_MODE_JUNGLECLEAR] then
+				elseif self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 					self:AttackMove(HealthPrediction:GetJungleTarget())
 				end
-			elseif self.Modes[ORBWALKER_MODE_JUNGLECLEAR] then
+			elseif self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 				self:AttackMove(HealthPrediction:GetJungleTarget())
 			else
 				self:AttackMove()
 			end
-		elseif self.Modes[ORBWALKER_MODE_JUNGLECLEAR] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 			self:AttackMove(HealthPrediction:GetJungleTarget())
-		elseif self.Modes[ORBWALKER_MODE_FLEE] then
+		elseif self.Modes[LocalCore.ORBWALKER_MODE_FLEE] then
 			if self.MovementEnabled and GameTimer() > self.LastMoveLocal and self:CanMoveLocal(0) then
 				self:AttackMove()
 			end
@@ -1643,7 +1646,7 @@ do
 		if self.AttackProjSpeed == -1 and myHero.attackData.projectileSpeed then self.AttackProjSpeed = myHero.attackData.projectileSpeed end
 		-- Get AttackData from myHero.activeSpell
 		local spell = myHero.activeSpell
-		if spell and spell.valid and not NoAutoAttacks[spell.name] and spell.castEndTime > self.AttackCastEndTime and (not myHero.isChanneling or SpecialAutoAttacks[spell.name]) then
+		if spell and spell.valid and not LocalCore.NoAutoAttacks[spell.name] and spell.castEndTime > self.AttackCastEndTime and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
@@ -1668,9 +1671,9 @@ do
 		end
 		self.AttackWindUp = GetWindup()
 		--[[
-		local data = GetHeroData(myHero, true)
+		local data = LocalCore:GetHeroData(myHero, true)
 		for name, s in pairs(data.ActiveSpells) do
-			if s.type == SPELLCAST_ATTACK and s.completed then
+			if s.type == LocalCore.SPELLCAST_ATTACK and s.completed then
 				local as = s.spell
 				if as ~= nil and as.spellWasCast ~= nil and as.spellWasCast == false and GameTimer() > as.castEndTime and GameTimer() < as.castEndTime + 0.075 then
 					self:__OnAutoAttackReset()
@@ -1686,7 +1689,7 @@ do
 	end
 
 	function __Orbwalker:HasMode(mode)
-		if mode == ORBWALKER_MODE_NONE then
+		if mode == LocalCore.ORBWALKER_MODE_NONE then
 			for _, value in pairs(self:GetModes()) do
 				if value then
 					return false;
@@ -1705,12 +1708,12 @@ do
 
 	function __Orbwalker:GetModes()
 		return {
-			[ORBWALKER_MODE_COMBO] 			= self:HasMode(ORBWALKER_MODE_COMBO),
-			[ORBWALKER_MODE_HARASS] 		= self:HasMode(ORBWALKER_MODE_HARASS),
-			[ORBWALKER_MODE_LANECLEAR] 		= self:HasMode(ORBWALKER_MODE_LANECLEAR),
-			[ORBWALKER_MODE_JUNGLECLEAR] 	= self:HasMode(ORBWALKER_MODE_JUNGLECLEAR),
-			[ORBWALKER_MODE_LASTHIT] 		= self:HasMode(ORBWALKER_MODE_LASTHIT),
-			[ORBWALKER_MODE_FLEE] 			= self:HasMode(ORBWALKER_MODE_FLEE)
+			[LocalCore.ORBWALKER_MODE_COMBO] 			= self:HasMode(LocalCore.ORBWALKER_MODE_COMBO),
+			[LocalCore.ORBWALKER_MODE_HARASS] 		= self:HasMode(LocalCore.ORBWALKER_MODE_HARASS),
+			[LocalCore.ORBWALKER_MODE_LANECLEAR] 		= self:HasMode(LocalCore.ORBWALKER_MODE_LANECLEAR),
+			[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] 	= self:HasMode(LocalCore.ORBWALKER_MODE_JUNGLECLEAR),
+			[LocalCore.ORBWALKER_MODE_LASTHIT] 		= self:HasMode(LocalCore.ORBWALKER_MODE_LASTHIT),
+			[LocalCore.ORBWALKER_MODE_FLEE] 			= self:HasMode(LocalCore.ORBWALKER_MODE_FLEE)
 		}
 	end
 
@@ -1748,8 +1751,8 @@ do
 		if self:IsAutoAttacking(unit) then
 			result = false
 		end
-		if result and IsChanneling(unit) then
-			if AllowMovement[unit.charName] == nil or (not AllowMovement[unit.charName](unit)) then
+		if result and LocalCore:IsChanneling(unit) then
+			if LocalCore.AllowMovement[unit.charName] == nil or (not LocalCore.AllowMovement[unit.charName](unit)) then
 				result = false
 			end
 		end
@@ -1762,10 +1765,10 @@ do
 		if unit.isMe then
 			return self:CanAttackLocal()
 		end
-		if result and IsChanneling(unit) then
+		if result and LocalCore:IsChanneling(unit) then
 			result = false
 		end
-		if result and DisableAutoAttack[unit.charName] ~= nil and DisableAutoAttack[unit.charName](unit) then
+		if result and LocalCore.DisableAutoAttack[unit.charName] ~= nil and LocalCore.DisableAutoAttack[unit.charName](unit) then
 			result = false
 		end
 		return result
@@ -1781,7 +1784,7 @@ do
 end
 
 do
-	local __HealthPrediction = Class()
+	local __HealthPrediction = LocalCore:Class()
 
 	function __HealthPrediction:__init()
 		self.OnUnkillableC = {}
@@ -1815,7 +1818,7 @@ do
 	function __HealthPrediction:GetJungleTarget()
 		local result = nil
 		local health = 200000
-		local targets = Join(ObjectManager:GetMonstersInAutoAttackRange(), ObjectManager:GetOtherEnemyMinionsInAutoAttackRange())
+		local targets = LocalCore:Join(ObjectManager:GetMonstersInAutoAttackRange(), ObjectManager:GetOtherEnemyMinionsInAutoAttackRange())
 		for i = 1, #targets do
 			local obj = targets[i]
 			if obj and obj.health < health then
@@ -1831,7 +1834,7 @@ do
 		local result = nil
 		for i = 1, #self.FarmMinions do
 			local minion = self.FarmMinions[i]
-			if not minion.Minion.dead and minion.LastHitable and minion.PredictedHP < min and IsValidTarget(minion.Minion) and IsInAutoAttackRange(myHero, minion.Minion) then
+			if not minion.Minion.dead and minion.LastHitable and minion.PredictedHP < min and LocalCore:IsValidTarget(minion.Minion) and LocalCore:IsInAutoAttackRange(myHero, minion.Minion) then
 				min = minion.PredictedHP
 				result = minion.Minion
 			end
@@ -1851,7 +1854,7 @@ do
 			local min = 10000000
 			for i = 1, #self.FarmMinions do
 				local target = self.FarmMinions[i]
-				if not target.Minion.dead and target.PredictedHP < min and IsValidTarget(target.Minion) and IsInAutoAttackRange(myHero, target.Minion) then
+				if not target.Minion.dead and target.PredictedHP < min and LocalCore:IsValidTarget(target.Minion) and LocalCore:IsInAutoAttackRange(myHero, target.Minion) then
 					min = target.PredictedHP
 					result = target.Minion
 				end
@@ -1861,25 +1864,25 @@ do
 	end
 
 	function __HealthPrediction:SetObjects(team)
-		if team == TEAM_ALLY then
+		if team == LocalCore.TEAM_ALLY then
 			if #self.CachedTeamAlly > 0 then
 				return
 			end
-		elseif team == TEAM_ENEMY then
+		elseif team == LocalCore.TEAM_ENEMY then
 			if #self.CachedTeamEnemy > 0 then
 				return
 			end
-		elseif team == TEAM_JUNGLE then
+		elseif team == LocalCore.TEAM_JUNGLE then
 			if #self.CachedTeamJungle > 0 then
 				return
 			end
 		end
 		for i = 1, GameMinionCount() do
 			local obj = GameMinion(i)
-			if obj and obj.team ~= team and IsValidTarget(obj) then
-				if team == TEAM_ALLY then
+			if obj and obj.team ~= team and LocalCore:IsValidTarget(obj) then
+				if team == LocalCore.TEAM_ALLY then
 					self.CachedTeamAlly[#self.CachedTeamAlly+1] = obj
-				elseif team == TEAM_ENEMY then
+				elseif team == LocalCore.TEAM_ENEMY then
 					self.CachedTeamEnemy[#self.CachedTeamEnemy+1] = obj
 				else
 					self.CachedTeamJungle[#self.CachedTeamJungle+1] = obj
@@ -1888,23 +1891,23 @@ do
 		end
 		for i = 1, GameHeroCount() do
 			local obj = GameHero(i)
-			if obj and obj.team ~= team and not obj.isMe and IsValidTarget(obj) then
-				if team == TEAM_ALLY then
+			if obj and obj.team ~= team and not obj.isMe and LocalCore:IsValidTarget(obj) then
+				if team == LocalCore.TEAM_ALLY then
 					self.CachedTeamAlly[#self.CachedTeamAlly+1] = obj
-				elseif team == TEAM_ENEMY then
+				elseif team == LocalCore.TEAM_ENEMY then
 					self.CachedTeamEnemy[#self.CachedTeamEnemy+1] = obj
 				else
 					self.CachedTeamJungle[#self.CachedTeamJungle+1] = obj
 				end
 			end
 		end
-		local turrets = Join(GetEnemyTurrets(), GetAllyTurrets())
+		local turrets = LocalCore:Join(LocalCore:GetEnemyTurrets(), LocalCore:GetAllyTurrets())
 		for i = 1, #turrets do
 			local obj = turrets[i]
-			if obj and obj.team ~= team and IsValidTarget(obj) then
-				if team == TEAM_ALLY then
+			if obj and obj.team ~= team and LocalCore:IsValidTarget(obj) then
+				if team == LocalCore.TEAM_ALLY then
 					self.CachedTeamAlly[#self.CachedTeamAlly+1] = obj
-				elseif team == TEAM_ENEMY then
+				elseif team == LocalCore.TEAM_ENEMY then
 					self.CachedTeamEnemy[#self.CachedTeamEnemy+1] = obj
 				else
 					self.CachedTeamJungle[#self.CachedTeamJungle+1] = obj
@@ -1914,11 +1917,11 @@ do
 	end
 
 	function __HealthPrediction:GetObjects(team)
-		if team == TEAM_ALLY then
+		if team == LocalCore.TEAM_ALLY then
 			return self.CachedTeamAlly
-		elseif team == TEAM_ENEMY then
+		elseif team == LocalCore.TEAM_ENEMY then
 			return self.CachedTeamEnemy
-		elseif team == TEAM_JUNGLE then
+		elseif team == LocalCore.TEAM_JUNGLE then
 			return self.CachedTeamJungle
 		end
 	end
@@ -1934,7 +1937,7 @@ do
 			-- charName
 			local name = target.charName
 			-- set attacks
-			local pos = To2D(target.pos)
+			local pos = LocalCore:To2D(target.pos)
 			-- cached objects
 			self:SetObjects(team)
 			local attackers = self:GetObjects(team)
@@ -1945,10 +1948,10 @@ do
 					self.CachedAttackData[objname] = {}
 				end
 				if self.CachedAttackData[objname][name] == nil then
-					self.CachedAttackData[objname][name] = { Range = GetAutoAttackRange(obj, target), Damage = 0 }
+					self.CachedAttackData[objname][name] = { Range = LocalCore:GetAutoAttackRange(obj, target), Damage = 0 }
 				end
 				local range = self.CachedAttackData[objname][name].Range + 100
-				if IsInRange(To2D(obj.pos), pos, range) then
+				if LocalCore:IsInRange(LocalCore:To2D(obj.pos), pos, range) then
 					if self.CachedAttackData[objname][name].Damage == 0 then
 						self.CachedAttackData[objname][name].Damage = Damage:GetAutoAttackDamage(obj, target)
 					end
@@ -1982,9 +1985,9 @@ do
 		self:SetAttacks(target)
 		local handle = target.handle
 		local attacks = self.CachedAttacks[handle]
-		local hp = TotalShieldHealth(target)
+		local hp = LocalCore:TotalShieldHealth(target)
 		if #attacks == 0 then return hp end
-		local pos = To2D(target.pos)
+		local pos = LocalCore:To2D(target.pos)
 		for i = 1, #attacks do
 			local attack = attacks[i]
 			local attacker = attack.Attacker
@@ -2003,7 +2006,7 @@ do
 				end
 				local flyTime
 				if attacker.attackData.projectileSpeed and attacker.attackData.projectileSpeed > 0 then
-					flyTime = GetDistance(To2D(attacker.pos), pos) / attacker.attackData.projectileSpeed
+					flyTime = LocalCore:GetDistance(LocalCore:To2D(attacker.pos), pos) / attacker.attackData.projectileSpeed
 				else
 					flyTime = 0
 				end
@@ -2050,7 +2053,7 @@ do
 		self.TurretHasTarget = false
 		self.CanCheckTurret = true
 		self.IsLastHitable = false
-		if Orbwalker.Modes[ORBWALKER_MODE_COMBO] then
+		if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] or Orbwalker:HasMode(LocalCore.ORBWALKER_MODE_NONE) then
 			self.CanCheckTurret = false
 			return
 		end
@@ -2058,17 +2061,17 @@ do
 		local projectileSpeed = GetProjSpeed()
 		local winduptime = GetWindup()
 		local latency = LATENCY * 0.5
-		local pos = To2D(myHero.pos)
+		local pos = LocalCore:To2D(myHero.pos)
 		for i = 1, #targets do
 			local target = targets[i]
-			local FlyTime = GetDistance(pos, To2D(target.pos)) / projectileSpeed
+			local FlyTime = LocalCore:GetDistance(pos, LocalCore:To2D(target.pos)) / projectileSpeed
 			self.FarmMinions[#self.FarmMinions+1] = self:SetLastHitable(target, winduptime + FlyTime + latency, Damage:GetAutoAttackDamage(myHero, target))
 		end
 		self.CanCheckTurret = false
 	end
 
 	function __HealthPrediction:Draw()
-		if Orbwalker.Modes[ORBWALKER_MODE_COMBO] then return end
+		if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] then return end
 		if Menu.gsodraw.lasthit.enabled:Value() or Menu.gsodraw.almostlasthit.enabled:Value() then
 			local tm = self.FarmMinions
 			for i = 1, #tm do
@@ -2086,7 +2089,7 @@ do
 end
 
 do
-	local __Damage = Class()
+	local __Damage = LocalCore:Class()
 
 	function __Damage:GetMaxLevel(hero)
 		return MathMax(MathMin(hero.levelData.lvl, 18), 1);
@@ -2109,7 +2112,7 @@ do
 		local penetrationFlat = 0;
 		local penetrationPercent = 0;
 		local bonusPenetrationPercent = 0;
-		if damageType == DAMAGE_TYPE_PHYSICAL then
+		if damageType == LocalCore.DAMAGE_TYPE_PHYSICAL then
 			baseResistance = MathMax(target.armor - target.bonusArmor, 0);
 			bonusResistance = target.bonusArmor;
 			penetrationFlat = from.armorPen;
@@ -2121,17 +2124,17 @@ do
 				penetrationPercent = 0;
 				bonusPenetrationPercent = 0;
 			elseif from.type == Obj_AI_Turret then
-				penetrationPercent = (BaseTurrets[from.charName] == nil) and 0.3 or 0.75;
+				penetrationPercent = (LocalCore.BaseTurrets[from.charName] == nil) and 0.3 or 0.75;
 				penetrationFlat = 0;
 				bonusPenetrationPercent = 0;
 			end
-		elseif damageType == DAMAGE_TYPE_MAGICAL then
+		elseif damageType == LocalCore.DAMAGE_TYPE_MAGICAL then
 			baseResistance = MathMax(target.magicResist - target.bonusMagicResist, 0);
 			bonusResistance = target.bonusMagicResist;
 			penetrationFlat = from.magicPen;
 			penetrationPercent = from.magicPenPercent;
 			bonusPenetrationPercent = 0;
-		elseif damageType == DAMAGE_TYPE_TRUE then
+		elseif damageType == LocalCore.DAMAGE_TYPE_TRUE then
 			return rawDamage;
 		end
 		local resistance = baseResistance + bonusResistance;
@@ -2174,20 +2177,20 @@ do
 			CalculatedTrue = 0,
 			CalculatedPhysical = 0,
 			CalculatedMagical = 0,
-			DamageType = DAMAGE_TYPE_PHYSICAL,
+			DamageType = LocalCore.DAMAGE_TYPE_PHYSICAL,
 			TargetIsMinion = targetIsMinion
 		}
-		if StaticChampionDamageDatabase[args.From.charName] ~= nil then
-			StaticChampionDamageDatabase[args.From.charName](args)
+		if LocalCore.StaticChampionDamageDatabase[args.From.charName] ~= nil then
+			LocalCore.StaticChampionDamageDatabase[args.From.charName](args)
 		end
 		local HashSet = {}
-		for i = 1, #ItemSlots do
-			local slot = ItemSlots[i]
+		for i = 1, #LocalCore.ItemSlots do
+			local slot = LocalCore.ItemSlots[i]
 			local item = args.From:GetItemData(slot)
 			if item ~= nil and item.itemID > 0 then
 				if HashSet[item.itemID] == nil then
-					if StaticItemDamageDatabase[item.itemID] ~= nil then
-						StaticItemDamageDatabase[item.itemID](args)
+					if LocalCore.StaticItemDamageDatabase[item.itemID] ~= nil then
+						LocalCore.StaticItemDamageDatabase[item.itemID](args)
 					end
 					HashSet[item.itemID] = true
 				end
@@ -2213,21 +2216,21 @@ do
 		if args.TargetIsMinion and args.Target.maxHealth <= 6 then
 			return 1;
 		end
-		if VariableChampionDamageDatabase[args.From.charName] ~= nil then
-			VariableChampionDamageDatabase[args.From.charName](args);
+		if LocalCore.VariableChampionDamageDatabase[args.From.charName] ~= nil then
+			LocalCore.VariableChampionDamageDatabase[args.From.charName](args);
 		end
-		if args.DamageType == DAMAGE_TYPE_PHYSICAL then
+		if args.DamageType == LocalCore.DAMAGE_TYPE_PHYSICAL then
 			args.RawPhysical = args.RawPhysical + args.RawTotal;
-		elseif args.DamageType == DAMAGE_TYPE_MAGICAL then
+		elseif args.DamageType == LocalCore.DAMAGE_TYPE_MAGICAL then
 			args.RawMagical = args.RawMagical + args.RawTotal;
-		elseif args.DamageType == DAMAGE_TYPE_TRUE then
+		elseif args.DamageType == LocalCore.DAMAGE_TYPE_TRUE then
 			args.CalculatedTrue = args.CalculatedTrue + args.RawTotal;
 		end
 		if args.RawPhysical > 0 then
-			args.CalculatedPhysical = args.CalculatedPhysical + self:CalculateDamage(from, target, DAMAGE_TYPE_PHYSICAL, args.RawPhysical, false, args.DamageType == DAMAGE_TYPE_PHYSICAL);
+			args.CalculatedPhysical = args.CalculatedPhysical + self:CalculateDamage(from, target, LocalCore.DAMAGE_TYPE_PHYSICAL, args.RawPhysical, false, args.DamageType == LocalCore.DAMAGE_TYPE_PHYSICAL);
 		end
 		if args.RawMagical > 0 then
-			args.CalculatedMagical = args.CalculatedMagical + self:CalculateDamage(from, target, DAMAGE_TYPE_MAGICAL, args.RawMagical, false, args.DamageType == DAMAGE_TYPE_MAGICAL);
+			args.CalculatedMagical = args.CalculatedMagical + self:CalculateDamage(from, target, LocalCore.DAMAGE_TYPE_MAGICAL, args.RawMagical, false, args.DamageType == LocalCore.DAMAGE_TYPE_MAGICAL);
 		end
 		local percentMod = 1;
 		if args.From.critChance - 1 == 0 or args.CriticalStrike then
@@ -2251,18 +2254,18 @@ do
 			if target.maxHealth <= 6 then
 				return 1;
 			end
-			if from.type == Obj_AI_Turret and BaseTurrets[from.charName] == nil then
-				local percentMod = TurretToMinionPercentMod[target.charName]
+			if from.type == Obj_AI_Turret and LocalCore.BaseTurrets[from.charName] == nil then
+				local percentMod = LocalCore.TurretToMinionPercentMod[target.charName]
 				if percentMod ~= nil then
 					return target.maxHealth * percentMod;
 				end
 			end
 		end
-		return self:CalculateDamage(from, target, DAMAGE_TYPE_PHYSICAL, from.totalDamage, false, true);
+		return self:CalculateDamage(from, target, LocalCore.DAMAGE_TYPE_PHYSICAL, from.totalDamage, false, true);
 	end
 
 	function __Damage:GetCriticalStrikePercent(from)
-		local baseCriticalDamage = 2 + (HasItem(from, 3031) and 0.5 or 0)
+		local baseCriticalDamage = 2
 		local percentMod = 1;
 		local fixedMod = 0;
 		if from.charName == "Jhin" then
@@ -2439,7 +2442,9 @@ HealthPrediction:CreateDrawMenu()
 Cursor:CreateDrawMenu()
 Orbwalker:CreateDrawMenu()
 
-OnEnemyHeroLoad(function(hero)
+Menu:MenuElement({name = "Version " .. tostring(GamsteronOrbVer), type = _G.SPACE, id = "verspace"})
+
+LocalCore:OnEnemyHeroLoad(function(hero)
 	local name = hero.charName
 	if name == "Teemo" then
 		Orbwalker.IsTeemo = true
