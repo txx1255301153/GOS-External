@@ -160,7 +160,7 @@ end
 
 local function QLogic()
     if Spells:IsReady(_Q, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
-        local EnemyHeroes = ObjectManager:GetEnemyHeroes(QData.Range, false, HEROES_SPELL)
+        local EnemyHeroes = ObjectManager:GetEnemyHeroes(QData.Range, false, LocalCore.HEROES_SPELL)
 
         if Q_KS_ON then
             local baseDmg = 25
@@ -273,7 +273,7 @@ end
 
 local function ELogic()
     if E_AUTO_ON and (E_ALLY_ON or E_SELF_ON) and Spells:IsReady(_E, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
-        local EnemyHeroes = ObjectManager:GetEnemyHeroes(2500, false, HEROES_IMMORTAL)
+        local EnemyHeroes = ObjectManager:GetEnemyHeroes(2500, false, LocalCore.HEROES_IMMORTAL)
         for i, hero in pairs(EnemyHeroes) do
             local heroPos = LocalCore:To2D(hero.pos)
             local currSpell = hero.activeSpell
