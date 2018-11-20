@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.04
+local GamsteronOrbVer = 0.05
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
 do
