@@ -1969,6 +1969,9 @@ do
 	function __HealthPrediction:GetPossibleDmg(target)
 		local result = 0
 		local handle = target.handle
+		if self.CachedAttacks[handle] == nil then
+			self.CachedAttacks[handle] = {}
+		end
 		local attacks = self.CachedAttacks[handle]
 		if #attacks == 0 then return 0 end
 		for i = 1, #attacks do
