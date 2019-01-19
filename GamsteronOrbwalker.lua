@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.07
+local GamsteronOrbVer = 0.071
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -443,7 +443,7 @@ do
 				for i, minion in pairs(self.FarmMinions) do
 					if minion.LastHitable then
 						local unit = minion.Minion
-						if unit.handle ~= HealthPrediction.LastHandle and not unit.dead then
+						if LocalCore:IsValidTarget(unit) and unit.handle ~= HealthPrediction.LastHandle then
 							TableInsert(result, unit)
 						end
 					end
@@ -456,7 +456,7 @@ do
 			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] and self:CanLaneClear() then
 				for i, minion in pairs(self.FarmMinions) do
 					local unit = minion.Minion
-					if unit.handle ~= HealthPrediction.LastLCHandle and not unit.dead then
+					if LocalCore:IsValidTarget(unit) and unit.handle ~= HealthPrediction.LastLCHandle then
 						TableInsert(result, unit)
 					end
 				end
@@ -798,10 +798,8 @@ do
 	end
 
 	function __TargetSelector:Draw()
-		if Menu.gsodraw.selected.enabled:Value() then
-			if self.SelectedTarget and not self.SelectedTarget.dead and self.SelectedTarget.isTargetable and self.SelectedTarget.visible and self.SelectedTarget.valid then
-				DrawCircle(self.SelectedTarget.pos, Menu.gsodraw.selected.radius:Value(), Menu.gsodraw.selected.width:Value(), Menu.gsodraw.selected.color:Value())
-			end
+		if Menu.gsodraw.selected.enabled:Value() and LocalCore:IsValidTarget(self.SelectedTarget) then
+			DrawCircle(self.SelectedTarget.pos, Menu.gsodraw.selected.radius:Value(), Menu.gsodraw.selected.width:Value(), Menu.gsodraw.selected.color:Value())
 		end
 	end
 
@@ -1761,7 +1759,7 @@ do
 		local result = nil
 		for i = 1, #self.FarmMinions do
 			local minion = self.FarmMinions[i]
-			if not minion.Minion.dead and minion.LastHitable and minion.PredictedHP < min and LocalCore:IsValidTarget(minion.Minion) and LocalCore:IsInAutoAttackRange(myHero, minion.Minion) then
+			if LocalCore:IsValidTarget(minion.Minion) and minion.LastHitable and minion.PredictedHP < min and LocalCore:IsValidTarget(minion.Minion) and LocalCore:IsInAutoAttackRange(myHero, minion.Minion) then
 				min = minion.PredictedHP
 				result = minion.Minion
 			end
@@ -1781,7 +1779,7 @@ do
 			local min = 10000000
 			for i = 1, #self.FarmMinions do
 				local target = self.FarmMinions[i]
-				if not target.Minion.dead and target.PredictedHP < min and LocalCore:IsValidTarget(target.Minion) and LocalCore:IsInAutoAttackRange(myHero, target.Minion) then
+				if LocalCore:IsValidTarget(target.Minion) and target.PredictedHP < min and LocalCore:IsInAutoAttackRange(myHero, target.Minion) then
 					min = target.PredictedHP
 					result = target.Minion
 				end
