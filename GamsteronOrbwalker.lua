@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.072
+local GamsteronOrbVer = 0.073
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -752,7 +752,7 @@ do
 			local hp = MathHuge
 			for i = 1, GameHeroCount() do
 				local obj = GameHero(i)
-				if LocalCore:IsValidTarget(obj) and not obj.isAlly and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+				if LocalCore:IsValidTarget(obj) and obj.team ~= LocalCore.TEAM_ALLY and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
 					t = obj
 					hp = obj.health
 				end
@@ -762,7 +762,7 @@ do
 			hp = MathHuge
 			for i = 1, GameMinionCount() do
 				local obj = GameMinion(i)
-				if LocalCore:IsValidTarget(obj) and not obj.isAlly and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+				if LocalCore:IsValidTarget(obj) and obj.team ~= LocalCore.TEAM_ALLY and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
 					t = obj
 					hp = obj.health
 				end
@@ -772,7 +772,7 @@ do
 			hp = MathHuge
 			for i = 1, GameTurretCount() do
 				local obj = GameTurret(i)
-				if LocalCore:IsValidTarget(obj) and not obj.isAlly and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
+				if LocalCore:IsValidTarget(obj) and obj.team ~= LocalCore.TEAM_ALLY and LocalCore:IsInAutoAttackRange(myHero, obj) and obj.health < hp then
 					t = obj
 					hp = obj.health
 				end
@@ -950,7 +950,7 @@ do
 		local result = {}
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			if LocalCore:IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION then
+			if LocalCore:IsValidTarget(minion) and minion.team == LocalCore.TEAM_ENEMY and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION then
 				if LocalCore:IsInAutoAttackRange(myHero, minion) then
 					TableInsert(result, minion)
 				end
@@ -980,7 +980,7 @@ do
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if LocalCore:IsValidTarget(minion) and minion.isAlly and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+			if LocalCore:IsValidTarget(minion) and minion.team == LocalCore.TEAM_ALLY and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
 				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
@@ -995,7 +995,7 @@ do
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if LocalCore:IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+			if LocalCore:IsValidTarget(minion) and minion.team == LocalCore.TEAM_ENEMY and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
 				if LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), range) then
 					TableInsert(result, minion)
 				end
@@ -1008,7 +1008,7 @@ do
 		local result = {}
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
-			if LocalCore:IsValidTarget(minion) and minion.isEnemy and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
+			if LocalCore:IsValidTarget(minion) and minion.team == LocalCore.TEAM_ENEMY and self:GetMinionType(minion) == LocalCore.MINION_TYPE_OTHER_MINION then
 				if LocalCore:IsInAutoAttackRange(myHero, minion) then
 					TableInsert(result, minion)
 				end
@@ -1066,7 +1066,7 @@ do
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if LocalCore:IsValidTarget(hero) and hero.isAlly then
+			if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ALLY then
 				if LocalCore:IsInRange(mePos, LocalCore:To2D(hero.pos), range) then
 					TableInsert(result, hero)
 				end
@@ -1105,7 +1105,7 @@ do
 		local result = {}
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if LocalCore:IsValidTarget(hero) and hero.isEnemy then
+			if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY then
 				if LocalCore:IsInAutoAttackRange(myHero, hero) then
 					TableInsert(result, hero)
 				end
