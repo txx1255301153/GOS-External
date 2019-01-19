@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.08
+local GamsteronCoreVer = 0.09
 
 local function DownloadFile(url, path)
     DownloadFileAsync(url, path, function() end)
@@ -57,7 +57,7 @@ end
 local MathSqrt                      = _G.math.sqrt
 local MathMax                       = _G.math.max
 local MathAbs                       = _G.math.abs
-local MathHuge                      = _G.math.huge
+local MathHuge                      = 99999999
 local MathPI                        = _G.math.pi
 local MathAtan                      = _G.math.atan
 local MathMin                       = _G.math.min
@@ -3144,7 +3144,7 @@ function __GamsteronCore:GetEnemyMinions(from, range)
     for i = 1, GameMinionCount() do
         local minion = GameMinion(i)
         if minion and minion.team ~= self.TEAM_ALLY and self:IsValidTarget(minion) and self:IsInRange(from, self:To2D(minion.pos), range) then
-            result[#result+1] = minion
+            TableInsert(result, minion)
         end
     end
     return result
