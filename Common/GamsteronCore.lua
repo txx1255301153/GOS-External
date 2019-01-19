@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.09
+local GamsteronCoreVer = 0.091
 
 local function DownloadFile(url, path)
     DownloadFileAsync(url, path, function() end)
@@ -2059,7 +2059,7 @@ function __GamsteronCore:PredictionInput(args)
     end
     result.RealRadius = result.RealRadius
     result.Delay = result.Delay + 0.06 + (LATENCY * 0.5)
-    if result.From == nil or result.Unit == nil or not result.Unit.valid or result.Unit.dead or not result.Unit.isTargetable then
+    if result.From == nil or result.Unit == nil or not result.Unit.valid or result.Unit.dead or not result.Unit.alive or not result.Unit.isTargetable then
         result.Valid = false
         return result
     end
@@ -2618,7 +2618,7 @@ function __GamsteronCore:IsValidTarget(target)
 			return false
 		end
 	end
-	if target.dead or (not target.visible) or (not target.isTargetable) then
+	if not target.alive or target.dead or (not target.visible) or (not target.isTargetable) then
 		return false
 	end
 	return true
@@ -3122,7 +3122,7 @@ function __GamsteronCore:__Interrupter()
         local mePos = self:To2D(myHero.pos)
         for i = 1, GameHeroCount() do
             local o = GameHero(i)
-            if o and o.valid and not o.dead and o.isTargetable and o.visible and self:IsInRange(mePos, self:To2D(o.pos), 1500) then
+            if o and o.valid and not o.dead and o.alive and o.isTargetable and o.visible and self:IsInRange(mePos, self:To2D(o.pos), 1500) then
                 local a = o.activeSpell
                 if a and a.valid and a.isChanneling and spells[a.name] and a.castEndTime - GameTimer() > 0.33 then
                     for j = 1, #cb do
