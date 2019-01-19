@@ -1,4 +1,5 @@
-local GamsteronOrbVer = 0.05
+local GamsteronOrbVer = 0.06
+local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
 do
@@ -81,6 +82,14 @@ local MathAbs						= math.abs
 local TableInsert					= _G.table.insert
 local TableRemove					= _G.table.remove
 
+local CURSOR_READY = true
+local CURSOR_POS = _G.cursorPos
+local CURSOR_POSDONE = false
+local CURSOR_WORK = nil
+local CURSOR_SETTIME = 0
+local CURSOR_ENDTIME = 0
+local CURSOR_CASTPOS = nil
+
 local function GetProjSpeed()
 	if LocalCore.IsMelee[MeCharName] or (LocalCore.SpecialMelees[MeCharName] ~= nil and LocalCore.SpecialMelees[MeCharName]()) then
 		return math.huge
@@ -93,8 +102,6 @@ local function GetProjSpeed()
 	end
 	if myHero.attackData.projectileSpeed then
 		return myHero.attackData.projectileSpeed
-	elseif Orbwalker.AttackProjSpeed > 0 then
-		return Orbwalker.AttackProjSpeed
 	end
 	return math.huge
 end
@@ -106,9 +113,7 @@ local function GetWindup()
 			return SpecialWindUpTime
 		end
 	end
-	if Orbwalker.AttackWindUp > 0 then
-		return Orbwalker.AttackWindUp
-	elseif myHero.attackData.windUpTime then
+	if myHero.attackData.windUpTime then
 		return myHero.attackData.windUpTime
 	end
 	return 0.25
@@ -131,9 +136,6 @@ local function GetHumanizer()
 end
 
 local function ResetMenu()
-	MenuChamp.lcore.enabled:Value(false)
-	MenuChamp.lcore.response:Value(false)
-	MenuChamp.lcore.extraw:Value(100)
 	MenuChamp.hold.HoldRadius:Value(120)
 	MenuChamp.spell.isaa:Value(true)
 	MenuChamp.spell.baa:Value(false)
@@ -144,69 +146,47 @@ end
 do
 	local __Cursor = LocalCore:Class()
 
-	function __Cursor:__init()
-		self.StartTime = 0
-		self.IsReady = true
-		self.IsReadyGlobal = true
-		self.Key = nil
-		self.CursorPos = nil
-		self.CastPos = nil
-		self.Work = nil
-		self.WorkDone = true
-		self.EndTime = 0
+	function __Cursor:SetCursor(work, pos)
+		CURSOR_READY = false -- champion can't use spells if ready == false, if it's true cursor logic works
+		CURSOR_POS = _G.cursorPos -- work is not done yet so we save correct cursor pos (not on cast pos)
+		CURSOR_POSDONE = false -- set cursor pos only once
+		CURSOR_WORK = work -- setcursor to cast pos + cast spell or attack
+		CURSOR_SETTIME = _G.Game.Timer() + 0.05 -- set cursor pos delay for work done
+		CURSOR_ENDTIME = _G.Game.Timer() + 0.075 -- next spells for set cursor pos done
+		CURSOR_CASTPOS = pos
+		-- STEP 1
+		self:SetCursorPos()
+		CURSOR_WORK()
 	end
 
-	function __Cursor:CastKey()
-		if self.CastPos == nil then return end
-		local newpos
-		if self.CastPos.pos then
-			newpos = Vector(self.CastPos.pos.x, self.CastPos.pos.y + self.CastPos.boundingRadius, self.CastPos.pos.z):To2D()
+	function __Cursor:SetCursorPos()
+		local castpos, newpos = nil, CURSOR_CASTPOS.pos
+		if newpos then
+			castpos = Vector(newpos.x, newpos.y + CURSOR_CASTPOS.boundingRadius, newpos.z):To2D()
 			--newpos = Vector(self.CastPos.pos.x, self.CastPos.pos.y, self.CastPos.pos.z + self.CastPos.boundingRadius * 0.5):To2D()
 		else
-			newpos = self.CastPos:To2D()
+			castpos = CURSOR_CASTPOS:To2D()
 		end
-		ControlSetCursorPos(newpos.x, newpos.y)
-		if self.Work ~= nil then--and LocalCore:GetDistanceSquared(newpos, _G.cursorPos) <= MAXIMUM_MOUSE_DISTANCE then
-			self.Work()
-			self.Work = nil
-		end
-	end
-
-	function __Cursor:SetCursor(cursorpos, castpos, key, work)
-		self.StartTime = GameTimer()
-		self.IsReady = false
-		self.IsReadyGlobal = false
-		self.Key = key
-		self.CursorPos = cursorpos
-		self.CastPos = castpos
-		self.Work = work
-		self.WorkDone = false
-		self.EndTime = 0
-		self:CastKey()
+		ControlSetCursorPos(castpos.x, castpos.y)
 	end
 
 	function __Cursor:Tick()
-		if self.IsReady then return end
-		if not self.WorkDone and (self.IsReadyGlobal or GameTimer() > self.StartTime + 0.1) then
-			if not self.IsReadyGlobal then
-				self.IsReadyGlobal = true
+		if not CURSOR_READY then
+			-- STEP 4
+			if CURSOR_POSDONE and _G.Game.Timer() > CURSOR_ENDTIME then
+				CURSOR_READY = true
 			end
-			local extradelay = Menu.orb.excdelay:Value()
-			if extradelay == 0 then
-				self.EndTime = 0
-			else
-				self.EndTime = GameTimer() + extradelay * 0.001
+			-- STEP 3
+			if not CURSOR_POSDONE and _G.Game.Timer() > CURSOR_SETTIME then
+				_G.Control.SetCursorPos(CURSOR_POS.x, CURSOR_POS.y)
+				CURSOR_POSDONE = true
+				return
 			end
-			self.WorkDone = true
+			-- STEP 2
+			if not CURSOR_POSDONE then
+				self:SetCursorPos()
+			end
 		end
-		if self.WorkDone and GameTimer() > self.EndTime then
-			ControlSetCursorPos(self.CursorPos.x, self.CursorPos.y)
-			if LocalCore:GetDistanceSquared(self.CursorPos, _G.cursorPos) <= MAXIMUM_MOUSE_DISTANCE then
-				self.IsReady = true
-			end
-			return
-		end
-		self:CastKey()
 	end
 
 	function __Cursor:CreateDrawMenu(menu)
@@ -302,7 +282,7 @@ do
 			t = t - LATENCY
 			self.SpellEndTime = t
 			self.StartTime = a.startTime
-			if GameTimer() < Orbwalker.AttackLocalStart + Orbwalker.AttackWindUp - 0.09 or GameTimer() < Orbwalker.AttackCastEndTime - 0.1 then
+			if GameTimer() < Orbwalker.AttackLocalStart + GetWindup() - 0.09 or GameTimer() < Orbwalker.AttackCastEndTime - 0.1 then
 				Orbwalker:__OnAutoAttackReset()
 			end
 			return true
@@ -345,7 +325,7 @@ do
 	function __Spells:IsReady(spell, delays)
 		delays = delays or { q = 0.25, w = 0.25, e = 0.25, r = 0.25 }
 		local currentTime = GameTimer()
-		if not Cursor.IsReady or CONTROLL ~= nil or currentTime <= NEXT_CONTROLL + 0.05 then
+		if not CURSOR_READY or CONTROLL ~= nil or currentTime <= NEXT_CONTROLL + 0.05 then
 			return false
 		end
 		if currentTime < self.LastQ + delays.q or currentTime < self.LastQk + delays.q then
@@ -893,12 +873,12 @@ do
 		local turrets = LocalCore:GetEnemyTurrets()
 		local inhibitors = LocalCore:GetEnemyInhibitors()
 		local nexus = LocalCore:GetEnemyNexus()
-		local br = bb and range + 270 - 30 or range --myHero.range + 270 bbox
-		local nr = bb and range + 380 - 30 or range --myHero.range + 380 bbox
+		local br = range; if bb then br = br + 270 - 30; end --myHero.range + 270 bbox
+		local nr = range; if bb then nr = nr + 380 - 30; end --myHero.range + 380 bbox
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, #turrets do
 			local turret = turrets[i]
-			local tr = bb and range + turret.boundingRadius * 0.75 or range
+			local tr = range; if bb then tr = tr + turret.boundingRadius * 0.75; end
 			if turret and LocalCore:IsValidTarget(turret) and LocalCore:IsInRange(mePos, LocalCore:To2D(turret.pos), tr) then
 				result[#result+1] = turret
 			end
@@ -927,6 +907,7 @@ do
 
 	function __ObjectManager:GetMinions(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
@@ -941,10 +922,11 @@ do
 
 	function __ObjectManager:GetAllyMinions(range, bb)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			local mr = bb and range + minion.boundingRadius or range
+			local mr = range; if bb then mr = mr + minion.boundingRadius; end
 			if minion and minion.team == LocalCore.TEAM_ALLY and LocalCore:IsValidTarget(minion) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION and LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), mr) then
 				result[#result+1] = minion
 			end
@@ -954,10 +936,11 @@ do
 
 	function __ObjectManager:GetEnemyMinions(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
-			local mr = bb and range + minion.boundingRadius or range
+			local mr = range; if bb then mr = mr + minion.boundingRadius; end
 			if minion and minion.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(minion) and LocalCore:IsInRange(mePos, LocalCore:To2D(minion.pos), mr) and self:GetMinionType(minion) == LocalCore.MINION_TYPE_LANE_MINION then
 				result[#result+1] = minion
 			end
@@ -980,6 +963,7 @@ do
 
 	function __ObjectManager:GetOtherMinions(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
@@ -994,6 +978,7 @@ do
 
 	function __ObjectManager:GetOtherAllyMinions(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
@@ -1008,6 +993,7 @@ do
 
 	function __ObjectManager:GetOtherEnemyMinions(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameWardCount() do
 			local minion = GameWard(i)
@@ -1035,6 +1021,7 @@ do
 
 	function __ObjectManager:GetMonsters(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameMinionCount() do
 			local minion = GameMinion(i)
@@ -1062,6 +1049,7 @@ do
 
 	function __ObjectManager:GetHeroes(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
@@ -1076,6 +1064,7 @@ do
 
 	function __ObjectManager:GetAllyHeroes(range)
 		local result = {}
+		range = range or math.huge;
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
@@ -1091,14 +1080,14 @@ do
 	function __ObjectManager:GetEnemyHeroes(range, bb, state)
 		local result = {}
 		state = state or 0
-		bb = bb or false
+		range = range or math.huge;
 		--state "spell" = 0
 		--state "attack" = 1
 		--state "immortal" = 2
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			local r = bb and range + hero.boundingRadius or range
+			local r = range; if bb then r = r + hero.boundingRadius; end
 			if hero and hero.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(hero) and LocalCore:IsInRange(mePos, LocalCore:To2D(hero.pos), r) then
 				local immortal = false
 				if state == 0 then
@@ -1133,6 +1122,7 @@ do
 
 	function __ObjectManager:GetAllyTurrets(range)
 		local result = {}
+		range = range or math.huge;
 		local turrets = LocalCore:GetAllyTurrets()
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, #turrets do
@@ -1146,6 +1136,7 @@ do
 
 	function __ObjectManager:GetEnemyTurrets(range)
 		local result = {}
+		range = range or math.huge;
 		local turrets = LocalCore:GetEnemyTurrets()
 		local mePos = LocalCore:To2D(myHero.pos)
 		for i = 1, #turrets do
@@ -1214,19 +1205,14 @@ do
 		self.ThreshLastDash = 0
 		-- Attack
 		self.ResetAttack = false
-		self.AttackStartTime = 0
-		self.AttackEndTime = 0
+		self.AttackServerStart = 0
 		self.AttackCastEndTime = 1
 		self.AttackLocalStart = 0
-		self.AttackSpeed = 0
-		self.AttackWindUp = 0
-		self.AttackAnim = 0
-		self.AttackProjSpeed = -1
+		self.LastPostAttack = 0
 		-- Move
 		self.LastMoveLocal = 0
 		self.LastMoveTime = 0
 		self.LastMovePos = myHero.pos
-		self.LastPostAttack = 0
 		-- Mouse
 		self.LastMouseDown = 0
 		-- Callbacks
@@ -1254,11 +1240,6 @@ do
 				MenuChamp:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
 					MenuChamp.spell:MenuElement({name = "Block if is attacking", id = "isaa", value = true })
 					MenuChamp.spell:MenuElement({name = "Spells between attacks", id = "baa", value = false })
-				MenuChamp:MenuElement({ name = "Orbwalker Core", id = "lcore", type = _G.MENU })
-					MenuChamp.lcore:MenuElement({name = "Use at own risk ! There can be attack cancels !", id = "space", type = SPACE})
-					MenuChamp.lcore:MenuElement({name = "ON - Local, OFF - Server", id = "enabled", value = false })
-					MenuChamp.lcore:MenuElement({name = "Only Local (if Local ON)", id = "response", value = false })
-					MenuChamp.lcore:MenuElement({ name = "Local Extra Windup", id = "extraw", value = 100, min = 0, max = 100, step = 10 })
 				MenuChamp:MenuElement({ name = "LaneClear", id = "lclear", type = _G.MENU })
 					MenuChamp.lclear:MenuElement({name = "Attack Heroes", id = "laneset", value = true })
 					MenuChamp.lclear:MenuElement({name = "Should Wait Time", id = "swait", value = 500, min = 0, max = 1000, step = 100 })
@@ -1352,12 +1333,12 @@ do
 	function __Orbwalker:Attack(unit)
 		self.ResetAttack = false
 		local attackKey = Menu.orb.aamoveclick:Key()
-		Cursor:SetCursor(_G.cursorPos, unit, attackKey, function()
+		Cursor:SetCursor(function()
 			ControlKeyDown(attackKey)
 			ControlKeyUp(attackKey)
-		end)
-		self.LastMoveLocal = 0
-		self.AttackLocalStart = GameTimer()
+			self.LastMoveLocal = 0
+			self.AttackLocalStart = GameTimer()
+		end, unit)
 	end
 
 	function __Orbwalker:Move()
@@ -1371,12 +1352,12 @@ do
 
 	function __Orbwalker:MoveToPos(pos)
 		if ControlIsKeyDown(2) then self.LastMouseDown = GameTimer() end
-		Cursor:SetCursor(_G.cursorPos, pos, MOUSEEVENTF_RIGHTDOWN, function()
+		Cursor:SetCursor(function()
 			ControlMouseEvent(MOUSEEVENTF_RIGHTDOWN)
 			ControlMouseEvent(MOUSEEVENTF_RIGHTUP)
-		end)
-		self.LastMoveLocal = GameTimer() + GetHumanizer()
-		self.LastMoveTime = GameTimer()
+			self.LastMoveLocal = GameTimer() + GetHumanizer()
+			self.LastMoveTime = GameTimer()
+		end, pos)
 	end
 
 	function __Orbwalker:CanAttackLocal()
@@ -1385,6 +1366,9 @@ do
 			return false
 		end
 		if ExtLibEvade and ExtLibEvade.Evading then
+			return false
+		end
+		if _G.JustEvade then
 			return false
 		end
 		if LocalCore:IsChanneling(myHero) then
@@ -1402,11 +1386,8 @@ do
 		if GameTimer() < Spells.ObjectEndTime then
 			return false
 		end
-		if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() < self.AttackLocalStart + self.AttackWindUp + 0.2 then
-			return false
-		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackEndTime - LATENCY - 0.04 then
+			if self.ResetAttack or GameTimer() >= self.AttackServerStart + myHero.attackData.animationTime - 0.05 - LATENCY then
 				return true
 			end
 			return false
@@ -1418,14 +1399,8 @@ do
 	end
 
 	function __Orbwalker:CanMoveSpell()
-		if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
-			return true
-		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackCastEndTime + 0.01 - LATENCY then
-				return true
-			end
-			if MenuChamp.lcore.enabled:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
+			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) + 0.01 then
 				return true
 			end
 			return false
@@ -1436,10 +1411,12 @@ do
 		return true
 	end
 
-	function __Orbwalker:CanMoveLocal(extraDelay)
-		local onlyMove = extraDelay == 0
-		if onlyMove and not self.CanMoveC() then return false end
+	function __Orbwalker:CanMoveLocal()
+		if not self.CanMoveC() then return false end
 		if ExtLibEvade and ExtLibEvade.Evading then
+			return false
+		end
+		if _G.JustEvade then
 			return false
 		end
 		if ME_KALISTA then
@@ -1456,18 +1433,12 @@ do
 		if self.ChampionCanMove[MeCharName] ~= nil and not self.ChampionCanMove[MeCharName]() then
 			return false
 		end
-		if MenuChamp.lcore.enabled:Value() and MenuChamp.lcore.response:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
-			return true
-		end
 		local mePos = LocalCore:To2D(myHero.pos)
 		if LocalCore:IsInRange(mePos, LocalCore:To2D(_G.mousePos), 120) then
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackCastEndTime + extraDelay + 0.01 - LATENCY then
-				return true
-			end
-			if MenuChamp.lcore.enabled:Value() and GameTimer() > self.AttackLocalStart + self.AttackWindUp + MenuChamp.lcore.extraw:Value() * 0.001 then
+			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) then
 				return true
 			end
 			return false
@@ -1494,7 +1465,7 @@ do
 					end
 				end
 			end
-		elseif self.MovementEnabled and self:CanMoveLocal(0) then
+		elseif self.MovementEnabled and self:CanMoveLocal() then
 			if self.PostAttackBool then
 				for i = 1, #self.OnPostAttackC do
 					self.OnPostAttackC[i]()
@@ -1531,18 +1502,8 @@ do
 	end
 
 	function __Orbwalker:WndMsg(msg, wParam)
-		if not Cursor.IsReadyGlobal then
-			if wParam == Menu.orb.aamoveclick:Key() then
-				self.AttackLocalStart = GameTimer()
-				Cursor.IsReadyGlobal = true
-				--print("attack")
-			elseif wParam == Cursor.Key then
-				Cursor.IsReadyGlobal = true
-				--print("spell")
-			elseif Cursor.Key == MOUSEEVENTF_RIGHTDOWN and wParam == 2 then
-				Cursor.IsReadyGlobal = true
-				--print("mouse")
-			end
+		if wParam == Menu.orb.aamoveclick:Key() then
+			self.AttackLocalStart = GameTimer()
 		end
 	end
 
@@ -1587,7 +1548,7 @@ do
 			end
 			return
 		end
-		if GameIsChatOpen() or (ExtLibEvade and ExtLibEvade.Evading) or not Cursor.IsReady or (not GameIsOnTop()) then
+		if GameIsChatOpen() or (ExtLibEvade and ExtLibEvade.Evading) or _G.JustEvade or not CURSOR_READY or (not GameIsOnTop()) then
 			return
 		end
 		if LocalCore:IsValidTarget(self.ForceTarget) then
@@ -1625,38 +1586,20 @@ do
 		elseif self.Modes[LocalCore.ORBWALKER_MODE_JUNGLECLEAR] then
 			self:AttackMove(HealthPrediction:GetJungleTarget())
 		elseif self.Modes[LocalCore.ORBWALKER_MODE_FLEE] then
-			if self.MovementEnabled and GameTimer() > self.LastMoveLocal and self:CanMoveLocal(0) then
+			if self.MovementEnabled and GameTimer() > self.LastMoveLocal and self:CanMoveLocal() then
 				self:AttackMove()
 			end
 		end
 	end
 
 	function __Orbwalker:Tick()
-		-- COMMENTED FOR FUTURE USAGE ! Calculate Animation & WindUp AttackTime
-		--local baseAnimationTime = myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed)
-		--local baseWindUpTime = myHero.attackData.windUpTime / myHero.attackData.animationTime
-		--local animationTime = 1 / baseAnimationTime
-		--local windUpTime = animationTime * baseWindUpTime
-		--print(tostring(animationTime) .. " " .. tostring(myHero.attackData.animationTime))
-		--print(tostring(windUpTime) .. " " .. tostring(myHero.attackData.windUpTime))
-		-- Get AttackData from myHero.attackData
-		if self.AttackSpeed == 0 and myHero.attackSpeed then self.AttackSpeed = myHero.attackSpeed end
-		if self.AttackWindUp == 0 and myHero.attackData.windUpTime then self.AttackWindUp = myHero.attackData.windUpTime end
-		if self.AttackAnim == 0 and myHero.attackData.animationTime then self.AttackAnim = myHero.attackData.animationTime end
-		if self.AttackProjSpeed == -1 and myHero.attackData.projectileSpeed then self.AttackProjSpeed = myHero.attackData.projectileSpeed end
-		-- Get AttackData from myHero.activeSpell
 		local spell = myHero.activeSpell
 		if spell and spell.valid and not LocalCore.NoAutoAttacks[spell.name] and spell.castEndTime > self.AttackCastEndTime and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
 			self.AttackCastEndTime = spell.castEndTime
-			self.AttackSpeed = myHero.attackSpeed
-			self.AttackWindUp = spell.windup
-			self.AttackAnim = spell.animation
-			self.AttackStartTime = spell.startTime
-			self.AttackEndTime = spell.endTime
-			self.AttackProjSpeed = spell.speed
+			self.AttackServerStart = spell.startTime
 			if GAMSTERON_MODE_DMG then
 				if self.TestCount == 0 then
 					self.TestStartTime = GameTimer()
@@ -1669,18 +1612,6 @@ do
 				end
 			end
 		end
-		self.AttackWindUp = GetWindup()
-		--[[
-		local data = LocalCore:GetHeroData(myHero, true)
-		for name, s in pairs(data.ActiveSpells) do
-			if s.type == LocalCore.SPELLCAST_ATTACK and s.completed then
-				local as = s.spell
-				if as ~= nil and as.spellWasCast ~= nil and as.spellWasCast == false and GameTimer() > as.castEndTime and GameTimer() < as.castEndTime + 0.075 then
-					self:__OnAutoAttackReset()
-					print("reset attack")
-				end
-			end
-		end]]
 		self:Orbwalk()
 	end
 
@@ -1776,8 +1707,6 @@ do
 
 	function __Orbwalker:__OnAutoAttackReset()
 		self.ResetAttack = true
-		self.AttackEndTime = 0
-		self.AttackLocalStart = 0
 	end
 
 	Orbwalker = __Orbwalker()
@@ -2287,7 +2216,7 @@ end
 _G.Control.Attack = function(target)
 	if CONTROLL == nil and GameTimer() > NEXT_CONTROLL + 0.05 then
 		CONTROLL = function()
-			if Cursor.IsReady then
+			if CURSOR_READY then
 				Orbwalker:Attack(target)
 				NEXT_CONTROLL = GameTimer()
 				Spells.CanNext = true
@@ -2316,7 +2245,7 @@ _G.Control.Move = function(a, b, c)
 		end
 		CONTROLL = function()
 			if position then
-				if Cursor.IsReady then
+				if CURSOR_READY then
 					Orbwalker:MoveToPos(position)
 					return true
 				end
@@ -2342,7 +2271,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 			if a.pos then
 				position = a.pos
 			else
-				position = a
+				position = Vector(a)
 			end
 		end
 		local spell
@@ -2361,7 +2290,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 		if spell ~= nil and not Spells.CanNext then
 			return false
 		end
-		if position ~= nil and not Cursor.IsReady then
+		if position ~= nil and not CURSOR_READY then
 			return false
 		end
 		if position ~= nil and MenuChamp.spell.isaa:Value() and Orbwalker:IsAutoAttacking(myHero) then
@@ -2398,11 +2327,11 @@ _G.Control.CastSpell = function(key, a, b, c)
 				if spell ~= nil and MenuChamp.spell.baa:Value() then
 					Spells.CanNext = false
 				end
-				Cursor:SetCursor(_G.cursorPos, position, key, function()
+				Cursor:SetCursor(function()
 					ControlKeyDown(key)
 					ControlKeyUp(key)
-				end)
-				Orbwalker.LastMoveLocal = 0
+					Orbwalker.LastMoveLocal = 0
+				end, position)
 				return true
 			else
 				ControlKeyDown(key)
@@ -2480,8 +2409,13 @@ AddLoadCallback(function()
 			end
 			Orbwalker.IsBlindedByTeemo = hasTeemoBlind
 		end
-		HealthPrediction:Tick()
-		Spells:DisableAutoAttack()
+		if DEBUG_MODE then
+			local status, err = pcall(function () HealthPrediction:Tick() end); if not status then print("2501: " .. tostring(err)) end
+			local status, err = pcall(function () Spells:DisableAutoAttack() end); if not status then print("2502: " .. tostring(err)) end
+		else
+			HealthPrediction:Tick()
+			Spells:DisableAutoAttack()
+		end
 		if Spells.Work ~= nil then
 			if GameTimer() < Spells.WorkEndTime then
 				Spells.Work()
@@ -2492,22 +2426,42 @@ AddLoadCallback(function()
 	end)
 
 	Callback.Add('WndMsg', function(msg, wParam)
-		TargetSelector:WndMsg(msg, wParam)
-		Orbwalker:WndMsg(msg, wParam)
-		Spells:WndMsg(msg, wParam)
+		if DEBUG_MODE then
+			local status, err = pcall(function ()
+				TargetSelector:WndMsg(msg, wParam)
+				Orbwalker:WndMsg(msg, wParam)
+				Spells:WndMsg(msg, wParam)
+			end); if not status then print("2513: " .. tostring(err)) end
+		else
+			TargetSelector:WndMsg(msg, wParam)
+			Orbwalker:WndMsg(msg, wParam)
+			Spells:WndMsg(msg, wParam)
+		end
 	end)
 
 	Callback.Add('Draw', function()
 		if not Menu.gsodraw.enabled:Value() then return end
-		TargetSelector:Draw()
-		HealthPrediction:Draw()
-		Cursor:Draw()
-		Orbwalker:Draw()
+		if DEBUG_MODE then
+			local status, err = pcall(function () TargetSelector:Draw() end); if not status then print("2520: " .. tostring(err)) end
+			local status, err = pcall(function () HealthPrediction:Draw() end); if not status then print("2521: " .. tostring(err)) end
+			local status, err = pcall(function () Cursor:Draw() end); if not status then print("2522: " .. tostring(err)) end
+			local status, err = pcall(function () Orbwalker:Draw() end); if not status then print("2523: " .. tostring(err)) end
+		else
+			TargetSelector:Draw()
+			HealthPrediction:Draw()
+			Cursor:Draw()
+			Orbwalker:Draw()
+		end
 	end)
 
 	Callback.Add('Draw', function()
-		Orbwalker:Tick()
-		Cursor:Tick()
+		if DEBUG_MODE then
+			local status, err = pcall(function () Orbwalker:Tick() end); if not status then print("2529: " .. tostring(err)) end
+			local status, err = pcall(function () Cursor:Tick() end); if not status then print("2530: " .. tostring(err)) end
+		else
+			Orbwalker:Tick()
+			Cursor:Tick()
+		end
 		if CONTROLL ~= nil and CONTROLL() == true then
 			CONTROLL = nil
 		end
