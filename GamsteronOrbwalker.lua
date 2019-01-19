@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.071
+local GamsteronOrbVer = 0.072
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -164,8 +164,10 @@ do
 		if newpos then
 			castpos = Vector(newpos.x, newpos.y + CURSOR_CASTPOS.boundingRadius, newpos.z):To2D()
 			--newpos = Vector(self.CastPos.pos.x, self.CastPos.pos.y, self.CastPos.pos.z + self.CastPos.boundingRadius * 0.5):To2D()
-		else
+		elseif CURSOR_CASTPOS.z then
 			castpos = CURSOR_CASTPOS:To2D()
+		else
+			castpos = CURSOR_CASTPOS
 		end
 		ControlSetCursorPos(castpos.x, castpos.y)
 	end
@@ -2260,7 +2262,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 		if a and b and c then
 			position = Vector(a, b, c)
 		elseif a and b then
-			position = Vector({ x = a, y = b})
+			position = { x = a, y = b}
 		elseif a then
 			if a.pos then
 				position = a.pos
