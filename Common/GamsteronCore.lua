@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.092
+local GamsteronCoreVer = 0.093
 
 local function DownloadFile(url, path)
     DownloadFileAsync(url, path, function() end)
@@ -3201,6 +3201,7 @@ local function PreLoad()
         end
         if GeneralLoadTimers.Active and GameTimer() > GeneralLoadTimers.EndTime then
             GeneralLoaded = true
+            -- ty Maxxxel
             _G.drawCircleQuality = 22
             _G.clickerSleepDelay = 0
             for i, cb in pairs(OnLoadC) do
