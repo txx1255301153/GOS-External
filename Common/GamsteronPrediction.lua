@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.01
+local GamsteronPredictionVer = 0.02
 local DebugMode = false
 
 -- LOAD START
@@ -39,12 +39,11 @@ local DebugMode = false
             _G.GamsteronPredictionUpdated = true
             return
         end
-        
     end
     local HighAccuracy = 0.1
     local MaxRangeMulipier = 1
     Menu = MenuElement({name = "Gamsteron Prediction", id = "GamsteronPrediction", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/morganads83fd.png" })
-    Menu:MenuElement({id = "PredHighAccuracy", name = "Pred High Accuracy [ last move ms ]", value = 100, min = 25, max = 100, step = 5, callback = function(value) HighAccuracy = value * 0.001 end })
+    Menu:MenuElement({id = "PredHighAccuracy", name = "Pred High Accuracy [ last move ms ]", value = 75, min = 25, max = 100, step = 5, callback = function(value) HighAccuracy = value * 0.001 end })
     Menu:MenuElement({id = "PredMaxRange", name = "Pred Max Range %", value = 100, min = 70, max = 100, step = 1, callback = function(value) MaxRangeMulipier = value * 0.01 end })
     Menu:MenuElement({name = "Version " .. tostring(GamsteronPredictionVer), type = _G.SPACE, id = "vermorgspace"})
     HighAccuracy = Menu.PredHighAccuracy:Value() * 0.001
@@ -1395,7 +1394,7 @@ local DebugMode = false
                 hitChance = _G.HITCHANCE_HIGH
             elseif fromUnit > 4000 and lastMoveTime < 1 then
                 hitChance = _G.HITCHANCE_HIGH
-            elseif lastMoveTime < 0.075 then
+            elseif lastMoveTime < HighAccuracy then
                 hitChance = _G.HITCHANCE_HIGH
             elseif slowDuration > 0 and moveSpeed < 300 then
                 local interceptTime = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed) - (input.RealRadius / moveSpeed)
@@ -1403,11 +1402,13 @@ local DebugMode = false
                     hitChance = _G.HITCHANCE_HIGH
                 end
             end
-            if fromUnit < 250 then
-                hitChance = _G.HITCHANCE_NORMAL
-            end
-            if fromUnit < 100 then
-                hitChance = _G.HITCHANCE_IMPOSSIBLE
+            if input.Type == _G.SPELLTYPE_LINE then
+                if fromUnit < 150 then
+                    hitChance = _G.HITCHANCE_NORMAL
+                end
+                if fromUnit < 75 then
+                    hitChance = _G.HITCHANCE_IMPOSSIBLE
+                end
             end
             local Radius = input.RealRadius * 0.75
             if input.Speed == _G.math.huge then
@@ -1590,6 +1591,14 @@ local DebugMode = false
                 output.Hitchance = _G.HITCHANCE_COLLISION
             end
             output.CollisionObjects = objects
+        end
+        if output.CastPosition ~= nil then
+            output.CastPosition = Vector({x = output.CastPosition.x, y = unit.boundingRadius, z = output.CastPosition.z})
+            if not output.CastPosition:ToScreen().onScreen then
+                output.CastPosition = input.From:Extended(output.CastPosition, 600)
+            end
+        else
+            output.Hitchance = _G.HITCHANCE_IMPOSSIBLE
         end
         return output
     end
