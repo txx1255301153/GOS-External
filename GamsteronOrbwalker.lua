@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.073
+local GamsteronOrbVer = 0.074
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -146,13 +146,13 @@ end
 do
 	local __Cursor = LocalCore:Class()
 
-	function __Cursor:SetCursor(work, pos)
+	function __Cursor:SetCursor(work, pos, extradelay)
 		CURSOR_READY = false -- champion can't use spells if ready == false, if it's true cursor logic works
 		CURSOR_POS = _G.cursorPos -- work is not done yet so we save correct cursor pos (not on cast pos)
 		CURSOR_POSDONE = false -- set cursor pos only once
 		CURSOR_WORK = work -- setcursor to cast pos + cast spell or attack
-		CURSOR_SETTIME = _G.Game.Timer() + 0.05 -- set cursor pos delay for work done
-		CURSOR_ENDTIME = _G.Game.Timer() + 0.075 -- next spells for set cursor pos done
+		CURSOR_SETTIME = _G.Game.Timer() + 0.05 + extradelay -- set cursor pos delay for work done
+		CURSOR_ENDTIME = _G.Game.Timer() + 0.075 + extradelay -- next spells for set cursor pos done
 		CURSOR_CASTPOS = pos
 		-- STEP 1
 		self:SetCursorPos()
@@ -1336,7 +1336,7 @@ do
 			ControlKeyUp(attackKey)
 			self.LastMoveLocal = 0
 			self.AttackLocalStart = GameTimer()
-		end, unit)
+		end, unit, 0)
 	end
 
 	function __Orbwalker:Move()
@@ -1355,7 +1355,7 @@ do
 			ControlMouseEvent(MOUSEEVENTF_RIGHTUP)
 			self.LastMoveLocal = GameTimer() + GetHumanizer()
 			self.LastMoveTime = GameTimer()
-		end, pos)
+		end, pos, 0.015)
 	end
 
 	function __Orbwalker:CanAttackLocal()
@@ -2258,6 +2258,7 @@ end
 
 _G.Control.CastSpell = function(key, a, b, c)
 	if CONTROLL == nil and GameTimer() > NEXT_CONTROLL + 0.05 then
+		local extradelay = 0.015
 		local position
 		if a and b and c then
 			position = Vector(a, b, c)
@@ -2267,6 +2268,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 			if a.pos then
 				position = a.pos
 			else
+				extradelay = 0.05
 				position = Vector(a)
 			end
 		end
@@ -2327,7 +2329,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 					ControlKeyDown(key)
 					ControlKeyUp(key)
 					Orbwalker.LastMoveLocal = 0
-				end, position)
+				end, position, extradelay)
 				return true
 			else
 				ControlKeyDown(key)
