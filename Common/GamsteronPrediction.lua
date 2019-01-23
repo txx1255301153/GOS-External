@@ -25,13 +25,13 @@ local DebugMode = false
             return
         end
         LocalCore = _G.GamsteronCore
-        --[[
+        
         local success, version = LocalCore:AutoUpdate({
             version = GamsteronPredictionVer,
             scriptPath = SCRIPT_PATH .. "GamsteronPrediction.lua",
-            scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Champions/GamsteronPrediction.lua",
+            scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua",
             versionPath = SCRIPT_PATH .. "GamsteronPrediction.version",
-            versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Champions/GamsteronPrediction.version"
+            versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.version"
         })
     
         if success then
@@ -39,7 +39,7 @@ local DebugMode = false
             _G.GamsteronPredictionUpdated = true
             return
         end
-        --]]
+        
     end
     local HighAccuracy = 0.1
     local MaxRangeMulipier = 1
