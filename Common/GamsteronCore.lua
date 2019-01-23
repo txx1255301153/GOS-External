@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.094
+local GamsteronCoreVer = 0.095
 
 -- locals update START
     local function DownloadFile(url, path)
@@ -148,32 +148,17 @@ function __GamsteronCore:__init()
     self.HEROES_ATTACK                    = 1
     self.HEROES_IMMORTAL                  = 2
 
-    self.SPELLCAST_ATTACK                 = 0
-    self.SPELLCAST_DASH                   = 1
-    self.SPELLCAST_IMMOBILE               = 2
-    self.SPELLCAST_OTHER                  = 3
-
     self.TEAM_ALLY                        = myHero.team
     self.TEAM_ENEMY                       = 300 - self.TEAM_ALLY
     self.TEAM_JUNGLE                      = 300
 
-    self.HITCHANCE_IMPOSSIBLE             = 0
-    self.HITCHANCE_COLLISION              = 1
-    self.HITCHANCE_NORMAL                 = 2
-    self.HITCHANCE_HIGH                   = 3
-    self.HITCHANCE_IMMOBILE               = 4
-
-    self.SPELLTYPE_LINE                   = 0
-    self.SPELLTYPE_CIRCLE                 = 1
-    self.SPELLTYPE_CONE                   = 2
+    self.MINION_TYPE_OTHER_MINION		    = 1
+    self.MINION_TYPE_MONSTER			    = 2
+    self.MINION_TYPE_LANE_MINION		    = 3
 
     self.DAMAGE_TYPE_PHYSICAL			    = 0
     self.DAMAGE_TYPE_MAGICAL			    = 1
     self.DAMAGE_TYPE_TRUE				    = 2
-
-    self.MINION_TYPE_OTHER_MINION		    = 1
-    self.MINION_TYPE_MONSTER			    = 2
-    self.MINION_TYPE_LANE_MINION		    = 3
 
     self.ORBWALKER_MODE_NONE			    = -1
     self.ORBWALKER_MODE_COMBO			    = 0
@@ -1106,6 +1091,28 @@ function __GamsteronCore:Class()
     end})
 end
 
+function __GamsteronCore:ProjectOn(p, p1, p2)
+    local isOnSegment, pointSegment, pointLine
+    local px,pz = p.x, (p.z or p.y)
+    local ax,az = p1.x, (p1.z or p1.y)
+    local bx,bz = p2.x, (p2.z or p2.y)
+    local bxax = bx - ax
+    local bzaz = bz - az
+    local t = ((px - ax) * bxax + (pz - az) * bzaz) / (bxax * bxax + bzaz * bzaz)
+    local pointLine = { x = ax + t * bxax, y = az + t * bzaz }
+    if t < 0 then
+        isOnSegment = false
+        pointSegment = p1
+    elseif t > 1 then
+        isOnSegment = false
+        pointSegment = p2
+    else
+        isOnSegment = true
+        pointSegment = pointLine
+    end
+    return isOnSegment, pointSegment, pointLine
+end
+
 function __GamsteronCore:CastSpell(spell, unit, castPos)
     if unit == nil and castPos == nil then
         if Control.CastSpell(spell) == true then
@@ -1352,6 +1359,75 @@ end
 
 function __GamsteronCore:GetEnemyTurrets()
     return EnemyTurrets
+end
+
+function __GamsteronCore:IsFacing(source, target)
+    local sourceDir = self:To2D(source.dir)
+    local targetPos = self:To2D(target.pos)
+    local sourcePos = self:To2D(source.pos)
+    local targetDir = self:Normalized(targetPos, sourcePos)
+    if self:AngleBetween(sourceDir, targetDir) < 90 then
+        local sourceEndPos = self:To2D(source.pathing.endPos)
+        local sourceExtended = self:Extended(sourcePos, self:Normalized(sourceEndPos - sourcePos), 0.5 * source.ms)
+        if not self:EqualVector(sourceExtended, sourcePos) then
+            sourceDir = self:Normalized(sourceExtended, sourcePos)
+        end
+        local targetEndPos = self:To2D(target.pathing.endPos)
+        local targetExtended = self:Extended(targetPos, self:Normalized(targetEndPos - targetPos), 0.5 * target.ms)
+        if self:AngleBetween(sourceDir, self:Normalized(targetExtended, sourceExtended)) < 90 then
+            return true
+        end
+    end
+    return false
+end
+
+function __GamsteronCore:__Interrupter()
+    local c = {}
+    local result = {}
+    c.__index = c
+    setmetatable(result, c)
+    local cb = {}
+    local spells =
+    {
+        ["CaitlynAceintheHole"] = true,
+        ["Crowstorm"] = true,
+        ["DrainChannel"] = true,
+        ["GalioIdolOfDurand"] = true,
+        ["ReapTheWhirlwind"] = true,
+        ["KarthusFallenOne"] = true,
+        ["KatarinaR"] = true,
+        ["LucianR"] = true,
+        ["AlZaharNetherGrasp"] = true,
+        ["Meditate"] = true,
+        ["MissFortuneBulletTime"] = true,
+        ["AbsoluteZero"] = true,
+        ["PantheonRJump"] = true,
+        ["PantheonRFall"] = true,
+        ["ShenStandUnited"] = true,
+        ["Destiny"] = true,
+        ["UrgotSwap2"] = true,
+        ["VelkozR"] = true,
+        ["InfiniteDuress"] = true,
+        ["XerathLocusOfPower2"] = true
+    }
+    Callback.Add("Draw", function()
+        local mePos = self:To2D(myHero.pos)
+        for i = 1, GameHeroCount() do
+            local o = GameHero(i)
+            if o and o.valid and not o.dead and o.alive and o.isTargetable and o.visible and self:IsInRange(mePos, self:To2D(o.pos), 1500) then
+                local a = o.activeSpell
+                if a and a.valid and a.isChanneling and spells[a.name] and a.castEndTime - GameTimer() > 0.33 then
+                    for j = 1, #cb do
+                        cb[j](o, a)
+                    end
+                end
+            end
+        end
+    end)
+    function c:OnInterrupt(cbb)
+        TableInsert(cb, cbb)
+    end
+    return result
 end
 
 _G.GamsteronCore = __GamsteronCore()
