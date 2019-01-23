@@ -1,4 +1,5 @@
-local GamsteronMorganaVer = 0.04
+local GamsteronMorganaVer = 0.05
+local debugMode = false
 local LocalCore, Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
 
 do
@@ -13,6 +14,10 @@ do
 
     require('GamsteronCore')
     if _G.GamsteronCoreUpdated then
+        return
+    end
+    require('GamsteronPrediction')
+    if _G.GamsteronPredictionUpdated then
         return
     end
     LocalCore = _G.GamsteronCore
@@ -70,13 +75,13 @@ local R_COMBO_RANGEX                = 300
 
 local QData                         =
 {
-    Type = LocalCore.SPELLTYPE_LINE, Aoe = false, From = myHero,
+    Type = _G.SPELLTYPE_LINE, Aoe = false, From = myHero,
     Delay = 0.25, Radius = 70, Range = 1175, Speed = 1200,
-    Collision = true, MaxCollision = 0, CollisionObjects = { LocalCore.COLLISION_MINION, LocalCore.COLLISION_YASUOWALL }
+    Collision = true, MaxCollision = 0, CollisionObjects = { _G.COLLISION_MINION, _G.COLLISION_YASUOWALL }
 }
 local WData                         =
 {
-    Type = LocalCore.SPELLTYPE_CIRCLE, Aoe = false, Collision = false, From = myHero,
+    Type = _G.SPELLTYPE_CIRCLE, Aoe = false, Collision = false, From = myHero,
     Delay = 0.25, Radius = 150, Range = 900, Speed = math.huge
 }
 local EData                         =
@@ -170,8 +175,11 @@ local function QLogic()
             if qDmg > Q_KS_MINHP then
                 for i = 1, #EnemyHeroes do
                     local qTarget = EnemyHeroes[i]
-                    if qTarget.health > Q_KS_MINHP and qTarget.health < Damage:CalculateDamage(myHero, qTarget, LocalCore.DAMAGE_TYPE_MAGICAL, qDmg) and LocalCore:CastSpell(HK_Q, qTarget, myHero, QData, Q_KS_HITCHANCE) then
-                        return
+                    if qTarget.health > Q_KS_MINHP and qTarget.health < Damage:CalculateDamage(myHero, qTarget, LocalCore.DAMAGE_TYPE_MAGICAL, qDmg) then
+                        local pred = GetGamsteronPrediction(qTarget, QData, myHero.pos)
+                        if pred.Hitchance >= Q_KS_HITCHANCE and LocalCore:CastSpell(HK_Q, qTarget, pred.CastPosition) then
+                            return true
+                        end
                     end
                 end
             end
@@ -187,8 +195,11 @@ local function QLogic()
                 end
             end
             local qTarget = TargetSelector:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL)
-            if qTarget and LocalCore:CastSpell(HK_Q, qTarget, myHero, QData, Q_COMBO_HITCHANCE) then
-                return
+            if qTarget then
+                local pred = GetGamsteronPrediction(qTarget, QData, myHero.pos)
+                if pred.Hitchance >= Q_COMBO_HITCHANCE and LocalCore:CastSpell(HK_Q, qTarget, pred.CastPosition) then
+                    return true
+                end
             end
         elseif Q_AUTO_ON then
             local qList = {}
@@ -200,8 +211,13 @@ local function QLogic()
                 end
             end
             local qTarget = TargetSelector:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL)
-            if qTarget and LocalCore:CastSpell(HK_Q, qTarget, myHero, QData, Q_AUTO_HITCHANCE) then
-                return
+            if qTarget then
+                local status, err = pcall(function ()
+                    local pred = GetGamsteronPrediction(qTarget, QData, myHero.pos)
+                    if pred.Hitchance >= Q_AUTO_HITCHANCE then
+                        LocalCore:CastSpell(HK_Q, qTarget, pred.CastPosition)
+                    end
+                end); if not status then print("MorganaAutoQ: " .. tostring(err)) end
             end
         end
     end
@@ -219,8 +235,11 @@ local function WLogic()
             if wDmg > W_KS_MINHP then
                 for i = 1, #EnemyHeroes do
                     local wTarget = EnemyHeroes[i]
-                    if wTarget.health > W_KS_MINHP and wTarget.health < Damage:CalculateDamage(myHero, wTarget, LocalCore.DAMAGE_TYPE_MAGICAL, wDmg) and LocalCore:CastSpell(HK_W, wTarget, myHero, WData, 3) then
-                        return
+                    if wTarget.health > W_KS_MINHP and wTarget.health < Damage:CalculateDamage(myHero, wTarget, LocalCore.DAMAGE_TYPE_MAGICAL, wDmg) then
+                        local pred = GetGamsteronPrediction(wTarget, WData, myHero.pos)
+                        if pred.Hitchance >= _G.HITCHANCE_HIGH and LocalCore:CastSpell(HK_W, wTarget, pred.CastPosition) then
+                            return true
+                        end
                     end
                 end
             end
@@ -229,8 +248,9 @@ local function WLogic()
         if (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] and W_COMBO_ON) or (Orbwalker.Modes[LocalCore.ORBWALKER_MODE_HARASS] and W_HARASS_ON) then
             for i = 1, #EnemyHeroes do
                 local unit = EnemyHeroes[i]
-                if LocalCore:CastSpell(HK_W, unit, myHero, WData, 3) then
-                    return
+                local pred = GetGamsteronPrediction(unit, WData, myHero.pos)
+                if pred.Hitchance >= _G.HITCHANCE_HIGH and LocalCore:CastSpell(HK_W, unit, pred.CastPosition) then
+                    return true
                 end
             end
         end
@@ -261,9 +281,8 @@ local function WLogic()
         if W_AUTO_ON then
             for i = 1, #EnemyHeroes do
                 local unit = EnemyHeroes[i]
-                local data = LocalCore:GetHeroData(unit, true)
-                local remainingTime = MathMax(data.RemainingImmobile, data.ExpireImmobile - GameTimer())
-                if remainingTime > 0.5 and not unit.pathing.isDashing and LocalCore:CastSpell(HK_W, unit, myHero, WData, 4) then
+                local ImmobileDuration, DashDuration, SlowDuration = GetImmobileDashSlowDuration(unit)
+                if ImmobileDuration > 0.5 and not unit.pathing.isDashing and Control.CastSpell(HK_W, unit) then
                     return
                 end
             end
@@ -363,7 +382,10 @@ AddLoadCallback(function()
     local Interrupter = LocalCore:__Interrupter()
     Interrupter:OnInterrupt(function(enemy, activeSpell)
         if Q_INTERRUPTER_ON and Spells:IsReady(_Q, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
-            LocalCore:CastSpell(HK_Q, enemy, myHero, QData, 4)
+            local pred = GetGamsteronPrediction(enemy, QData, myHero.pos)
+            if pred.Hitchance >= _G.HITCHANCE_MEDIUM then
+                LocalCore:CastSpell(HK_Q, enemy, pred.CastPosition)
+            end
         end
     end)
 
@@ -390,11 +412,21 @@ AddLoadCallback(function()
     end
 
     Callback.Add("Draw", function()
-        if Orbwalker:IsAutoAttacking() then return end
-        QLogic()
-        WLogic()
-        ELogic()
-        RLogic()
+        if debugMode then
+            local isautoaa = false
+            local status, err = pcall(function () isautoaa = Orbwalker:IsAutoAttacking() end); if not status then print("2501: " .. tostring(err)) end
+            if isautoaa then return end
+            local status, err = pcall(function () QLogic() end); if not status then print("2501: " .. tostring(err)) end
+            local status, err = pcall(function () WLogic() end); if not status then print("2501: " .. tostring(err)) end
+            local status, err = pcall(function () ELogic() end); if not status then print("2501: " .. tostring(err)) end
+            local status, err = pcall(function () RLogic() end); if not status then print("2501: " .. tostring(err)) end
+        else
+            if Orbwalker:IsAutoAttacking() then return end
+            QLogic()
+            WLogic()
+            ELogic()
+            RLogic()
+        end
     end)
 end)
 
