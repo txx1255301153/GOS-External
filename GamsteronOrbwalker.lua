@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0741
+local GamsteronOrbVer = 0.0742
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -746,7 +746,7 @@ do
 			end
 		end
 		local t = self:GetTarget(targets, LocalCore.DAMAGE_TYPE_PHYSICAL)
-		if not myHero.charName == "Kalista" then
+		if myHero.charName ~= "Kalista" then
 			return t
 		end
 		if t == nil then
