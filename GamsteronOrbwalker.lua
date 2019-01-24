@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0742
+local GamsteronOrbVer = 0.0743
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -1235,6 +1235,9 @@ do
 
 	function __Orbwalker:CreateMenu()
 		Menu:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/orb.png" })
+			Menu.orb:MenuElement({ name = "Extra Windup", id = "extrawindup", value = 0, min = 0, max = 100, step = 1 })
+			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
+			Menu.orb:MenuElement({name = "Player Attack Only Click", id = "aamoveclick", key = string.byte("U")})
 			MenuChamp = Menu.orb:MenuElement({name = myHero.charName, id = myHero.charName, type = _G.MENU})
 				MenuChamp:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
 					MenuChamp.spell:MenuElement({name = "Block if is attacking", id = "isaa", value = true })
@@ -1271,8 +1274,6 @@ do
 					Menu.orb.humanizer.random:MenuElement({name = "To", id = "to", value = 220, min = 60, max = 400, step = 20 })
 				Menu.orb.humanizer:MenuElement({name = "Humanizer", id = "standard", value = 200, min = 60, max = 300, step = 10 })
 					self.Menu.General.MovementDelay = Menu.orb.humanizer.standard
-			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
-			Menu.orb:MenuElement({name = "Player Attack Only Click", id = "aamoveclick", key = string.byte("U")})
 	end
 
 	function __Orbwalker:CreateDrawMenu(menu)
@@ -1399,7 +1400,7 @@ do
 
 	function __Orbwalker:CanMoveSpell()
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) + 0.01 then
+			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) + 0.01 + (Menu.orb.extrawindup:Value() * 0.001) then
 				return true
 			end
 			return false
@@ -1437,7 +1438,7 @@ do
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) then
+			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) + (Menu.orb.extrawindup:Value() * 0.001) then
 				return true
 			end
 			return false
