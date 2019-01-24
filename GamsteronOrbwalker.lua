@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.074
+local GamsteronOrbVer = 0.0741
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -36,12 +36,9 @@ local MAXIMUM_MOUSE_DISTANCE		= 120 * 120
 local GAMSTERON_MODE_DMG			= false
 local CONTROLL						= nil
 local NEXT_CONTROLL					= 0
-local ME_CAITLYN					= myHero.charName == "Caitlyn"
-local ME_KALISTA					= myHero.charName == "Kalista"
 
 local GetTickCount					= GetTickCount
 local myHero						= _G.myHero
-local MeCharName					= myHero.charName
 local Vector						= Vector
 local DrawLine						= Draw.Line
 local DrawColor						= Draw.Color
@@ -77,25 +74,28 @@ local MathMax						= math.max
 local MathMin						= math.min
 local MathSqrt						= math.sqrt
 local MathRandom					= math.random
-local MathHuge						= 99999999
+local MathHuge						= 999999999
 local MathAbs						= math.abs
 local TableInsert					= _G.table.insert
 local TableRemove					= _G.table.remove
 
 local CURSOR_READY = true
-local CURSOR_POS = _G.cursorPos
+local CURSOR_POS = nil
 local CURSOR_POSDONE = false
 local CURSOR_WORK = nil
 local CURSOR_SETTIME = 0
 local CURSOR_ENDTIME = 0
 local CURSOR_CASTPOS = nil
 
+local GOSAPIBROKEN = 0
+
 local function GetProjSpeed()
-	if LocalCore.IsMelee[MeCharName] or (LocalCore.SpecialMelees[MeCharName] ~= nil and LocalCore.SpecialMelees[MeCharName]()) then
+	local name = myHero.charName
+	if LocalCore.IsMelee[name] or (LocalCore.SpecialMelees[name] ~= nil and LocalCore.SpecialMelees[name]()) then
 		return MathHuge
 	end
-	if LocalCore.SpecialMissileSpeeds[MeCharName] ~= nil then
-		local projectileSpeed = LocalCore.SpecialMissileSpeeds[MeCharName](myHero)
+	if LocalCore.SpecialMissileSpeeds[name] ~= nil then
+		local projectileSpeed = LocalCore.SpecialMissileSpeeds[name](myHero)
 		if projectileSpeed then
 			return projectileSpeed
 		end
@@ -107,8 +107,9 @@ local function GetProjSpeed()
 end
 
 local function GetWindup()
-	if LocalCore.SpecialWindUpTimes[MeCharName] ~= nil then
-		local SpecialWindUpTime = LocalCore.SpecialWindUpTimes[MeCharName](myHero)
+	local name = myHero.charName
+	if LocalCore.SpecialWindUpTimes[name] ~= nil then
+		local SpecialWindUpTime = LocalCore.SpecialWindUpTimes[name](myHero)
 		if SpecialWindUpTime then
 			return SpecialWindUpTime
 		end
@@ -734,7 +735,7 @@ do
 			local hero = GameHero(i)
 			if hero and hero.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(hero) and not ObjectManager:IsHeroImmortal(hero, true) then
 				local herorange = range
-				if ME_CAITLYN and LocalCore:HasBuff(hero, "caitlynyordletrapinternal") then
+				if myHero.charName == "Caitlyn" and LocalCore:HasBuff(hero, "caitlynyordletrapinternal") then
 					herorange = herorange + 600
 				else
 					herorange = herorange + bbox + hero.boundingRadius
@@ -745,7 +746,7 @@ do
 			end
 		end
 		local t = self:GetTarget(targets, LocalCore.DAMAGE_TYPE_PHYSICAL)
-		if not ME_KALISTA then
+		if not myHero.charName == "Kalista" then
 			return t
 		end
 		if t == nil then
@@ -1234,7 +1235,7 @@ do
 
 	function __Orbwalker:CreateMenu()
 		Menu:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/orb.png" })
-			MenuChamp = Menu.orb:MenuElement({name = MeCharName, id = MeCharName, type = _G.MENU})
+			MenuChamp = Menu.orb:MenuElement({name = myHero.charName, id = myHero.charName, type = _G.MENU})
 				MenuChamp:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
 					MenuChamp.spell:MenuElement({name = "Block if is attacking", id = "isaa", value = true })
 					MenuChamp.spell:MenuElement({name = "Spells between attacks", id = "baa", value = false })
@@ -1372,7 +1373,7 @@ do
 		if LocalCore:IsChanneling(myHero) then
 			return false
 		end
-		if LocalCore.DisableAutoAttack[MeCharName] ~= nil and LocalCore.DisableAutoAttack[MeCharName](myHero) then
+		if LocalCore.DisableAutoAttack[myHero.charName] ~= nil and LocalCore.DisableAutoAttack[myHero.charName](myHero) then
 			return false
 		end
 		if Spells:DisableAutoAttack() then
@@ -1417,18 +1418,18 @@ do
 		if _G.JustEvade then
 			return false
 		end
-		if ME_KALISTA then
+		if myHero.charName == "Kalista" then
 			return true
 		end
 		if not myHero.pathing.hasMovePath then
 			self.LastMoveLocal = 0
 		end
 		if LocalCore:IsChanneling(myHero) then
-			if LocalCore.AllowMovement[MeCharName] == nil or (not LocalCore.AllowMovement[MeCharName](myHero)) then
+			if LocalCore.AllowMovement[myHero.charName] == nil or (not LocalCore.AllowMovement[myHero.charName](myHero)) then
 				return false
 			end
 		end
-		if self.ChampionCanMove[MeCharName] ~= nil and not self.ChampionCanMove[MeCharName]() then
+		if self.ChampionCanMove[myHero.charName] ~= nil and not self.ChampionCanMove[myHero.charName]() then
 			return false
 		end
 		local mePos = LocalCore:To2D(myHero.pos)
@@ -1591,8 +1592,9 @@ do
 	end
 
 	function __Orbwalker:Tick()
+		--[[
 		local spell = myHero.activeSpell
-		if spell and spell.valid and not LocalCore.NoAutoAttacks[spell.name] and spell.castEndTime > self.AttackCastEndTime and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
+		if spell and spell.valid and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then -- and spell.castEndTime > self.AttackCastEndTime
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
@@ -1609,7 +1611,27 @@ do
 					self.TestStartTime = 0
 				end
 			end
+		end--]]
+		if myHero.attackData.endTime > GOSAPIBROKEN then
+			for i = 1, #self.OnAttackC do
+				self.OnAttackC[i]()
+			end
+			GOSAPIBROKEN = myHero.attackData.endTime
+			self.AttackServerStart = myHero.attackData.endTime - myHero.attackData.animationTime
+			self.AttackCastEndTime = self.AttackServerStart + myHero.attackData.windUpTime
+			if GAMSTERON_MODE_DMG then
+				if self.TestCount == 0 then
+					self.TestStartTime = GameTimer()
+				end
+				self.TestCount = self.TestCount + 1
+				if self.TestCount == 5 then
+					print("5 attacks in time: " .. tostring(GameTimer() - self.TestStartTime) .. "[sec]")
+					self.TestCount = 0
+					self.TestStartTime = 0
+				end
+			end
 		end
+		
 		self:Orbwalk()
 	end
 
