@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.02
+local GamsteronPredictionVer = 0.03
 local DebugMode = false
 
 -- LOAD START
@@ -1137,41 +1137,24 @@ local DebugMode = false
         return toUnit, fromUnit, toEnd
 
     end
-    local function GetPredictedPos(unit, path, predDistance, invisiblePath)
+    local function GetPredictedPos(unit, path, predDistance)
 
-        -- visible
-        if invisiblePath == nil then
-            -- point on current segment
-            local pointFrom, pointTo = unit.pos, unit:GetPath(path.pathIndex)
-            local currentDistance = pointFrom:DistanceTo(pointTo)
-            if currentDistance >= predDistance then
-                return pointFrom:Extended(pointTo, predDistance)
-            end
-            predDistance = predDistance - currentDistance
+        -- point on current segment
+        local pointFrom, pointTo = unit.pos, unit:GetPath(path.pathIndex)
+        local currentDistance = pointFrom:DistanceTo(pointTo)
+        if currentDistance >= predDistance then
+            return pointFrom:Extended(pointTo, predDistance)
+        end
+        predDistance = predDistance - currentDistance
 
-            -- point is end pos
-            if path.pathIndex == path.pathCount then
-                return pointTo
-            end
-
-            -- search point on other path segments
-            for i = path.pathIndex, path.pathCount - 1 do
-                pointFrom, pointTo = unit:GetPath(i), unit:GetPath(i+1)
-                currentDistance = pointFrom:DistanceTo(pointTo)
-                if currentDistance >= predDistance then
-                    return pointFrom:Extended(pointTo, predDistance)
-                end
-                predDistance = predDistance - currentDistance
-            end
-
-            -- point is end pos
+        -- point is end pos
+        if path.pathIndex == path.pathCount then
             return pointTo
         end
 
-        -- invisible
-        local pointFrom, pointTo = nil, nil
-        for i = 1, #invisiblePath - 1 do
-            pointFrom, pointTo = invisiblePath[i], invisiblePath[i+1]
+        -- search point on other path segments
+        for i = path.pathIndex, path.pathCount - 1 do
+            pointFrom, pointTo = unit:GetPath(i), unit:GetPath(i+1)
             currentDistance = pointFrom:DistanceTo(pointTo)
             if currentDistance >= predDistance then
                 return pointFrom:Extended(pointTo, predDistance)
@@ -1378,63 +1361,60 @@ local DebugMode = false
         if args.UseBoundingRadius or result.Type == _G.SPELLTYPE_LINE then result.RealRadius = result.Radius + result.Unit.boundingRadius else result.RealRadius = result.Radius end
         return result
     end
-    local function GetStandardPrediction(input, slowDuration, moveSpeed, invisiblePath)
+    local function GetHitChance(unit, path, moveSpeed, slowDuration, delay, spellType)
         local hitChance = _G.HITCHANCE_NORMAL
-        if invisiblePath == nil then
-            local path = input.Unit.pathing
-            local toUnit, fromUnit, toEnd = GetPathDistance(input.Unit, path)
-            local lastMoveTime = toUnit / moveSpeed
-            if fromUnit > 700 and lastMoveTime < 0.125 then
-                hitChance = _G.HITCHANCE_HIGH
-            elseif fromUnit > 1000 and lastMoveTime < 0.25 then
-                hitChance = _G.HITCHANCE_HIGH
-            elseif fromUnit > 2000 and lastMoveTime < 0.5 then
-                hitChance = _G.HITCHANCE_HIGH
-            elseif fromUnit > 3000 and lastMoveTime < 0.75 then
-                hitChance = _G.HITCHANCE_HIGH
-            elseif fromUnit > 4000 and lastMoveTime < 1 then
-                hitChance = _G.HITCHANCE_HIGH
-            elseif lastMoveTime < HighAccuracy then
-                hitChance = _G.HITCHANCE_HIGH
-            elseif slowDuration > 0 and moveSpeed < 300 then
-                local interceptTime = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed) - (input.RealRadius / moveSpeed)
-                if slowDuration + 0.1 >= interceptTime then
-                    hitChance = _G.HITCHANCE_HIGH
-                end
+        local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
+        local lastMoveTime = toUnit / moveSpeed
+        if fromUnit > 700 and lastMoveTime < 0.125 then
+            hitChance = _G.HITCHANCE_HIGH
+        elseif fromUnit > 1000 and lastMoveTime < 0.25 then
+            hitChance = _G.HITCHANCE_HIGH
+        elseif fromUnit > 2000 and lastMoveTime < 0.5 then
+            hitChance = _G.HITCHANCE_HIGH
+        elseif fromUnit > 3000 and lastMoveTime < 0.75 then
+            hitChance = _G.HITCHANCE_HIGH
+        elseif fromUnit > 4000 and lastMoveTime < 1 then
+            hitChance = _G.HITCHANCE_HIGH
+        elseif lastMoveTime < HighAccuracy then
+            hitChance = _G.HITCHANCE_HIGH
+        elseif slowDuration > 0 and moveSpeed < 300 and slowDuration + 0.1 >= delay then
+            hitChance = _G.HITCHANCE_HIGH
+        end
+        if spellType == _G.SPELLTYPE_LINE then
+            if fromUnit < 150 then
+                hitChance = _G.HITCHANCE_NORMAL
             end
-            if input.Type == _G.SPELLTYPE_LINE then
-                if fromUnit < 150 then
-                    hitChance = _G.HITCHANCE_NORMAL
-                end
-                if fromUnit < 75 then
-                    hitChance = _G.HITCHANCE_IMPOSSIBLE
-                end
+            if fromUnit < 75 then
+                hitChance = _G.HITCHANCE_IMPOSSIBLE
             end
-            local Radius = input.RealRadius * 0.75
-            if input.Speed == _G.math.huge then
-                local interceptTime = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed)
-                local interceptTime2 = interceptTime - (Radius / moveSpeed)
-                return PredictionOutput({
-                    Input = input,
-                    Hitchance = hitChance,
-                    CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime2),
-                    UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime)
-                })
-            end
-            local delay = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed)
-            local endPos = GetPredictedPos(input.Unit, path, moveSpeed * delay)
-            local interceptTime = input.Delay + GetInterceptionTime(input.From, input.Unit.pos, endPos, moveSpeed, input.Speed)
-            local interceptTime2 = interceptTime - (Radius / moveSpeed)
+        end
+        return hitChance
+    end
+    local function GetStandardPrediction(input, slowDuration, moveSpeed)
+        local path = input.Unit.pathing
+        local Radius = input.RealRadius * 0.75
+        local delay = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed)
+        local delay2 = delay - (Radius / moveSpeed)
+        local hitChance = GetHitChance(input.Unit, path, moveSpeed, slowDuration, delay2, input.Type)
+        if input.Speed == _G.math.huge then
             return PredictionOutput({
                 Input = input,
                 Hitchance = hitChance,
-                CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime2),
-                UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime)
+                CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * delay2),
+                UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * delay)
             })
         end
-        return PredictionOutput({Input = input})
+        local endPos = GetPredictedPos(input.Unit, path, moveSpeed * delay)
+        local interceptTime = input.Delay + GetInterceptionTime(input.From, input.Unit.pos, endPos, moveSpeed, input.Speed)
+        local interceptTime2 = interceptTime - (Radius / moveSpeed)
+        return PredictionOutput({
+            Input = input,
+            Hitchance = hitChance,
+            CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime2),
+            UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime)
+        })
     end
-    local function GetDashingPrediction(input, dashDuration, moveSpeed, invisiblePath)
+    local function GetDashingPrediction(input, dashDuration, moveSpeed)
         --[[local unit = input.Unit
         local path = GetWaypoints(unit, input.UnitID)
         if #path ~= 2 then
@@ -1555,7 +1535,7 @@ local DebugMode = false
         end
         if data.IsDashing or DashDuration > 0 then
             if DashDuration > 0 and #invisiblePath == 2 then
-                return GetDashingPrediction(input, DashDuration, data.MoveSpeed, invisiblePath)
+                return GetDashingPrediction(input, DashDuration, data.MoveSpeed)
             end
             return PredictionOutput({ Input = input })
         end
@@ -1565,7 +1545,7 @@ local DebugMode = false
         end
         if os.clock() - data.InVisibleTimer < dist / data.MoveSpeed then
             input.Range = input.Range * MaxRangeMulipier
-            return GetStandardPrediction(input, SlowDuration, data.MoveSpeed, invisiblePath)
+            return GetStandardPrediction(input, SlowDuration, data.MoveSpeed)
         end
         return PredictionOutput({ Input = input })
     end
@@ -1595,7 +1575,11 @@ local DebugMode = false
         if output.CastPosition ~= nil then
             output.CastPosition = Vector({x = output.CastPosition.x, y = unit.boundingRadius, z = output.CastPosition.z})
             if not output.CastPosition:ToScreen().onScreen then
-                output.CastPosition = input.From:Extended(output.CastPosition, 600)
+                if input.Type == _G.SPELLTYPE_LINE then
+                    output.CastPosition = input.From:Extended(output.CastPosition, 600)
+                else
+                    output.Hitchance = _G.HITCHANCE_IMPOSSIBLE
+                end
             end
         else
             output.Hitchance = _G.HITCHANCE_IMPOSSIBLE
