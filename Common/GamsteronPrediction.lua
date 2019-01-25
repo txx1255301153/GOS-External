@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.04
+local GamsteronPredictionVer = 0.05
 local DebugMode = false
 
 -- LOAD START
@@ -42,13 +42,16 @@ local DebugMode = false
     end
     local HighAccuracy = 0.1
     local MaxRangeMulipier = 1
+    local HighAccuracy2 = 5000
     Menu = MenuElement({name = "Gamsteron Prediction", id = "GamsteronPrediction", type = _G.MENU })
     Menu:MenuElement({id = "castposMode", name = "CastPos Mode", value = 1, drop = { "GOS - recommended", "Custom - not recommended" } })
-    Menu:MenuElement({id = "PredHighAccuracy", name = "Pred High Accuracy [ last move ms ]", value = 75, min = 25, max = 100, step = 5, callback = function(value) HighAccuracy = value * 0.001 end })
+    Menu:MenuElement({id = "PredNumAccuracy", name = "HitChance High - higher = better accuracy", value = 3000, min = 2000, max = 5000, step = 1000, callback = function(value) HighAccuracy2 = value end })
+    Menu:MenuElement({id = "PredHighAccuracy", name = "HitChance High - lower = better accuracy", value = 80, min = 20, max = 100, step = 10, callback = function(value) HighAccuracy = value * 0.001 end })
     Menu:MenuElement({id = "PredMaxRange", name = "Pred Max Range %", value = 100, min = 70, max = 100, step = 1, callback = function(value) MaxRangeMulipier = value * 0.01 end })
     Menu:MenuElement({name = "Version " .. tostring(GamsteronPredictionVer), type = _G.SPACE, id = "vermorgspace"})
     HighAccuracy = Menu.PredHighAccuracy:Value() * 0.001
     MaxRangeMulipier = Menu.PredMaxRange:Value() * 0.01
+    HighAccuracy2 = Menu.PredNumAccuracy:Value()
 -- LOAD END
 
 -- BUFF SPELL NAMES START
@@ -1070,7 +1073,7 @@ local DebugMode = false
         local id = unit.networkID
 
         -- create id table
-        if not VisibleData[id] then VisibleData[id] = { IsVisible = true, IsDashing = false, InVisibleTimer = 0, VisibleTimer = 0, LastPath = {}, MoveSpeed = 0 } end
+        if VisibleData[id] == nil then VisibleData[id] = { IsVisible = true, IsDashing = false, InVisibleTimer = 0, VisibleTimer = 0, LastPath = {}, MoveSpeed = 0 } end
 
         -- unit is visible
         if unit.visible then
@@ -1366,19 +1369,11 @@ local DebugMode = false
         local hitChance = _G.HITCHANCE_NORMAL
         local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
         local lastMoveTime = toUnit / moveSpeed
-        if fromUnit > 700 and lastMoveTime < 0.075 then
-            hitChance = _G.HITCHANCE_HIGH
-        elseif fromUnit > 1000 and lastMoveTime < 0.1 then
-            hitChance = _G.HITCHANCE_HIGH
-        elseif fromUnit > 2000 and lastMoveTime < 0.2 then
-            hitChance = _G.HITCHANCE_HIGH
-        elseif fromUnit > 3000 and lastMoveTime < 0.75 then
-            hitChance = _G.HITCHANCE_HIGH
-        elseif fromUnit > 4000 and lastMoveTime < 1 then
-            hitChance = _G.HITCHANCE_HIGH
-        elseif lastMoveTime < HighAccuracy then
-            hitChance = _G.HITCHANCE_HIGH
-        elseif slowDuration > 0 and moveSpeed < 300 and slowDuration + 0.1 >= delay then
+        if lastMoveTime > 0 then
+            if lastMoveTime < HighAccuracy or lastMoveTime < fromUnit / HighAccuracy2 then
+                hitChance = _G.HITCHANCE_HIGH
+            end
+        elseif slowDuration > 0 and moveSpeed < 250 and slowDuration + 0.1 >= delay then
             hitChance = _G.HITCHANCE_HIGH
         end
         if spellType == _G.SPELLTYPE_LINE then
@@ -1466,13 +1461,8 @@ local DebugMode = false
     local function GetImmobilePrediction(input, ImmobileDuration)
         local pos = input.Unit.pos
         local interceptTime = input.Delay + (GetDistance(input.From, pos) / input.Speed) - (input.RealRadius / input.Unit.ms)
-        if ImmobileDuration + 0.1 >= interceptTime then
-            if ImmobileDuration >= interceptTime then
-                if DebugMode then print("IMMOBILE_STUN") end
-                return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
-            end
-            if DebugMode then print("HIGH_STUN") end
-            return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
+        if ImmobileDuration >= interceptTime then
+            return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
         end
         return PredictionOutput({ Input = input })
     end
