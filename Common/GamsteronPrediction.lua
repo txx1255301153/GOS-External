@@ -1,10 +1,10 @@
-local GamsteronPredictionVer = 0.03
+local GamsteronPredictionVer = 0.04
 local DebugMode = false
 
 -- LOAD START
-    local IsLoaded, StartTime = false, _G.Game.Timer() + 5
+    local IsLoaded, StartTime = false, os.clock() + 5
     local function PreLoad()
-        if _G.Game.Timer() < 30 or _G.Game.Timer() < StartTime then
+        if os.clock() < StartTime or _G.Game.Timer() < 30 then
             return
         end
         IsLoaded = true
@@ -42,7 +42,8 @@ local DebugMode = false
     end
     local HighAccuracy = 0.1
     local MaxRangeMulipier = 1
-    Menu = MenuElement({name = "Gamsteron Prediction", id = "GamsteronPrediction", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/morganads83fd.png" })
+    Menu = MenuElement({name = "Gamsteron Prediction", id = "GamsteronPrediction", type = _G.MENU })
+    Menu:MenuElement({id = "castposMode", name = "CastPos Mode", value = 1, drop = { "GOS - recommended", "Custom - not recommended" } })
     Menu:MenuElement({id = "PredHighAccuracy", name = "Pred High Accuracy [ last move ms ]", value = 75, min = 25, max = 100, step = 5, callback = function(value) HighAccuracy = value * 0.001 end })
     Menu:MenuElement({id = "PredMaxRange", name = "Pred Max Range %", value = 100, min = 70, max = 100, step = 1, callback = function(value) MaxRangeMulipier = value * 0.01 end })
     Menu:MenuElement({name = "Version " .. tostring(GamsteronPredictionVer), type = _G.SPACE, id = "vermorgspace"})
@@ -1365,11 +1366,11 @@ local DebugMode = false
         local hitChance = _G.HITCHANCE_NORMAL
         local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
         local lastMoveTime = toUnit / moveSpeed
-        if fromUnit > 700 and lastMoveTime < 0.125 then
+        if fromUnit > 700 and lastMoveTime < 0.075 then
             hitChance = _G.HITCHANCE_HIGH
-        elseif fromUnit > 1000 and lastMoveTime < 0.25 then
+        elseif fromUnit > 1000 and lastMoveTime < 0.1 then
             hitChance = _G.HITCHANCE_HIGH
-        elseif fromUnit > 2000 and lastMoveTime < 0.5 then
+        elseif fromUnit > 2000 and lastMoveTime < 0.2 then
             hitChance = _G.HITCHANCE_HIGH
         elseif fromUnit > 3000 and lastMoveTime < 0.75 then
             hitChance = _G.HITCHANCE_HIGH
@@ -1395,24 +1396,43 @@ local DebugMode = false
         local Radius = input.RealRadius * 0.75
         local delay = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed)
         local delay2 = delay - (Radius / moveSpeed)
+        local delayNoSpeed = input.Delay + (Radius / moveSpeed)
         local hitChance = GetHitChance(input.Unit, path, moveSpeed, slowDuration, delay2, input.Type)
         if input.Speed == _G.math.huge then
-            return PredictionOutput({
-                Input = input,
-                Hitchance = hitChance,
-                CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * delay2),
-                UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * delay)
-            })
+            if Menu.castposMode:Value() == 1 then
+                return PredictionOutput({
+                    Input = input,
+                    Hitchance = hitChance,
+                    CastPosition = input.Unit:GetPrediction(_G.math.huge,input.Delay):Extended(input.Unit.pos, Radius),
+                    UnitPosition = input.Unit:GetPrediction(_G.math.huge,input.Delay)
+                })
+            else
+                return PredictionOutput({
+                    Input = input,
+                    Hitchance = hitChance,
+                    CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * delayNoSpeed),
+                    UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * input.Delay)
+                })
+            end
         end
         local endPos = GetPredictedPos(input.Unit, path, moveSpeed * delay)
         local interceptTime = input.Delay + GetInterceptionTime(input.From, input.Unit.pos, endPos, moveSpeed, input.Speed)
         local interceptTime2 = interceptTime - (Radius / moveSpeed)
-        return PredictionOutput({
-            Input = input,
-            Hitchance = hitChance,
-            CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime2),
-            UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime)
-        })
+        if Menu.castposMode:Value() == 1 then
+            return PredictionOutput({
+                Input = input,
+                Hitchance = hitChance,
+                CastPosition = input.Unit:GetPrediction(input.Speed,input.Delay):Extended(input.Unit.pos, Radius),
+                UnitPosition = input.Unit:GetPrediction(input.Speed,input.Delay)
+            })
+        else
+            return PredictionOutput({
+                Input = input,
+                Hitchance = hitChance,
+                CastPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime2),
+                UnitPosition = GetPredictedPos(input.Unit, path, moveSpeed * interceptTime)
+            })
+        end
     end
     local function GetDashingPrediction(input, dashDuration, moveSpeed)
         --[[local unit = input.Unit
@@ -1518,7 +1538,7 @@ local DebugMode = false
             end
             if path.isDashing or DashDuration > 0 then
                 if DashDuration > 0 then
-                    return GetDashingPrediction(input, DashDuration, path.dashSpeed)
+                    --return GetDashingPrediction(input, DashDuration, path.dashSpeed)
                 end
                 return PredictionOutput({ Input = input })
             end
@@ -1535,7 +1555,7 @@ local DebugMode = false
         end
         if data.IsDashing or DashDuration > 0 then
             if DashDuration > 0 and #invisiblePath == 2 then
-                return GetDashingPrediction(input, DashDuration, data.MoveSpeed)
+                --return GetDashingPrediction(input, DashDuration, data.MoveSpeed)
             end
             return PredictionOutput({ Input = input })
         end
@@ -1569,11 +1589,18 @@ local DebugMode = false
             local isWall, objects = GetCollision(input.From, output.CastPosition, input.Speed, input.Delay, input.Radius, input.CollisionObjects, input.UnitID)
             if isWall or #objects > input.MaxCollision then
                 output.Hitchance = _G.HITCHANCE_COLLISION
+            else
+                isWall, objects = GetCollision(input.From, output.UnitPosition, input.Speed, input.Delay, input.Radius, input.CollisionObjects, input.UnitID)
+                if isWall or #objects > input.MaxCollision then
+                    output.Hitchance = _G.HITCHANCE_COLLISION
+                end
             end
             output.CollisionObjects = objects
         end
         if output.CastPosition ~= nil then
-            output.CastPosition = Vector({x = output.CastPosition.x, y = unit.boundingRadius, z = output.CastPosition.z})
+            if Menu.castposMode:Value() == 2 then
+                output.CastPosition = Vector({x = output.CastPosition.x, y = unit:GetPrediction(input.Speed,input.Delay).y, z = output.CastPosition.z})
+            end
             if not output.CastPosition:ToScreen().onScreen then
                 if input.Type == _G.SPELLTYPE_LINE then
                     output.CastPosition = input.From:Extended(output.CastPosition, 600)
