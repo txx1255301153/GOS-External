@@ -1,4 +1,5 @@
-local GamsteronCoreVer = 0.095
+local GamsteronCoreVer = 0.096
+local DebugMode = false
 
 -- locals update START
     local function DownloadFile(url, path)
@@ -111,8 +112,6 @@ local GamsteronCoreVer = 0.095
     }
 
     local OnLoadC                       = {}
-
-    local DebugMode                     = false
 
     local Menu                          = MenuElement({name = "Gamsteron Core", id = "GamCore", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/GamsteronCore.png" })
         Menu:MenuElement({id = "ping", name = "Your Ping", value = 50, min = 0, max = 150, step = 5, callback = function(value) _G.LATENCY = value * 0.001 end })
@@ -1157,19 +1156,19 @@ end
 
 function __GamsteronCore:GetDistance(vec1, vec2)
     local dx = vec1.x - vec2.x
-    local dy = vec1.y - vec2.y
+    local dy = (vec1.z or vec1.y) - (vec2.z or vec2.y)
     return MathSqrt(dx * dx + dy * dy)
 end
 
 function __GamsteronCore:GetDistanceSquared(vec1, vec2)
     local dx = vec1.x - vec2.x
-    local dy = vec1.y - vec2.y
+    local dy = (vec1.z or vec1.y) - (vec2.z or vec2.y)
     return dx * dx + dy * dy
 end
 
 function __GamsteronCore:IsInRange(vec1, vec2, range)
     local dx = vec1.x - vec2.x
-    local dy = vec1.y - vec2.y
+    local dy = (vec1.z or vec1.y) - (vec2.z or vec2.y)
     return dx * dx + dy * dy <= range * range
 end
 
@@ -1244,7 +1243,7 @@ function __GamsteronCore:GetAutoAttackRange(from, target)
 end
 
 function __GamsteronCore:IsInAutoAttackRange(from, target)
-	return self:IsInRange(self:To2D(from.pos), self:To2D(target.pos), self:GetAutoAttackRange(from, target))
+	return self:IsInRange(from.pos, target.pos, self:GetAutoAttackRange(from, target))
 end
 
 function __GamsteronCore:RadianToDegree(angle)
@@ -1252,14 +1251,16 @@ function __GamsteronCore:RadianToDegree(angle)
 end
 
 function __GamsteronCore:Polar(v1)
-    if v1.x == 0 then
-        if v1.y > 0 then
+    local x = v1.x
+    local y = v1.z or v1.y
+    if x == 0 then
+        if y > 0 then
             return 90
         end
-        return v1.y < 0 and 270 or 0
+        return y < 0 and 270 or 0
     end
-    local theta = self:RadianToDegree(MathAtan(v1.y / v1.x))
-    if v1.x < 0 then
+    local theta = self:RadianToDegree(MathAtan(y / x))
+    if x < 0 then
         theta = theta + 180
     end
     if theta < 0 then
@@ -1290,7 +1291,7 @@ function __GamsteronCore:EqualDirection(vec1, vec2)
 end
 
 function __GamsteronCore:Normalized(vec1, vec2)
-    local vec = { x = vec1.x - vec2.x, y = vec1.y - vec2.y }
+    local vec = { x = vec1.x - vec2.x, y = (vec1.z or vec1.y) - (vec2.z or vec2.y) }
     local length = MathSqrt(vec.x * vec.x + vec.y * vec.y)
     if length > 0 then
         local inv = 1.0 / length
@@ -1301,32 +1302,9 @@ end
 
 function __GamsteronCore:Extended(vec, dir, range)
     if dir == nil then return vec end
-    return { x = vec.x + dir.x * range, y = vec.y + dir.y * range }
-end
-
-function __GamsteronCore:Perpendicular(dir)
-    if dir == nil then return nil end
-    return { x = -dir.y, y = dir.x }
-end
-
-function __GamsteronCore:AddVectors(vec1, vec2, mulitplier)
-    mulitplier = mulitplier or 1
-    local x = vec1.x + vec2.x
-    local y = vec1.y + vec2.y
-    return {
-        x = x * mulitplier,
-        y = y * mulitplier
-    }
-end
-
-function __GamsteronCore:SubVectors(vec1, vec2, mulitplier)
-    mulitplier = mulitplier or 1
-    local x = vec1.x - vec2.x
-    local y = vec1.y - vec2.y
-    return {
-        x = x * mulitplier,
-        y = y * mulitplier
-    }
+    local vecy = vec.z or vec.y
+    local diry = dir.z or dir.y
+    return { x = vec.x + dir.x * range, y = vecy + diry * range }
 end
 
 function __GamsteronCore:OnEnemyHeroLoad(cb)
@@ -1362,17 +1340,17 @@ function __GamsteronCore:GetEnemyTurrets()
 end
 
 function __GamsteronCore:IsFacing(source, target)
-    local sourceDir = self:To2D(source.dir)
-    local targetPos = self:To2D(target.pos)
-    local sourcePos = self:To2D(source.pos)
+    local sourceDir = source.dir
+    local targetPos = target.pos
+    local sourcePos = source.pos
     local targetDir = self:Normalized(targetPos, sourcePos)
     if self:AngleBetween(sourceDir, targetDir) < 90 then
-        local sourceEndPos = self:To2D(source.pathing.endPos)
+        local sourceEndPos = source.pathing.endPos
         local sourceExtended = self:Extended(sourcePos, self:Normalized(sourceEndPos - sourcePos), 0.5 * source.ms)
         if not self:EqualVector(sourceExtended, sourcePos) then
             sourceDir = self:Normalized(sourceExtended, sourcePos)
         end
-        local targetEndPos = self:To2D(target.pathing.endPos)
+        local targetEndPos = target.pathing.endPos
         local targetExtended = self:Extended(targetPos, self:Normalized(targetEndPos - targetPos), 0.5 * target.ms)
         if self:AngleBetween(sourceDir, self:Normalized(targetExtended, sourceExtended)) < 90 then
             return true
@@ -1411,14 +1389,14 @@ function __GamsteronCore:__Interrupter()
         ["XerathLocusOfPower2"] = true
     }
     Callback.Add("Draw", function()
-        local mePos = self:To2D(myHero.pos)
+        local mePos = myHero.pos
         for i = 1, GameHeroCount() do
-            local o = GameHero(i)
-            if o and o.valid and not o.dead and o.alive and o.isTargetable and o.visible and self:IsInRange(mePos, self:To2D(o.pos), 1500) then
-                local a = o.activeSpell
+            local unit = GameHero(i)
+            if unit and unit.valid and not unit.dead and unit.alive and unit.isTargetable and unit.visible and self:IsInRange(mePos, unit.pos, 1500) then
+                local a = unit.activeSpell
                 if a and a.valid and a.isChanneling and spells[a.name] and a.castEndTime - GameTimer() > 0.33 then
                     for j = 1, #cb do
-                        cb[j](o, a)
+                        cb[j](unit, a)
                     end
                 end
             end
