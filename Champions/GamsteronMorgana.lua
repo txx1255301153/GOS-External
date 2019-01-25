@@ -1,4 +1,4 @@
-local GamsteronMorganaVer = 0.06
+local GamsteronMorganaVer = 0.07
 local debugMode = false
 local LocalCore, Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
 
@@ -305,7 +305,7 @@ local function ELogic()
             local currSpell = hero.activeSpell
             if currSpell and currSpell.valid and hero.isChanneling then
                 for j = 1, #AllyHeroes do
-                    local ally = AllyHeroes[i]
+                    local ally = AllyHeroes[j]
                     if (E_SELF_ON and ally.isMe) or (E_ALLY_ON and not ally.isMe) then
                         local canUse = false
                         local allyPos = ally.pos
