@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0747
+local GamsteronOrbVer = 0.0748
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -2273,6 +2273,9 @@ _G.Control.Move = function(a, b, c)
 			end
 			return false
 		end
+		if CONTROLL() == true then
+			CONTROLL = nil
+		end
 		return true
 	end
 	return false
@@ -2342,23 +2345,27 @@ _G.Control.CastSpell = function(key, a, b, c)
 			end
 		end
 		NEXT_CONTROLL = GameTimer()
-		CONTROLL = function()
-			if position then
-				if spell ~= nil and MenuChamp.spell.baa:Value() then
-					Spells.CanNext = false
-				end
-				Cursor:SetCursor(function()
-					ControlKeyDown(key)
-					ControlKeyUp(key)
-					Orbwalker.LastMoveLocal = 0
-				end, position, extradelay)
-				return true
-			else
+		if position then
+			if spell ~= nil and MenuChamp.spell.baa:Value() then
+				Spells.CanNext = false
+			end
+			Cursor:SetCursor(function()
 				ControlKeyDown(key)
 				ControlKeyUp(key)
-				return true
-			end
+				ControlKeyDown(key)
+				ControlKeyUp(key)
+				ControlKeyDown(key)
+				ControlKeyUp(key)
+				Orbwalker.LastMoveLocal = 0
+			end, position, extradelay)
+		else
+			ControlKeyDown(key)
+			ControlKeyUp(key)
 		end
+		CONTROLL = function()
+			return true
+		end
+		return true
 	end
 	return false
 end
