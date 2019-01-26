@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0744
+local GamsteronOrbVer = 0.0745
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -1067,10 +1067,8 @@ do
 		local mePos = myHero.pos
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ALLY then
-				if LocalCore:IsInRange(mePos, hero.pos, range) then
-					TableInsert(result, hero)
-				end
+			if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ALLY and LocalCore:IsInRange(mePos, hero.pos, range) then
+				TableInsert(result, hero)
 			end
 		end
 		return result
@@ -1593,8 +1591,7 @@ do
 	end
 
 	function __Orbwalker:Tick()
-		--[[
-			if myHero.attackData.endTime > GOSAPIBROKEN then
+		if myHero.attackData.endTime > GOSAPIBROKEN then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
@@ -1613,8 +1610,7 @@ do
 				end
 			end
 		end
-		--]]
-		local spell = myHero.activeSpell
+		--[[local spell = myHero.activeSpell
 		if spell and spell.valid and spell.castEndTime > self.AttackCastEndTime and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
@@ -1632,7 +1628,7 @@ do
 					self.TestStartTime = 0
 				end
 			end
-		end
+		end--]]
 
 		self:Orbwalk()
 	end
