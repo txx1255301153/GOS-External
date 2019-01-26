@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0745
+local GamsteronOrbVer = 0.0746
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -1233,7 +1233,7 @@ do
 
 	function __Orbwalker:CreateMenu()
 		Menu:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/orb.png" })
-			Menu.orb:MenuElement({ name = "Extra Windup", id = "extrawindup", value = 0, min = 0, max = 100, step = 1 })
+			Menu.orb:MenuElement({ name = "Extra Windup", id = "extrawindup", value = 0, min = 0, max = 30, step = 1 })
 			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
 			Menu.orb:MenuElement({name = "Player Attack Only Click", id = "aamoveclick", key = string.byte("U")})
 			MenuChamp = Menu.orb:MenuElement({name = myHero.charName, id = myHero.charName, type = _G.MENU})
@@ -1398,7 +1398,8 @@ do
 
 	function __Orbwalker:CanMoveSpell()
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) + 0.01 + (Menu.orb.extrawindup:Value() * 0.001) then
+			local extraWindUp = Menu.orb.extrawindup:Value() * 0.001; extraWindUp = extraWindUp - LATENCY
+			if GameTimer() >= self.AttackServerStart + GetWindup() + extraWindUp + 0.025 then
 				return true
 			end
 			return false
@@ -1436,7 +1437,8 @@ do
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if GameTimer() >= self.AttackServerStart + myHero.attackData.windUpTime - (LATENCY * 0.5) + (Menu.orb.extrawindup:Value() * 0.001) then
+			local extraWindUp = Menu.orb.extrawindup:Value() * 0.001; extraWindUp = extraWindUp - LATENCY
+			if GameTimer() >= self.AttackServerStart + GetWindup() + extraWindUp + 0.015 then
 				return true
 			end
 			return false
@@ -1591,7 +1593,7 @@ do
 	end
 
 	function __Orbwalker:Tick()
-		if myHero.attackData.endTime > GOSAPIBROKEN then
+		--[[if myHero.attackData.endTime > GOSAPIBROKEN then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
@@ -1609,14 +1611,15 @@ do
 					self.TestStartTime = 0
 				end
 			end
-		end
-		--[[local spell = myHero.activeSpell
-		if spell and spell.valid and spell.castEndTime > self.AttackCastEndTime and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
+		end--]]
+		local spell = myHero.activeSpell
+		if spell and spell.valid and spell.castEndTime - (spell.animation - spell.windup) > self.AttackCastEndTime and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
-			self.AttackCastEndTime = spell.castEndTime
-			self.AttackServerStart = spell.startTime
+			local windDown = spell.animation - spell.windup
+			self.AttackCastEndTime = spell.castEndTime - windDown
+			self.AttackServerStart = spell.startTime - spell.windup
 			if GAMSTERON_MODE_DMG then
 				if self.TestCount == 0 then
 					self.TestStartTime = GameTimer()
@@ -1628,7 +1631,7 @@ do
 					self.TestStartTime = 0
 				end
 			end
-		end--]]
+		end
 
 		self:Orbwalk()
 	end
