@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.06
+local GamsteronPredictionVer = 0.07
 local DebugMode = false
 
 -- LOAD START
@@ -41,15 +41,18 @@ local DebugMode = false
         end
     end
     local HighAccuracy = 0.1
+    local ExtraImmobile = 0
     local MaxRangeMulipier = 1
     local HighAccuracy2 = 5000
     Menu = MenuElement({name = "Gamsteron Prediction", id = "GamsteronPrediction", type = _G.MENU })
     Menu:MenuElement({id = "castposMode", name = "CastPos Mode", value = 1, drop = { "GOS - recommended", "Custom - not recommended" } })
+    Menu:MenuElement({id = "ExtraImmobile", name = "ExtraImmobileTime - lower = better accuracy", value = 100, min = 0, max = 200, step = 10, callback = function(value) ExtraImmobile = value * 0.001 end })
     Menu:MenuElement({id = "PredNumAccuracy", name = "HitChance High - higher = better accuracy", value = 3000, min = 2000, max = 5000, step = 1000, callback = function(value) HighAccuracy2 = value end })
     Menu:MenuElement({id = "PredHighAccuracy", name = "HitChance High - lower = better accuracy", value = 80, min = 20, max = 100, step = 10, callback = function(value) HighAccuracy = value * 0.001 end })
     Menu:MenuElement({id = "PredMaxRange", name = "Pred Max Range %", value = 100, min = 70, max = 100, step = 1, callback = function(value) MaxRangeMulipier = value * 0.01 end })
     Menu:MenuElement({name = "Version " .. tostring(GamsteronPredictionVer), type = _G.SPACE, id = "vermorgspace"})
     HighAccuracy = Menu.PredHighAccuracy:Value() * 0.001
+    ExtraImmobile = Menu.ExtraImmobile:Value() * 0.001
     MaxRangeMulipier = Menu.PredMaxRange:Value() * 0.01
     HighAccuracy2 = Menu.PredNumAccuracy:Value()
 -- LOAD END
@@ -1462,7 +1465,7 @@ local DebugMode = false
     local function GetImmobilePrediction(input, ImmobileDuration)
         local pos = input.Unit.pos
         local interceptTime = input.Delay + (GetDistance(input.From, pos) / input.Speed) - (input.RealRadius / input.Unit.ms)
-        if ImmobileDuration >= interceptTime then
+        if ImmobileDuration + ExtraImmobile >= interceptTime then
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
         end
         return PredictionOutput({ Input = input })
