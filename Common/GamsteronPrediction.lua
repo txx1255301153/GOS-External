@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.08
+local GamsteronPredictionVer = 0.09
 local DebugMode = false
 
 -- LOAD START
@@ -1371,6 +1371,9 @@ local DebugMode = false
     local function GetHitChance(unit, path, moveSpeed, slowDuration, delay, spellType, radius, spellDelay)
         local hitChance = _G.HITCHANCE_NORMAL
         local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
+        if toUnit <= 1 or fromUnit <= 1 or toEnd <= 1 then
+            return _G.HITCHANCE_IMPOSSIBLE
+        end
         local lastMoveTime = toUnit / moveSpeed
         if lastMoveTime > 0 then
             if lastMoveTime < HighAccuracy or lastMoveTime < fromUnit / HighAccuracy2 then
