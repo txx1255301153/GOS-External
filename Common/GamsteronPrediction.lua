@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.07
+local GamsteronPredictionVer = 0.08
 local DebugMode = false
 
 -- LOAD START
@@ -1372,8 +1372,10 @@ local DebugMode = false
         local hitChance = _G.HITCHANCE_NORMAL
         local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
         local lastMoveTime = toUnit / moveSpeed
-        if lastMoveTime < HighAccuracy or lastMoveTime < fromUnit / HighAccuracy2 then
-            hitChance = _G.HITCHANCE_HIGH
+        if lastMoveTime > 0 then
+            if lastMoveTime < HighAccuracy or lastMoveTime < fromUnit / HighAccuracy2 then
+                hitChance = _G.HITCHANCE_HIGH
+            end
         elseif slowDuration > 0 and moveSpeed < 250 and slowDuration + 0.1 >= delay then
             hitChance = _G.HITCHANCE_HIGH
         end
@@ -1627,4 +1629,4 @@ local DebugMode = false
     end)
 -- GOS CALLBACKS END
 
-_G.GamsteronMorganaLoaded = true
+_G.GamsteronPredictionLoaded = true
