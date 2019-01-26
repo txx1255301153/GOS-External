@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.05
+local GamsteronPredictionVer = 0.06
 local DebugMode = false
 
 -- LOAD START
@@ -1249,14 +1249,14 @@ local DebugMode = false
                     local HasMovePath, CastPos = GetCollisionPrediction(object, from, speed, delay)
                     local isOnSegment, pointSegment, pointLine = ProjectOn(CastPos, from, to)
                     local IsCollisionable = false
-                    if isOnSegment and IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
+                    if isOnSegment and IsInRange(CastPos, pointSegment, radius + 35 + object.boundingRadius) then
                         _G.table.insert(result, object)
                         IsCollisionable = true
                     end
                     if HasMovePath and not IsCollisionable then
                         local objectPos = object.pos
                         isOnSegment, pointSegment, pointLine = ProjectOn(objectPos, from, to)
-                        if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
+                        if isOnSegment and IsInRange(objectPos, pointSegment, radius + 35 + object.boundingRadius) then
                             _G.table.insert(result, object)
                         end
                     end
@@ -1268,14 +1268,14 @@ local DebugMode = false
                     local HasMovePath, CastPos = GetCollisionPrediction(object, from, speed, delay)
                     local isOnSegment, pointSegment, pointLine = ProjectOn(CastPos, from, to)
                     local IsCollisionable = false
-                    if isOnSegment and IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
+                    if isOnSegment and IsInRange(CastPos, pointSegment, radius + 35 + object.boundingRadius) then
                         _G.table.insert(result, object)
                         IsCollisionable = true
                     end
                     if HasMovePath and not IsCollisionable then
                         local objectPos = object.pos
                         isOnSegment, pointSegment, pointLine = ProjectOn(objectPos, from, to)
-                        if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
+                        if isOnSegment and IsInRange(objectPos, pointSegment, radius + 35 + object.boundingRadius) then
                             _G.table.insert(result, object)
                         end
                     end
@@ -1287,14 +1287,14 @@ local DebugMode = false
                     local HasMovePath, CastPos = GetCollisionPrediction(object, from, speed, delay)
                     local isOnSegment, pointSegment, pointLine = ProjectOn(CastPos, from, to)
                     local IsCollisionable = false
-                    if isOnSegment and IsInRange(CastPos, pointSegment, radius + 30 + object.boundingRadius) then
+                    if isOnSegment and IsInRange(CastPos, pointSegment, radius + 35 + object.boundingRadius) then
                         _G.table.insert(result, object)
                         IsCollisionable = true
                     end
                     if HasMovePath and not IsCollisionable then
                         local objectPos = object.pos
                         isOnSegment, pointSegment, pointLine = ProjectOn(objectPos, from, to)
-                        if isOnSegment and IsInRange(objectPos, pointSegment, radius + 30 + object.boundingRadius) then
+                        if isOnSegment and IsInRange(objectPos, pointSegment, radius + 35 + object.boundingRadius) then
                             _G.table.insert(result, object)
                         end
                     end
@@ -1365,14 +1365,12 @@ local DebugMode = false
         if args.UseBoundingRadius or result.Type == _G.SPELLTYPE_LINE then result.RealRadius = result.Radius + result.Unit.boundingRadius else result.RealRadius = result.Radius end
         return result
     end
-    local function GetHitChance(unit, path, moveSpeed, slowDuration, delay, spellType)
+    local function GetHitChance(unit, path, moveSpeed, slowDuration, delay, spellType, radius, spellDelay)
         local hitChance = _G.HITCHANCE_NORMAL
         local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
         local lastMoveTime = toUnit / moveSpeed
-        if lastMoveTime > 0 then
-            if lastMoveTime < HighAccuracy or lastMoveTime < fromUnit / HighAccuracy2 then
-                hitChance = _G.HITCHANCE_HIGH
-            end
+        if lastMoveTime < HighAccuracy or lastMoveTime < fromUnit / HighAccuracy2 then
+            hitChance = _G.HITCHANCE_HIGH
         elseif slowDuration > 0 and moveSpeed < 250 and slowDuration + 0.1 >= delay then
             hitChance = _G.HITCHANCE_HIGH
         end
@@ -1384,15 +1382,18 @@ local DebugMode = false
                 hitChance = _G.HITCHANCE_IMPOSSIBLE
             end
         end
+        if fromUnit < spellDelay * moveSpeed - radius then
+            hitChance = _G.HITCHANCE_NORMAL
+        end
         return hitChance
     end
     local function GetStandardPrediction(input, slowDuration, moveSpeed)
         local path = input.Unit.pathing
-        local Radius = input.RealRadius * 0.75
+        local Radius = input.RealRadius * 0.9
         local delay = input.Delay + (GetDistance(input.From, input.Unit.pos) / input.Speed)
         local delay2 = delay - (Radius / moveSpeed)
         local delayNoSpeed = input.Delay + (Radius / moveSpeed)
-        local hitChance = GetHitChance(input.Unit, path, moveSpeed, slowDuration, delay2, input.Type)
+        local hitChance = GetHitChance(input.Unit, path, moveSpeed, slowDuration, delay2, input.Type, Radius, input.Delay)
         if input.Speed == _G.math.huge then
             if Menu.castposMode:Value() == 1 then
                 return PredictionOutput({
@@ -1579,11 +1580,6 @@ local DebugMode = false
             local isWall, objects = GetCollision(input.From, output.CastPosition, input.Speed, input.Delay, input.Radius, input.CollisionObjects, input.UnitID)
             if isWall or #objects > input.MaxCollision then
                 output.Hitchance = _G.HITCHANCE_COLLISION
-            else
-                isWall, objects = GetCollision(input.From, output.UnitPosition, input.Speed, input.Delay, input.Radius, input.CollisionObjects, input.UnitID)
-                if isWall or #objects > input.MaxCollision then
-                    output.Hitchance = _G.HITCHANCE_COLLISION
-                end
             end
             output.CollisionObjects = objects
         end
