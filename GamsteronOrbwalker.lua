@@ -33,7 +33,7 @@ do
 end
 
 local MAXIMUM_MOUSE_DISTANCE		= 120 * 120
-local GAMSTERON_MODE_DMG			= true
+local GAMSTERON_MODE_DMG			= false
 local CONTROLL						= nil
 local NEXT_CONTROLL					= 0
 
