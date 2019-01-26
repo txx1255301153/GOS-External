@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0746
+local GamsteronOrbVer = 0.0747
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -33,7 +33,7 @@ do
 end
 
 local MAXIMUM_MOUSE_DISTANCE		= 120 * 120
-local GAMSTERON_MODE_DMG			= false
+local GAMSTERON_MODE_DMG			= true
 local CONTROLL						= nil
 local NEXT_CONTROLL					= 0
 
@@ -1613,13 +1613,12 @@ do
 			end
 		end--]]
 		local spell = myHero.activeSpell
-		if spell and spell.valid and spell.castEndTime - (spell.animation - spell.windup) > self.AttackCastEndTime and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
+		if spell and spell.valid and spell.castEndTime> self.AttackCastEndTime and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
 			for i = 1, #self.OnAttackC do
 				self.OnAttackC[i]()
 			end
-			local windDown = spell.animation - spell.windup
-			self.AttackCastEndTime = spell.castEndTime - windDown
-			self.AttackServerStart = spell.startTime - spell.windup
+			self.AttackCastEndTime = spell.castEndTime
+			self.AttackServerStart = spell.startTime
 			if GAMSTERON_MODE_DMG then
 				if self.TestCount == 0 then
 					self.TestStartTime = GameTimer()
