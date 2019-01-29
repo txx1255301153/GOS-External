@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0748
+local GamsteronOrbVer = 0.0749
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -31,6 +31,11 @@ do
 
 	math.randomseed(os.clock())
 end
+
+local HAS_LETHAL_TEMPO				= false
+local LAST_LETHAL_TEMPO				= 0
+local ATTACK_WINDUP					= 0
+local ATTACK_ANIMATION				= 0
 
 local MAXIMUM_MOUSE_DISTANCE		= 120 * 120
 local GAMSTERON_MODE_DMG			= false
@@ -114,10 +119,17 @@ local function GetWindup()
 			return SpecialWindUpTime
 		end
 	end
-	if myHero.attackData.windUpTime then
+	if HAS_LETHAL_TEMPO then
 		return myHero.attackData.windUpTime
 	end
-	return 0.25
+	return ATTACK_WINDUP
+end
+
+local function GetAnimation()
+	if HAS_LETHAL_TEMPO then
+		return myHero.attackData.animationTime
+	end
+	return ATTACK_ANIMATION
 end
 
 local function GetHumanizer()
@@ -1385,7 +1397,7 @@ do
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
-			if self.ResetAttack or GameTimer() >= self.AttackServerStart + myHero.attackData.animationTime - 0.05 - LATENCY then
+			if self.ResetAttack or GameTimer() >= self.AttackServerStart + GetAnimation() - 0.05 - LATENCY then
 				return true
 			end
 			return false
@@ -1619,6 +1631,8 @@ do
 			end
 			self.AttackCastEndTime = spell.castEndTime
 			self.AttackServerStart = spell.startTime
+			ATTACK_WINDUP = spell.windup
+			ATTACK_ANIMATION = spell.animation
 			if GAMSTERON_MODE_DMG then
 				if self.TestCount == 0 then
 					self.TestStartTime = GameTimer()
@@ -1984,7 +1998,7 @@ do
 		if lastHitable then self.IsLastHitable = true end
 		local almostLastHitable = false
 		if not lastHitable then
-			local dmg = self:GetPrediction(target, (myHero.attackData.animationTime * 1.5) + (time * 3)) - self:GetPossibleDmg(target)
+			local dmg = self:GetPrediction(target, (GetAnimation() * 1.5) + (time * 3)) - self:GetPossibleDmg(target)
 			almostLastHitable = dmg - damage < 0
 		end
 		if almostLastHitable then
@@ -2423,19 +2437,30 @@ LocalCore:OnEnemyHeroLoad(function(hero)
 end)
 
 AddLoadCallback(function()
-	Callback.Add('Tick', function()
-		if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
-		if Orbwalker.IsTeemo then
-			local hasTeemoBlind = false
-			for i = 0, myHero.buffCount do
-				local buff = myHero:GetBuff(i)
-				if buff and buff.count > 0 and buff.name:lower() == "blindingdart" then
+	Callback.Add('Draw', function()
+		local hasTeemoBlind = false
+		local hasLethal = false
+		for i = 0, myHero.buffCount do
+			local buff = myHero:GetBuff(i)
+			if buff and buff.count > 0 then
+				local name = buff.name:lower()
+				if name == "blindingdart" then
 					hasTeemoBlind = true
-					break
+				elseif name:find("lethaltempoemp") then
+					hasLethal = true
+					LAST_LETHAL_TEMPO = GameTimer()
 				end
 			end
-			Orbwalker.IsBlindedByTeemo = hasTeemoBlind
 		end
+		if hasLethal then
+			HAS_LETHAL_TEMPO = true
+		elseif GameTimer() > LAST_LETHAL_TEMPO + 1 then
+			HAS_LETHAL_TEMPO = false
+		end
+		Orbwalker.IsBlindedByTeemo = hasTeemoBlind
+	end)
+	Callback.Add('Tick', function()
+		if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
 		if DEBUG_MODE then
 			local status, err = pcall(function () HealthPrediction:Tick() end); if not status then print("2501: " .. tostring(err)) end
 			local status, err = pcall(function () Spells:DisableAutoAttack() end); if not status then print("2502: " .. tostring(err)) end
