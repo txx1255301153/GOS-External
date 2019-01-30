@@ -1,4 +1,4 @@
-local GamsteronMorganaVer = 0.09
+local GamsteronMorganaVer = 0.10
 local debugMode = false
 local LocalCore, Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
 
@@ -14,7 +14,7 @@ do
 
     --if not FileExist(COMMON_PATH .. "GamsteronPrediction.lua") then
         DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua", COMMON_PATH .. "GamsteronPrediction.lua", function() end)
-    --    while not FileExist(COMMON_PATH .. "GamsteronPrediction.lua") do end
+        while not FileExist(COMMON_PATH .. "GamsteronPrediction.lua") do end
     --end
 
     require('GamsteronCore')
