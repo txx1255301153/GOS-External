@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.09
+local GamsteronPredictionVer = 0.10
 local DebugMode = false
 
 -- LOAD START
@@ -28,9 +28,9 @@ local DebugMode = false
         
         local success, version = LocalCore:AutoUpdate({
             version = GamsteronPredictionVer,
-            scriptPath = SCRIPT_PATH .. "GamsteronPrediction.lua",
+            scriptPath = COMMON_PATH .. "GamsteronPrediction.lua",
             scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua",
-            versionPath = SCRIPT_PATH .. "GamsteronPrediction.version",
+            versionPath = COMMON_PATH .. "GamsteronPrediction.version",
             versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.version"
         })
     
