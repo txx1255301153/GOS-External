@@ -1,4 +1,4 @@
-local GamsteronMorganaVer = 0.07
+local GamsteronMorganaVer = 0.08
 local debugMode = false
 local LocalCore, Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
 
@@ -10,6 +10,11 @@ do
     if not FileExist(COMMON_PATH .. "GamsteronCore.lua") then
         DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua", COMMON_PATH .. "GamsteronCore.lua", function() end)
         while not FileExist(COMMON_PATH .. "GamsteronCore.lua") do end
+    end
+
+    if not FileExist(COMMON_PATH .. "GamsteronPrediction.lua") then
+        DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronPrediction.lua", COMMON_PATH .. "GamsteronPrediction.lua", function() end)
+        while not FileExist(COMMON_PATH .. "GamsteronPrediction.lua") do end
     end
 
     require('GamsteronCore')
@@ -166,7 +171,7 @@ LoadMenu()
 
 local function QLogic()
     local result = false
-    if Spells:IsReady(_Q, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
+    if Spells:IsReady(_Q, { q = 1, w = 0.3, e = 0.3, r = 0.3 } ) then
         local EnemyHeroes = ObjectManager:GetEnemyHeroes(QData.Range, false, LocalCore.HEROES_SPELL)
 
         if Q_KS_ON then
@@ -227,7 +232,7 @@ end
 
 local function WLogic()
     local result = false
-    if Spells:IsReady(_W, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
+    if Spells:IsReady(_W, { q = 0.3, w = 1, e = 0.3, r = 0.3 } ) then
         local EnemyHeroes = ObjectManager:GetEnemyHeroes(WData.Range, false, 0)
 
         if W_KS_ON then
@@ -296,7 +301,7 @@ local function WLogic()
 end
 
 local function ELogic()
-    if E_AUTO_ON and (E_ALLY_ON or E_SELF_ON) and Spells:IsReady(_E, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
+    if E_AUTO_ON and (E_ALLY_ON or E_SELF_ON) and Spells:IsReady(_E, { q = 0.3, w = 0.3, e = 1, r = 0.3 } ) then
         local EnemyHeroes = ObjectManager:GetEnemyHeroes(2500, false, LocalCore.HEROES_IMMORTAL)
         local AllyHeroes = ObjectManager:GetAllyHeroes(EData.Range)
         for i = 1, #EnemyHeroes do
@@ -332,7 +337,7 @@ end
 
 local function RLogic()
     local result = false
-    if Spells:IsReady(_R, { q = 0.33, w = 0.33, e = 0.33, r = 0.5 } ) then
+    if Spells:IsReady(_R, { q = 0.33, w = 0.33, e = 0.33, r = 1 } ) then
         local EnemyHeroes = ObjectManager:GetEnemyHeroes(RData.Range, false, 0)
 
         if R_KS_ON then
