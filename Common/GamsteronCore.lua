@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.096
+local GamsteronCoreVer = 0.097
 local DebugMode = false
 
 -- locals update START
@@ -1242,8 +1242,9 @@ function __GamsteronCore:GetAutoAttackRange(from, target)
 	return result
 end
 
-function __GamsteronCore:IsInAutoAttackRange(from, target)
-	return self:IsInRange(from.pos, target.pos, self:GetAutoAttackRange(from, target))
+function __GamsteronCore:IsInAutoAttackRange(from, target, extrarange)
+    local range = extrarange or 0
+	return self:IsInRange(from.pos, target.pos, self:GetAutoAttackRange(from, target) + range)
 end
 
 function __GamsteronCore:RadianToDegree(angle)
