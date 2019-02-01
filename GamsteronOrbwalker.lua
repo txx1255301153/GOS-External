@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0754
+local GamsteronOrbVer = 0.0755
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -828,7 +828,7 @@ do
 	end
 
 	function __TargetSelector:CreateMenu()
-		Menu:MenuElement({name = "Target Selector", id = "ts", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/ts.png" })
+		Menu:MenuElement({name = "Target Selector", id = "ts", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/ts.png" })
 			Menu.ts:MenuElement({ id = "Mode", name = "Mode", value = 1, drop = { "Auto", "Closest", "Least Health", "Highest Priority" } })
 			Menu.ts:MenuElement({ id = "priorities", name = "Priorities", type = _G.MENU })
 				LocalCore:OnEnemyHeroLoad(function(hero) self:CreatePriorityMenu(hero.charName) end)
@@ -1243,7 +1243,7 @@ do
 	end
 
 	function __Orbwalker:CreateMenu()
-		Menu:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/orb.png" })
+		Menu:MenuElement({name = "Orbwalker", id = "orb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/orb.png" })
 			Menu.orb:MenuElement({name = "Keys", id = "keys", type = _G.MENU})
 				Menu.orb.keys:MenuElement({name = "Combo Key", id = "combo", key = string.byte(" ")})
 					self:RegisterMenuKey(LocalCore.ORBWALKER_MODE_COMBO, Menu.orb.keys.combo)
@@ -2326,11 +2326,11 @@ _G.SDK.TargetSelector = TargetSelector
 _G.SDK.HealthPrediction = HealthPrediction
 _G.SDK.Orbwalker = Orbwalker
 
-Menu = MenuElement({name = "gsoOrbwalker", id = "gamsteronOrb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/rsz_gsoorbwalker.png" })
+Menu = MenuElement({name = "gsoOrbwalker", id = "gamsteronOrb", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/rsz_gsoorbwalker.png" })
 TargetSelector:CreateMenu()
 Orbwalker:CreateMenu()
 
-Menu:MenuElement({name = "Drawings", id = "gsodraw", leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/circles.png", type = _G.MENU })
+Menu:MenuElement({name = "Drawings", id = "gsodraw", leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/circles.png", type = _G.MENU })
 Menu.gsodraw:MenuElement({name = "Enabled",  id = "enabled", value = true})
 TargetSelector:CreateDrawMenu()
 HealthPrediction:CreateDrawMenu()
