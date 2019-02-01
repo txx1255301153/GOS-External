@@ -1,5 +1,4 @@
-local GamsteronOrbVer = 0.0751
-local DEBUG_MODE = false
+local GamsteronOrbVer = 0.0752
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
 do
@@ -2375,29 +2374,36 @@ AddLoadCallback(function()
 	end)
 	Callback.Add('Tick', function()
 		if _G.Orbwalker.Enabled:Value() then _G.Orbwalker.Enabled:Value(false) end
-		if DEBUG_MODE then
-			local status, err = pcall(function () HealthPrediction:Tick() end); if not status then print("2501: " .. tostring(err)) end
-			local status, err = pcall(function () Spells:DisableAutoAttack() end); if not status then print("2502: " .. tostring(err)) end
+		if _G.GamsteronDebug then
+			local status, err = pcall(function () HealthPrediction:Tick() end); if not status then print("HealthPrediction:Tick: " .. tostring(err)) end
+			status, err = pcall(function () Spells:DisableAutoAttack() end); if not status then print("Spells:DisableAutoAttack: " .. tostring(err)) end
+			status, err = pcall(function () 
+				if Spells.Work ~= nil then
+					if GameTimer() < Spells.WorkEndTime then
+						Spells.Work()
+						return
+					end
+					Spells.Work = nil
+				end
+			end); if not status then print("Spells.Work: " .. tostring(err)) end
 		else
 			HealthPrediction:Tick()
 			Spells:DisableAutoAttack()
-		end
-		if Spells.Work ~= nil then
-			if GameTimer() < Spells.WorkEndTime then
-				Spells.Work()
-				return
+			if Spells.Work ~= nil then
+				if GameTimer() < Spells.WorkEndTime then
+					Spells.Work()
+					return
+				end
+				Spells.Work = nil
 			end
-			Spells.Work = nil
 		end
 	end)
 
 	Callback.Add('WndMsg', function(msg, wParam)
-		if DEBUG_MODE then
-			local status, err = pcall(function ()
-				TargetSelector:WndMsg(msg, wParam)
-				Orbwalker:WndMsg(msg, wParam)
-				Spells:WndMsg(msg, wParam)
-			end); if not status then print("2513: " .. tostring(err)) end
+		if _G.GamsteronDebug then
+			local status, err = pcall(function (msg, wParam) TargetSelector:WndMsg(msg, wParam) end); if not status then print("TargetSelector:WndMsg: " .. tostring(err)) end
+			status, err = pcall(function (msg, wParam) Orbwalker:WndMsg(msg, wParam) end); if not status then print("Orbwalker:WndMsg: " .. tostring(err)) end
+			status, err = pcall(function (msg, wParam) Spells:WndMsg(msg, wParam) end); if not status then print("Spells:WndMsg: " .. tostring(err)) end
 		else
 			TargetSelector:WndMsg(msg, wParam)
 			Orbwalker:WndMsg(msg, wParam)
@@ -2407,11 +2413,11 @@ AddLoadCallback(function()
 
 	Callback.Add('Draw', function()
 		if not Menu.gsodraw.enabled:Value() then return end
-		if DEBUG_MODE then
-			local status, err = pcall(function () TargetSelector:Draw() end); if not status then print("2520: " .. tostring(err)) end
-			local status, err = pcall(function () HealthPrediction:Draw() end); if not status then print("2521: " .. tostring(err)) end
-			local status, err = pcall(function () Cursor:Draw() end); if not status then print("2522: " .. tostring(err)) end
-			local status, err = pcall(function () Orbwalker:Draw() end); if not status then print("2523: " .. tostring(err)) end
+		if _G.GamsteronDebug then
+			local status, err = pcall(function () TargetSelector:Draw() end); if not status then print("TargetSelector:Draw: " .. tostring(err)) end
+			status, err = pcall(function () HealthPrediction:Draw() end); if not status then print("HealthPrediction:Draw " .. tostring(err)) end
+			status, err = pcall(function () Cursor:Draw() end); if not status then print("Cursor:Draw " .. tostring(err)) end
+			status, err = pcall(function () Orbwalker:Draw() end); if not status then print("Orbwalker:Draw " .. tostring(err)) end
 		else
 			TargetSelector:Draw()
 			HealthPrediction:Draw()
@@ -2421,9 +2427,9 @@ AddLoadCallback(function()
 	end)
 
 	Callback.Add('Draw', function()
-		if DEBUG_MODE then
-			local status, err = pcall(function () Orbwalker:Tick() end); if not status then print("2529: " .. tostring(err)) end
-			local status, err = pcall(function () Cursor:Tick() end); if not status then print("2530: " .. tostring(err)) end
+		if _G.GamsteronDebug then
+			local status, err = pcall(function () Orbwalker:Tick() end); if not status then print("Orbwalker:Tick " .. tostring(err)) end
+			status, err = pcall(function () Cursor:Tick() end); if not status then print("Cursor:Tick: " .. tostring(err)) end
 		else
 			Orbwalker:Tick()
 			Cursor:Tick()
