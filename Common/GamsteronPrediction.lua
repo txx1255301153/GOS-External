@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.10
+local GamsteronPredictionVer = 0.11
 local DebugMode = false
 
 -- LOAD START
@@ -40,7 +40,7 @@ local DebugMode = false
             return
         end
     end
-    local HighAccuracy = 0.1
+    local HighAccuracy = 0.15
     local ExtraImmobile = 0
     local MaxRangeMulipier = 1
     local HighAccuracy2 = 5000
@@ -48,7 +48,7 @@ local DebugMode = false
     Menu:MenuElement({id = "castposMode", name = "CastPos Mode", value = 1, drop = { "GOS - recommended", "Custom - not recommended" } })
     Menu:MenuElement({id = "ExtraImmobile", name = "ExtraImmobileTime - lower = better accuracy", value = 100, min = 0, max = 200, step = 10, callback = function(value) ExtraImmobile = value * 0.001 end })
     Menu:MenuElement({id = "PredNumAccuracy", name = "HitChance High - higher = better accuracy", value = 3000, min = 2000, max = 5000, step = 1000, callback = function(value) HighAccuracy2 = value end })
-    Menu:MenuElement({id = "PredHighAccuracy", name = "HitChance High - lower = better accuracy", value = 80, min = 20, max = 100, step = 10, callback = function(value) HighAccuracy = value * 0.001 end })
+    Menu:MenuElement({id = "PredHighAccuracy", name = "HitChance High - lower = better accuracy", value = 150, min = 50, max = 200, step = 1, callback = function(value) HighAccuracy = value * 0.001 end })
     Menu:MenuElement({id = "PredMaxRange", name = "Pred Max Range %", value = 100, min = 70, max = 100, step = 1, callback = function(value) MaxRangeMulipier = value * 0.01 end })
     Menu:MenuElement({name = "Version " .. tostring(GamsteronPredictionVer), type = _G.SPACE, id = "vermorgspace"})
     HighAccuracy = Menu.PredHighAccuracy:Value() * 0.001
@@ -1120,6 +1120,28 @@ local DebugMode = false
 -- VISIBLE END
 
 -- WAYPOINTS START
+    local Waypoints = {}
+    local function SaveWaypoints(id, path)
+        if not Waypoints[id] then
+            Waypoints[id] = { IsMoving = path.hasMovePath, Path = path.endPos, Tick = Game.Timer() }
+            return
+        end
+        local currentWaypoints = { IsMoving = path.hasMovePath, Path = path.endPos, Tick = Game.Timer() }
+        local currentWaypointsT = Waypoints[id]
+        if currentWaypoints.IsMoving ~= currentWaypointsT.IsMoving then
+            Waypoints[id] = currentWaypoints
+            return
+        end
+        if currentWaypoints.IsMoving then
+            local xx = currentWaypoints.Path.x
+            local zz = currentWaypoints.Path.z
+            local xxT = currentWaypointsT.Path.x
+            local zzT = currentWaypointsT.Path.z
+            if xx ~= xxT or zz ~= zzT then
+                Waypoints[id] = currentWaypoints
+            end
+        end
+    end
     local function GetPathDistance(unit, path)
 
         -- (toUnit) distance from start point to unit.pos
@@ -1348,6 +1370,7 @@ local DebugMode = false
     end
     local function PredictionInput(unit, args, from)
         GetVisibleData(unit)
+        SaveWaypoints(unit.networkID, unit.pathing)
         local result =
         {
             Aoe                = args.Aoe                  or false,
@@ -1381,6 +1404,9 @@ local DebugMode = false
             end
         elseif slowDuration > 0 and moveSpeed < 250 and slowDuration + 0.1 >= delay then
             hitChance = _G.HITCHANCE_HIGH
+        elseif Game.Timer() - Waypoints[unit.networkID].Tick < HighAccuracy then
+            --print("new HighAccuracy")
+            hitChance = _G.HITCHANCE_HIGH
         end
         if spellType == _G.SPELLTYPE_LINE then
             if fromUnit < 150 then
@@ -1390,7 +1416,7 @@ local DebugMode = false
                 hitChance = _G.HITCHANCE_IMPOSSIBLE
             end
         end
-        if fromUnit < spellDelay * moveSpeed - radius then
+        if fromUnit < (spellDelay * moveSpeed) - radius then
             hitChance = _G.HITCHANCE_NORMAL
         end
         return hitChance
@@ -1468,10 +1494,15 @@ local DebugMode = false
         return PredictionOutput({ Input = input })
     end
     local function GetImmobilePrediction(input, ImmobileDuration)
-        local pos = input.Unit.pos
+        local unit = input.Unit
+        local pos = unit.pos
+        local id = unit.networkID
         local interceptTime = input.Delay + (GetDistance(input.From, pos) / input.Speed) - (input.RealRadius / input.Unit.ms)
         if ImmobileDuration + ExtraImmobile >= interceptTime then
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
+        elseif not unit.pathing.hasMovePath and not Waypoints[id].IsMoving and Game.Timer() - Waypoints[id].Tick > 0.5 then
+            --print("new not moving")
+            return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
         end
         return PredictionOutput({ Input = input })
     end
@@ -1621,6 +1652,7 @@ local DebugMode = false
             for i = 1, _G.Game.HeroCount() do
                 local unit = _G.Game.Hero(i)
                 if unit and unit.valid and unit.alive then
+                    SaveWaypoints(unit.networkID, unit.pathing)
                     GetVisibleData(unit)
                     if IsYasuo and not YasuoChecked and unit.charName == "Yasuo" then
                         YasuoWallTick(unit)
