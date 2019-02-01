@@ -1568,10 +1568,10 @@ local GamsteronPredictionVer = 0.14
         if ImmobileDuration + ExtraImmobile >= interceptTime then
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
         elseif not unit.pathing.hasMovePath and not Waypoints[id].IsMoving then
-            if Game.Timer() - Waypoints[id].Tick > 0.77 then
-                return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_NORMAL, CastPosition = pos, UnitPosition = pos })
-            elseif Game.Timer() - Waypoints[id].Tick > 3 and os.clock() - data.VisibleTimer > 3 then
+            if Game.Timer() - Waypoints[id].Tick > 3 and os.clock() - data.VisibleTimer > 3 then
                 return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
+            elseif Game.Timer() - Waypoints[id].Tick > 0.77 and os.clock() - data.VisibleTimer > 0.77 then
+                return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_NORMAL, CastPosition = pos, UnitPosition = pos })
             end
         end
         return PredictionOutput({ Input = input })
