@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.02
+local GamsteronAIOVer = 0.001
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -8,11 +8,11 @@ do
     {
         ["Twitch"] = true,
         ["Morgana"] = true,
+        ["Karthus"] = true,
         ["Ezreal"] = false,
         ["KogMaw"] = false,
         ["Varus"] = false,
         ["Brand"] = false,
-        ["Karthus"] = false,
         ["Vayne"] = false
     }
     if not SUPPORTED_CHAMPIONS[myHero.charName] then
@@ -172,6 +172,16 @@ end
         end
         return BestPos, BestHit
     end
+    local function CastSpell(spell, unit, spelldata, hitchance)
+        if LocalCore:IsValidTarget(unit) then
+            local HitChance = hitchance or 3
+            local Pred = GetGamsteronPrediction(unit, spelldata, myHero.pos)
+            if Pred.Hitchance >= HitChance then
+                return LocalCore:CastSpell(spell, nil, Pred.CastPosition)
+            end
+        end
+        return false
+    end
 local AIO = {
     Twitch = function()
         local TwitchVersion = 0.01
@@ -217,6 +227,7 @@ local AIO = {
                 MENU.draws.qnotification:MenuElement({id = "color", name = "Color ", color = Draw.Color(200, 188, 77, 26)})
         -- Version
         MENU:MenuElement({name = "Version " .. tostring(TwitchVersion), type = _G.SPACE, id = "verspace"})
+        WData = { delay = 0.25, radius = 50, range = 950, speed = 1400, type = _G.SPELLTYPE_CIRCLE }
         CHAMPION = LocalCore:Class()
         function CHAMPION:__init()
             self.HasQBuff = false
@@ -225,7 +236,6 @@ local AIO = {
             self.QASBuffDuration = 0
             self.Recall = true
             self.EBuffs = {}
-            self.WData = { delay = 0.25, radius = 50, range = 950, speed = 1400, type = _G.SPELLTYPE_CIRCLE }
         end
         function CHAMPION:Tick()
             --[[q buff best orbwalker dps
@@ -344,12 +354,7 @@ local AIO = {
                     else
                         WTarget = TS:GetTarget(OB:GetEnemyHeroes(950, false, 0), 0)
                     end
-                    if WTarget then
-                        local pred = GetGamsteronPrediction(WTarget, self.WData, myHero.pos)
-                        if pred.Hitchance >= MENU.wset.hitchance:Value() + 1 then
-                            LocalCore:CastSpell(HK_W, nil, pred.CastPosition)
-                        end
-                    end
+                    CastSpell(HK_W, WTarget, WData, MENU.wset.hitchance:Value() + 1)
                 end
                 --E
                 if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value())or(ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value())) and SPELLS:IsReady(_E, { q = 0, w = 0.25, e = 0.5, r = 0 } ) then
@@ -519,20 +524,20 @@ local AIO = {
             MENU.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
                 MENU.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) Q_KS_ON = value end})
                 MENU.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) Q_KS_MINHP = value end})
-                MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_KS_HITCHANCE = value end })
+                MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "Normal", "High", "Immobile" }, callback = function(value) Q_KS_HITCHANCE = value end })
             -- Auto
             MENU.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
                 MENU.qset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) Q_AUTO_ON = value end})
                 MENU.qset.auto:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
                     LocalCore:OnEnemyHeroLoad(function(hero) MENU.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
-                MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_AUTO_HITCHANCE = value end })
+                MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "Normal", "High", "Immobile" }, callback = function(value) Q_AUTO_HITCHANCE = value end })
             -- Combo / Harass
             MENU.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
                 MENU.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true, callback = function(value) Q_COMBO_ON = value end})
                 MENU.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false, callback = function(value) Q_HARASS_ON = value end})
                 MENU.qset.comhar:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
                     LocalCore:OnEnemyHeroLoad(function(hero) MENU.qset.comhar.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
-                MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_COMBO_HITCHANCE = value end })
+                MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "Normal", "High", "Immobile" }, callback = function(value) Q_COMBO_HITCHANCE = value end })
         -- W
         MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
             -- KS
@@ -589,10 +594,7 @@ local AIO = {
                         for i = 1, #EnemyHeroes do
                             local qTarget = EnemyHeroes[i]
                             if qTarget.health > Q_KS_MINHP and qTarget.health < DMG:CalculateDamage(myHero, qTarget, LocalCore.DAMAGE_TYPE_MAGICAL, qDmg) then
-                                local pred = GetGamsteronPrediction(qTarget, QData, myHero.pos)
-                                if pred.Hitchance >= Q_KS_HITCHANCE then
-                                    result = LocalCore:CastSpell(HK_Q, qTarget, pred.CastPosition)
-                                end
+                                result = CastSpell(HK_Q, qTarget, QData, Q_KS_HITCHANCE + 1)
                             end
                         end
                     end
@@ -607,13 +609,7 @@ local AIO = {
                             qList[#qList+1] = hero
                         end
                     end
-                    local qTarget = TS:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL)
-                    if qTarget then
-                        local pred = GetGamsteronPrediction(qTarget, QData, myHero.pos)
-                        if pred.Hitchance >= Q_COMBO_HITCHANCE then
-                            result = LocalCore:CastSpell(HK_Q, qTarget, pred.CastPosition)
-                        end
-                    end
+                    result = CastSpell(HK_Q, TS:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL), QData, Q_COMBO_HITCHANCE + 1)
                 end if result then return end
         
                 if Q_AUTO_ON then
@@ -625,13 +621,7 @@ local AIO = {
                             qList[#qList+1] = hero
                         end
                     end
-                    local qTarget = TS:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL)
-                    if qTarget then
-                        local pred = GetGamsteronPrediction(qTarget, QData, myHero.pos)
-                        if pred.Hitchance >= Q_AUTO_HITCHANCE then
-                            LocalCore:CastSpell(HK_Q, qTarget, pred.CastPosition)
-                        end
-                    end
+                    CastSpell(HK_Q, TS:GetTarget(qList, LocalCore.DAMAGE_TYPE_MAGICAL), QData, Q_AUTO_HITCHANCE + 1)
                 end
             end
         end
@@ -639,7 +629,7 @@ local AIO = {
             local result = false
             if SPELLS:IsReady(_W, { q = 0.3, w = 1, e = 0.3, r = 0.3 } ) then
                 local EnemyHeroes = OB:GetEnemyHeroes(WData.Range, false, 0)
-        
+
                 if W_KS_ON then
                     local baseDmg = 10
                     local lvlDmg = 14 * myHero:GetSpellData(_W).level
@@ -649,10 +639,7 @@ local AIO = {
                         for i = 1, #EnemyHeroes do
                             local wTarget = EnemyHeroes[i]
                             if wTarget.health > W_KS_MINHP and wTarget.health < DMG:CalculateDamage(myHero, wTarget, LocalCore.DAMAGE_TYPE_MAGICAL, wDmg) then
-                                local pred = GetGamsteronPrediction(wTarget, WData, myHero.pos)
-                                if pred.Hitchance >= _G.HITCHANCE_HIGH then
-                                    result = LocalCore:CastSpell(HK_W, wTarget, pred.CastPosition)
-                                end
+                                result = CastSpell(HK_W, wTarget, WData, _G.HITCHANCE_HIGH)
                             end
                         end
                     end
@@ -660,11 +647,8 @@ local AIO = {
         
                 if (ORB.Modes[LocalCore.ORBWALKER_MODE_COMBO] and W_COMBO_ON) or (ORB.Modes[LocalCore.ORBWALKER_MODE_HARASS] and W_HARASS_ON) then
                     for i = 1, #EnemyHeroes do
-                        local unit = EnemyHeroes[i]
-                        local pred = GetGamsteronPrediction(unit, WData, myHero.pos)
-                        if pred.Hitchance >= _G.HITCHANCE_HIGH  then
-                            result = LocalCore:CastSpell(HK_W, unit, pred.CastPosition)
-                        end
+                        result = CastSpell(HK_W, EnemyHeroes[i], WData, _G.HITCHANCE_HIGH)
+                        if result then break end
                     end
                 end if result then return end
         
@@ -790,7 +774,7 @@ local AIO = {
         CHAMPION = LocalCore:Class()
         function CHAMPION:__init()
         end
-        function CHAMPION:Draw()
+        function CHAMPION:Tick()
             -- Is Attacking
             if ORB:IsAutoAttacking() then
                 return
@@ -803,11 +787,8 @@ local AIO = {
         function CHAMPION:Interrupter()
             INTERRUPTER = LocalCore:__Interrupter()
             INTERRUPTER:OnInterrupt(function(enemy, activeSpell)
-                if Q_INTERRUPTER_ON and SPELLS:IsReady(_Q, { q = 0.3, w = 0.3, e = 0.3, r = 0.3 } ) then
-                    local pred = GetGamsteronPrediction(enemy, QData, myHero.pos)
-                    if pred.Hitchance >= _G.HITCHANCE_MEDIUM then
-                        LocalCore:CastSpell(HK_Q, enemy, pred.CastPosition)
-                    end
+                if Q_INTERRUPTER_ON and SPELLS:IsReady(_Q, { q = 1, w = 0.3, e = 0.3, r = 0.3 } ) then
+                    CastSpell(HK_Q, enemy, QData, _G.HITCHANCE_HIGH)
                 end
             end)
         end
@@ -833,61 +814,53 @@ local AIO = {
         end
     end,
     Karthus = function()
-        local c = {}
-        local result =
-        {
-            QData = { delay = 0.625, radius = 0, range = 900, speed = math.huge, collision = false, sType = "circular" },
-            WData = { delay = 0.25, radius = 0, range = 1000, speed = math.huge, collision = false, sType = "line" }
-        }
-        -- init
-            c.__index = c
-            setmetatable(result, c)
-        function c:Menu()
-            MENU = MenuElement({name = "Gamsteron Karthus", id = "gsokarthus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/karthusw5s.png" })
-                -- Q
-                MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
-                    -- Disable Attack
-                    MENU.qset:MenuElement({id = "disaa", name = "Disable attack", value = true})
-                    -- KS
-                    MENU.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                        MENU.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1})
-                        MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                    -- Auto
-                    MENU.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                        MENU.qset.auto:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.qset.auto:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
-                            LocalCore:OnEnemyHeroLoad(function(hero) MENU.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
-                        MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                    -- Combo / Harass
-                    MENU.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                        MENU.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
-                        MENU.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
-                        MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                -- W
-                MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
-                    MENU.wset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.wset:MenuElement({id = "harass", name = "Harass", value = false})
-                    MENU.wset:MenuElement({id = "slow", name = "Auto OnSlow", value = true})
-                    MENU.wset:MenuElement({id = "immobile", name = "Auto OnImmobile", value = true})
-                    MENU.wset:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                -- E
-                MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
-                    MENU.eset:MenuElement({id = "auto", name = "Auto", value = true})
-                    MENU.eset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.eset:MenuElement({id = "harass", name = "Harass", value = false})
-                    MENU.eset:MenuElement({id = "minmp", name = "minimum mana percent", value = 25, min = 1, max = 100, step = 1})
-                --R
-                MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
-                    MENU.rset:MenuElement({id = "killsteal", name = "Auto KS X enemies in passive form", value = true})
-                    MENU.rset:MenuElement({id = "kscount", name = "^^^ X enemies ^^^", value = 2, min = 1, max = 5, step = 1})
-                -- [ draws ]
-                MENU:MenuElement({name = "Drawings", id = "draws", type = _G.MENU })
-                    MENU.draws:MenuElement({name = "Draw Kill Count", id = "ksdraw", type = _G.MENU })
-                    MENU.draws.ksdraw:MenuElement({id = "enabled", name = "Enabled", value = true})
-                    MENU.draws.ksdraw:MenuElement({id = "size", name = "Text Size", value = 25, min = 1, max = 64, step = 1 })
+        MENU = MenuElement({name = "Gamsteron Karthus", id = "gsokarthus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/karthusw5s.png" })
+        -- Q
+        MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
+            -- Disable Attack
+            MENU.qset:MenuElement({id = "disaa", name = "Disable attack", value = true})
+            -- KS
+            MENU.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1})
+                MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            -- Auto
+            MENU.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.qset.auto:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.qset.auto:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
+                    LocalCore:OnEnemyHeroLoad(function(hero) MENU.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
+                MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            -- Combo / Harass
+            MENU.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
+                MENU.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
+                MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- W
+        MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
+            MENU.wset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.wset:MenuElement({id = "harass", name = "Harass", value = false})
+            MENU.wset:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- E
+        MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
+            MENU.eset:MenuElement({id = "auto", name = "Auto", value = true})
+            MENU.eset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.eset:MenuElement({id = "harass", name = "Harass", value = false})
+            MENU.eset:MenuElement({id = "minmp", name = "minimum mana percent", value = 25, min = 1, max = 100, step = 1})
+        --R
+        MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
+            MENU.rset:MenuElement({id = "killsteal", name = "Auto KS X enemies in passive form", value = true})
+            MENU.rset:MenuElement({id = "kscount", name = "^^^ X enemies ^^^", value = 2, min = 1, max = 5, step = 1})
+        -- [ draws ]
+        MENU:MenuElement({name = "Drawings", id = "draws", type = _G.MENU })
+            MENU.draws:MenuElement({name = "Draw Kill Count", id = "ksdraw", type = _G.MENU })
+            MENU.draws.ksdraw:MenuElement({id = "enabled", name = "Enabled", value = true})
+            MENU.draws.ksdraw:MenuElement({id = "size", name = "Text Size", value = 25, min = 1, max = 64, step = 1 })
+        local QData = { delay = 0.625, radius = 1, range = 900, speed = _G.math.huge, collision = false, type = _G.SPELLTYPE_CIRCLE }
+        local WData = { delay = 0.25, radius = 1, range = 1000, speed = _G.math.huge, collision = false, type = _G.SPELLTYPE_CIRCLE }
+        CHAMPION = LocalCore:Class()
+        function CHAMPION:__init()
         end
-        function c:Tick()
+        function CHAMPION:Tick()
             -- Is Attacking
             if ORB:IsAutoAttacking() then
                 return
@@ -896,22 +869,9 @@ local AIO = {
             local hasPassive = LocalCore:HasBuff(myHero, "karthusdeathdefiedbuff")
             -- W
             if SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.33, r = 3.23 } ) then
-                local mSlow = MENU.wset.slow:Value()
-                local mImmobile = MENU.wset.immobile:Value()
                 if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.wset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.wset.harass:Value()) then
                     local enemyList = OB:GetEnemyHeroes(1000, false, 0)
-                    local wTarget = TS:GetTarget(enemyList, 1)
-                    if wTarget and Control.CastSpell(HK_W, wTarget, myHero.pos, self.WData, MENU.wset.hitchance:Value()) then
-                        return
-                    end
-                elseif mSlow or mImmobile then
-                    local enemyList = OB:GetEnemyHeroes(1000, false, 0)
-                    for i = 1, #enemyList do
-                        local unit = enemyList[i]
-                        if ((mImmobile and LocalCore:IsImmobile(unit, 0.5)) or (mSlow and LocalCore:IsSlowed(unit, 0.5))) and Control.CastSpell(HK_W, unit, myHero.pos, self.WData, MENU.wset.hitchance:Value()) then
-                            return
-                        end
-                    end
+                    CastSpell(HK_W, TS:GetTarget(enemyList, 1), WData, MENU.wset.hitchance:Value() + 1)
                 end
             end
             -- E
@@ -929,7 +889,7 @@ local AIO = {
                 end
             end
             -- Q
-            if SPELLS:IsReady(_Q, { q = 0.5, w = 0.33, e = 0.33, r = 3.23 } ) and SPELLS:CustomIsReady(_Q, 1) then
+            if SPELLS:IsReady(_Q, { q = 0.5, w = 0.33, e = 0.33, r = 3.23 } ) and myHero:GetSpellData(_Q).ammoCd == 0 and myHero:GetSpellData(_Q).ammoCurrentCd == 0 and myHero:GetSpellData(_Q).ammo == 2 then
                 -- KS
                 if MENU.qset.killsteal.enabled:Value() then
                     local qDmg = self:GetQDmg()
@@ -938,8 +898,8 @@ local AIO = {
                         local enemyList = OB:GetEnemyHeroes(875, false, 0)
                         for i = 1, #enemyList do
                             local qTarget = enemyList[i]
-                            if qTarget.health > minHP and qTarget.health < DMG:CalculateDamage(myHero, qTarget, DAMAGE_TYPE_MAGICAL, self:GetQDmg()) and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.killsteal.hitchance:Value()) then
-                                return
+                            if qTarget.health > minHP and qTarget.health < DMG:CalculateDamage(myHero, qTarget, DAMAGE_TYPE_MAGICAL, self:GetQDmg()) then
+                                CastSpell(HK_Q, qTarget, QData, MENU.qset.killsteal.hitchance:Value() + 1)
                             end
                         end
                     end
@@ -948,10 +908,7 @@ local AIO = {
                 if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.comhar.harass:Value()) then
                     for i = 1, 3 do
                         local enemyList = OB:GetEnemyHeroes(1000 - (i*100), false, 0)
-                        local qTarget = TS:GetTarget(enemyList, 1)
-                        if qTarget and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.comhar.hitchance:Value()) then
-                            return
-                        end
+                        CastSpell(HK_Q, TS:GetTarget(enemyList, 1), QData, MENU.qset.comhar.hitchance:Value() + 1)
                     end
                 -- Auto
                 elseif MENU.qset.auto.enabled:Value() then
@@ -965,10 +922,7 @@ local AIO = {
                                 qList[#qList+1] = hero
                             end
                         end
-                        local qTarget = TS:GetTarget(qList, 1)
-                        if qTarget and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.auto.hitchance:Value()) then
-                            return
-                        end
+                        CastSpell(HK_Q, TS:GetTarget(qList, 1), QData, MENU.qset.auto.hitchance:Value() + 1)
                     end
                 end
             end
@@ -987,7 +941,7 @@ local AIO = {
                 end
             end
         end
-        function c:Draw()
+        function CHAMPION:Draw()
             if MENU.draws.ksdraw.enabled:Value() and LocalGameCanUseSpell(_R) == 0 then
                 local rCount = 0
                 local enemyList = OB:GetEnemyHeroes(99999, false, 0)
@@ -1007,7 +961,7 @@ local AIO = {
                 end
             end
         end
-        function c:CanAttack()
+        function CHAMPION:CanAttack()
             if not SPELLS:CheckSpellDelays({ q = 0.33, w = 0.33, e = 0.33, r = 3.23 }) then
                 return false
             end
@@ -1022,13 +976,13 @@ local AIO = {
             end
             return true
         end
-        function c:CanMove()
+        function CHAMPION:CanMove()
             if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0.2, e = 0.2, r = 3.13 }) then
                 return false
             end
             return true
         end
-        function c:GetQDmg()
+        function CHAMPION:GetQDmg()
             local qLvl = myHero:GetSpellData(_Q).level
             if qLvl == 0 then return 0 end
             local baseDmg = 30
@@ -1036,7 +990,7 @@ local AIO = {
             local apDmg = myHero.ap * 0.3
             return baseDmg + lvlDmg + apDmg
         end
-        function c:GetRDmg()
+        function CHAMPION:GetRDmg()
             local rLvl = myHero:GetSpellData(_R).level
             if rLvl == 0 then return 0 end
             local baseDmg = 100
@@ -2168,7 +2122,7 @@ AddLoadCallback(function()
         ORB:OnPreAttack(function(args) CHAMPION:PreAttack(args) end)
     end
     if CHAMPION.Tick then
-        Callback.Add("Tick", function()
+        Callback.Add("Draw", function()
             if _G.GamsteronDebug then
                 local status, err = pcall(function () CHAMPION:Tick() end) if not status then print("CHAMPION.Tick " .. tostring(err)) end
             else
