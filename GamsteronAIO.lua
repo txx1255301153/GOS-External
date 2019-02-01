@@ -39,7 +39,7 @@ do
 	if _G.GamsteronCoreUpdated then return end
 	LocalCore = _G.GamsteronCore
 
-	--[[local success, version = LocalCore:AutoUpdate({
+	local success, version = LocalCore:AutoUpdate({
 		version = GamsteronAIOVer,
 		scriptPath = SCRIPT_PATH .. "GamsteronAIO.lua",
 		scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronAIO.lua",
@@ -50,7 +50,7 @@ do
 		print("GamsteronAIO updated to version " .. version .. ". Please Reload with 2x F6 !")
 		_G.GamsteronAIOUpdated = true
 		return
-	end--]]
+	end
 end
 --locals
     local GetTickCount					= GetTickCount
