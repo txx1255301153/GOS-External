@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.12
+local GamsteronPredictionVer = 0.13
 
 -- LOAD START
     local IsLoaded, StartTime = false, os.clock() + 5
@@ -1432,17 +1432,26 @@ local GamsteronPredictionVer = 0.12
     local function PredictionInput(unit, args, from)
         GetVisibleData(unit)
         SaveWaypoints(unit.networkID, unit.pathing)
+        local input_aoe = false; if args.Aoe or args.aoe then input_aoe = true end
+        local input_collision = false; if args.Collision or args.collision then input_collision = true end
+        local input_maxcollision = 0; if args.MaxCollision or args.maxcollision then input_maxcollision = args.MaxCollision or args.maxcollision end
+        local input_colobjects = { _G.COLLISION_MINION, _G.COLLISION_YASUOWALL }; if args.CollisionObjects or args.collisionobjects then input_colobjects = args.CollisionObjects or args.collisionobjects end
+        local input_delay = 0; if args.Delay or args.delay then input_delay = args.Delay or args.delay end
+        local input_radius = 1; if args.Radius or args.radius then input_radius = args.Radius or args.radius end
+        local input_range = _G.math.huge; if args.Range or args.range then input_range = args.Range or args.range end
+        local input_speed = _G.math.huge; if args.Speed or args.speed then input_speed = args.Speed or args.speed end
+        local input_type = _G.SPELLTYPE_LINE; if args.Type or args.type then input_type = args.Type or args.type end
         local result =
         {
-            Aoe                = args.Aoe                  or false,
-            Collision          = args.Collision            or false,
-            MaxCollision       = args.MaxCollision         or 0,
-            CollisionObjects   = args.CollisionObjects     or { _G.COLLISION_MINION, _G.COLLISION_YASUOWALL },
-            Delay              = args.Delay                or 0,
-            Radius             = args.Radius               or 1,
-            Range              = args.Range                or _G.math.huge,
-            Speed              = args.Speed                or _G.math.huge,
-            Type               = args.Type                 or _G.SPELLTYPE_LINE
+            Aoe = input_aoe,
+            Collision = input_collision,
+            MaxCollision = input_maxcollision,
+            CollisionObjects = input_colobjects,
+            Delay = input_delay,
+            Radius = input_radius,
+            Range = input_range,
+            Speed = input_speed,
+            Type = input_type
         }
         result.From = from
         result.RangeCheckFrom = myHero.pos
