@@ -1,6 +1,6 @@
-local GamsteronOrbVer = 0.0753
+local GamsteronOrbVer = 0.0754
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
-local AttackSpeedData = { as = myHero.attackSpeed, timer = os.clock() }
+local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
 do
 	if _G.GamsteronOrbwalkerLoaded == true then return end
@@ -116,14 +116,14 @@ local function GetWindup()
 			return SpecialWindUpTime
 		end
 	end
-	if HAS_LETHAL_TEMPO or os.clock() < AttackSpeedData.timer + 1 then
+	if HAS_LETHAL_TEMPO or os.clock() < AttackSpeedData.tickwindup then
 		return myHero.attackData.windUpTime
 	end
 	return ATTACK_WINDUP
 end
 
 local function GetAnimation()
-	if HAS_LETHAL_TEMPO or os.clock() < AttackSpeedData.timer + 1 then
+	if HAS_LETHAL_TEMPO or os.clock() < AttackSpeedData.tickanim then
 		return myHero.attackData.animationTime
 	end
 	return ATTACK_ANIMATION
@@ -1614,9 +1614,13 @@ do
 	end
 
 	function __Orbwalker:Tick()
-		if AttackSpeedData.as ~= myHero.attackSpeed then
-			AttackSpeedData.timer = os.clock()
-			AttackSpeedData.as = myHero.attackSpeed
+		if AttackSpeedData.windup ~= myHero.attackData.windUpTime then
+			AttackSpeedData.tickwindup = os.clock() + 1
+			AttackSpeedData.windup = myHero.attackData.windUpTime
+		end
+		if AttackSpeedData.anim ~= myHero.attackData.animationTime then
+			AttackSpeedData.tickanim = os.clock() + 1
+			AttackSpeedData.anim = myHero.attackData.animationTime
 		end
 		local spell = myHero.activeSpell
 		if spell and spell.valid and spell.castEndTime> self.AttackCastEndTime and not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
