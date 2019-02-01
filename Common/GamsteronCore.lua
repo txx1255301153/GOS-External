@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.097
+local GamsteronCoreVer = 0.098
 local DebugMode = false
 
 -- locals update START
@@ -1042,6 +1042,17 @@ function __GamsteronCore:__init()
     }
 end
 
+function __GamsteronCore:GetBuffDuration(unit, bName)
+    bName = bName:lower()
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff and buff.count > 0 and buff.name:lower() == bName then
+            return buff.duration
+        end
+    end
+    return 0
+end
+
 function __GamsteronCore:DownloadFile(url, path)
     DownloadFileAsync(url, path, function() end)
     while not FileExist(path) do end
@@ -1141,9 +1152,10 @@ function __GamsteronCore:Join(t1, t2, t3, t4, t5, t6)
 end
 
 function __GamsteronCore:HasBuff(unit, name)
+    name = name:lower()
     for i = 0, unit.buffCount do
         local buff = unit:GetBuff(i)
-        if buff and buff.count > 0 and buff.name == name then
+        if buff and buff.count > 0 and buff.name:lower() == name then
             return true
         end
     end
@@ -1172,10 +1184,92 @@ function __GamsteronCore:IsInRange(vec1, vec2, range)
     return dx * dx + dy * dy <= range * range
 end
 
+function __GamsteronCore:GetClosestEnemy(enemyList, maxDistance)
+    local result = nil
+    for i = 1, #enemyList do
+        local hero = enemyList[i]
+        local distance = myHero.pos:DistanceTo(hero.pos)
+        if distance < maxDistance then
+            maxDistance = distance
+            result = hero
+        end
+    end
+    return result
+end
+
+function __GamsteronCore:GetImmobileEnemy(enemyList, maxDistance)
+    local result = nil
+    local num = 0
+    for i = 1, #enemyList do
+        local hero = enemyList[i]
+        local distance = myHero.pos:DistanceTo(hero.pos)
+        local iT = self:ImmobileTime(hero)
+        if distance < maxDistance and iT > num then
+            num = iT
+            result = hero
+        end
+    end
+    return result
+end
+
+function __GamsteronCore:IsSlowed(unit, delay)
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if from and buff.count > 0 and buff.type == 10 and buff.duration >= delay then
+            return true
+        end
+    end
+    return false
+end
+
+function __GamsteronCore:IsImmobile(unit, delay)
+    -- http://leagueoflegends.wikia.com/wiki/Types_of_Crowd_Control
+        --ok
+        --STUN = 5
+        --SNARE = 11
+        --SUPRESS = 24
+        --KNOCKUP = 29
+        --good
+        --FEAR = 21 -> fiddle Q, ...
+        --CHARM = 22 -> ahri E, ...
+        --not good
+        --TAUNT = 8 -> rammus E, ... can move too fast + anyway will detect attack
+        --SLOW = 10 -> can move too fast -> nasus W, zilean E are ok. Rylai item, ... not good
+        --KNOCKBACK = 30 -> alistar W, lee sin R, ... - no no
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff and buff.count > 0 and buff.duration > delay then
+            local bType = buff.type
+            if bType == 5 or bType == 11 or bType == 21 or bType == 22 or bType == 24 or bType == 29 or buff.name == "recall" then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function __GamsteronCore:ImmobileTime(unit)
+    local iT = 0
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff and buff.count > 0 then
+            local bType = buff.type
+            if bType == 5 or bType == 11 or bType == 21 or bType == 22 or bType == 24 or bType == 29 or buff.name == "recall" then
+                local bDuration = buff.duration
+                if bDuration > iT then
+                    iT = bDuration
+                end
+            end
+        end
+    end
+    return iT
+end
+
 function __GamsteronCore:GetBuffCount(unit, name)
+    name = name:lower()
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff and buff.count > 0 and buff.name == name then
+		if buff and buff.count > 0 and buff.name:lower() == name then
 			return buff.count
 		end
 	end
