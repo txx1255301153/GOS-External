@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.13
+local GamsteronPredictionVer = 0.14
 
 -- LOAD START
     local IsLoaded, StartTime = false, os.clock() + 5
@@ -1560,15 +1560,19 @@ local GamsteronPredictionVer = 0.13
         end--]]
         return PredictionOutput({ Input = input })
     end
-    local function GetImmobilePrediction(input, ImmobileDuration)
+    local function GetImmobilePrediction(input, ImmobileDuration, data)
         local unit = input.Unit
         local pos = unit.pos
         local id = unit.networkID
         local interceptTime = input.Delay + (GetDistance(input.From, pos) / input.Speed) - (input.RealRadius / input.Unit.ms)
         if ImmobileDuration + ExtraImmobile >= interceptTime then
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
-        elseif not unit.pathing.hasMovePath and not Waypoints[id].IsMoving and Game.Timer() - Waypoints[id].Tick > 0.5 then
-            return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
+        elseif not unit.pathing.hasMovePath and not Waypoints[id].IsMoving then
+            if Game.Timer() - Waypoints[id].Tick > 0.77 then
+                return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_NORMAL, CastPosition = pos, UnitPosition = pos })
+            elseif Game.Timer() - Waypoints[id].Tick > 3 and os.clock() - data.VisibleTimer > 3 then
+                return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
+            end
         end
         return PredictionOutput({ Input = input })
     end
@@ -1630,7 +1634,7 @@ local GamsteronPredictionVer = 0.13
                 return PredictionOutput({ Input = input })
             end
             if not path.hasMovePath or ImmobileDuration > 0 then
-                return GetImmobilePrediction(input, ImmobileDuration)
+                return GetImmobilePrediction(input, ImmobileDuration, data)
             end
             if path.isDashing or DashDuration > 0 then
                 if DashDuration > 0 then
@@ -1647,7 +1651,7 @@ local GamsteronPredictionVer = 0.13
          -- invisible
         local invisiblePath = data.LastPath
         if #invisiblePath == 0 then
-            return GetImmobilePrediction(input, ImmobileDuration)
+            return GetImmobilePrediction(input, ImmobileDuration, data)
         end
         if data.IsDashing or DashDuration > 0 then
             if DashDuration > 0 and #invisiblePath == 2 then
