@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0750
+local GamsteronOrbVer = 0.0751
 local DEBUG_MODE = false
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 
@@ -1316,6 +1316,14 @@ do
 
 	function __Orbwalker:OnPreMovement(func)
 		TableInsert(self.OnPreMoveC, func)
+	end
+
+	function __Orbwalker:IsBeforeAttack(multipier)
+		if GameTimer() > self.AttackLocalStart + multipier * myHero.attackData.animationTime then
+			return true
+		else
+			return false
+		end
 	end
 
 	function __Orbwalker:Draw()
