@@ -1,5 +1,4 @@
 local GamsteronPredictionVer = 0.12
-local DebugMode = false
 
 -- LOAD START
     local IsLoaded, StartTime = false, os.clock() + 5
@@ -1101,7 +1100,6 @@ local DebugMode = false
                 if path.isDashing then
                     VisibleData[id].IsDashing = true
                     VisibleData[id].MoveSpeed = path.dashSpeed
-                    --print(path.dashSpeed)
                 else
                     VisibleData[id].IsDashing = false
                     VisibleData[id].MoveSpeed = unit.ms
@@ -1468,7 +1466,6 @@ local DebugMode = false
         elseif slowDuration > 0 and moveSpeed < 250 and slowDuration + 0.1 >= delay then
             hitChance = _G.HITCHANCE_HIGH
         elseif Game.Timer() - Waypoints[unit.networkID].Tick < HighAccuracy then
-            --print("new HighAccuracy")
             hitChance = _G.HITCHANCE_HIGH
         end
         if spellType == _G.SPELLTYPE_LINE then
@@ -1548,10 +1545,8 @@ local DebugMode = false
                 castPos = endPos
             end
             if remainingTime >= interceptTime then
-                if DebugMode then print("IMMOBILE_DASH: speed " .. tostring(speed)) end
                 return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = castPos, UnitPosition = castPos })
             end
-            if DebugMode then print("HIGH_DASH: speed " .. tostring(speed)) end
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = castPos, UnitPosition = castPos })
         end--]]
         return PredictionOutput({ Input = input })
@@ -1564,7 +1559,6 @@ local DebugMode = false
         if ImmobileDuration + ExtraImmobile >= interceptTime then
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_IMMOBILE, CastPosition = pos, UnitPosition = pos })
         elseif not unit.pathing.hasMovePath and not Waypoints[id].IsMoving and Game.Timer() - Waypoints[id].Tick > 0.5 then
-            --print("new not moving")
             return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
         end
         return PredictionOutput({ Input = input })
