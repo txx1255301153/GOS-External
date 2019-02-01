@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.074
+local GamsteronAIOVer = 0.075
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -10,10 +10,10 @@ do
         ["Morgana"] = true,
         ["Karthus"] = true,
         ["KogMaw"] = true,
-        ["Ezreal"] = false,
-        ["Varus"] = false,
-        ["Brand"] = false,
-        ["Vayne"] = false
+        ["Vayne"] = true,
+        ["Brand"] = true,
+        ["Ezreal"] = true,
+        ["Varus"] = true
     }
     if not SUPPORTED_CHAMPIONS[myHero.charName] then
         print("GamsteronAIO - " .. myHero.charName .. " is not supported !")
@@ -185,7 +185,7 @@ end
 local AIO = {
     Twitch = function()
         local TwitchVersion = 0.01
-        MENU = MenuElement({name = "Gamsteron Twitch", id = "Gamsteron_Twitch", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/twitch.png" })
+        MENU = MenuElement({name = "Gamsteron Twitch", id = "Gamsteron_Twitch", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/twitch.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
             MENU.qset:MenuElement({id = "combo", name = "Use Q Combo", value = false})
@@ -465,7 +465,7 @@ local AIO = {
     end,
     Morgana = function()
         local MorganaVersion = 0.01
-        MENU = MenuElement({name = "Gamsteron Morgana", id = "Gamsteron_Morgana", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/morganads83fd.png" })
+        MENU = MenuElement({name = "Gamsteron Morgana", id = "Gamsteron_Morgana", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/morganads83fd.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
             -- Disable Attack
@@ -772,7 +772,7 @@ local AIO = {
     end,
     Karthus = function()
         local KarthusVersion = 0.01
-        MENU = MenuElement({name = "Gamsteron Karthus", id = "Gamsteron_Karthus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/karthusw5s.png" })
+        MENU = MenuElement({name = "Gamsteron Karthus", id = "Gamsteron_Karthus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/karthusw5s.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
             -- Disable Attack
@@ -961,7 +961,7 @@ local AIO = {
     end,
     KogMaw = function()
         local KogMawVersion = 0.01
-        MENU = MenuElement({name = "Gamsteron KogMaw", id = "Gamsteron_KogMaw", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/kog.png" })
+        MENU = MenuElement({name = "Gamsteron KogMaw", id = "Gamsteron_KogMaw", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/kog.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
             MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
@@ -1167,582 +1167,35 @@ local AIO = {
             return true
         end
     end,
-    Brand = function()
-        local c = {}
-        local result =
-        {
-            ETarget = nil,
-            QData = { delay = 0.25, radius = 80, range = 1050, speed = 1550, collision = true, sType = "line" },
-            WData = { delay = 0.625, radius = 100, range = 875, speed = math.huge, collision = false, sType = "circular" }
-        }
-        -- init
-            c.__index = c
-            setmetatable(result, c)
-        function c:Menu()
-            MENU = MenuElement({name = "Gamsteron Brand", id = "gsobrand", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/x1xxbrandx3xx.png" })
-                -- Q
-                MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
-                    -- KS
-                    MENU.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                        MENU.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1})
-                        MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                    -- Auto
-                    MENU.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                        MENU.qset.auto:MenuElement({id = "stun", name = "Auto Stun", value = true})
-                        MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                    -- Combo / Harass
-                    MENU.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                        MENU.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
-                        MENU.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
-                        MENU.qset.comhar:MenuElement({id = "stun", name = "Only if will stun", value = true})
-                        MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                -- W
-                MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
-                    MENU.wset:MenuElement({id = "disaa", name = "Disable attack if ready or almostReady", value = true})
-                    -- KS
-                    MENU.wset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                        MENU.wset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.wset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1})
-                        MENU.wset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                    -- Auto
-                    MENU.wset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                        MENU.wset.auto:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.wset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
-                    -- Combo / Harass
-                    MENU.wset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                        MENU.wset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
-                        MENU.wset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
-                        MENU.wset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                -- E
-                MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
-                    MENU.eset:MenuElement({id = "disaa", name = "Disable attack if ready or almostReady", value = true})
-                    -- KS
-                    MENU.eset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                        MENU.eset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.eset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 100, min = 1, max = 300, step = 1})
-                    -- Auto
-                    MENU.eset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                        MENU.eset.auto:MenuElement({id = "stun", name = "If Q ready | no collision & W not ready $ mana for Q + E", value = true})
-                        MENU.eset.auto:MenuElement({id = "passive", name = "If Q not ready & W not ready $ enemy has passive buff", value = true})
-                    -- Combo / Harass
-                    MENU.eset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                        MENU.eset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
-                        MENU.eset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
-                --R
-                MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
-                    -- Auto
-                    MENU.rset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                        MENU.rset.auto:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.rset.auto:MenuElement({id = "xenemies", name = ">= X enemies near target", value = 2, min = 1, max = 4, step = 1})
-                        MENU.rset.auto:MenuElement({id = "xrange", name = "< X distance enemies to target", value = 300, min = 100, max = 600, step = 50})
-                    -- Combo / Harass
-                    MENU.rset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                        MENU.rset.comhar:MenuElement({id = "combo", name = "Use R Combo", value = true})
-                        MENU.rset.comhar:MenuElement({id = "harass", name = "Use R Harass", value = false})
-                        MENU.rset.comhar:MenuElement({id = "xenemies", name = ">= X enemies near target", value = 1, min = 1, max = 4, step = 1})
-                        MENU.rset.comhar:MenuElement({id = "xrange", name = "< X distance enemies to target", value = 300, min = 100, max = 600, step = 50})
-        end
-        function c:Tick()
-            -- Is Attacking
-            if ORB:IsAutoAttacking() then
-                return
-            end
-            -- Q
-            if SPELLS:IsReady(_Q, { q = 0.5, w = 0.53, e = 0.53, r = 0.33 } ) then
-                -- antigap
-                local gapList = OB:GetEnemyHeroes(300, false, 0)
-                for i = 1, #gapList do
-                    if Control.CastSpell(HK_Q, gapList[i], myHero.pos, self.QData, 1) then
-                        return
-                    end
-                end
-                -- KS
-                if MENU.qset.killsteal.enabled:Value() then
-                    local baseDmg = 50
-                    local lvlDmg = 30 * myHero:GetSpellData(_Q).level
-                    local apDmg = myHero.ap * 0.55
-                    local qDmg = baseDmg + lvlDmg + apDmg
-                    local minHP = MENU.qset.killsteal.minhp:Value()
-                    if qDmg > minHP then
-                        local enemyList = OB:GetEnemyHeroes(1050, false, 0)
-                        for i = 1, #enemyList do
-                            local qTarget = enemyList[i]
-                            if qTarget.health > minHP and qTarget.health < DMG:CalculateDamage(myHero, qTarget, DAMAGE_TYPE_MAGICAL, qDmg) and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.killsteal.hitchance:Value()) then
-                                return
-                            end
-                        end
-                    end
-                end
-                -- Combo Harass
-                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.comhar.harass:Value()) then
-                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, self.ETarget, myHero.pos, self.QData, MENU.qset.comhar.hitchance:Value()) then
-                        return
-                    end
-                    local blazeList = {}
-                    local enemyList = OB:GetEnemyHeroes(1050, false, 0)
-                    for i = 1, #enemyList do
-                        local unit = enemyList[i]
-                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.5 and not IsGamsteronCollision(unit, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
-                            blazeList[#blazeList+1] = unit
-                        end
-                    end
-                    local qTarget = TS:GetTarget(blazeList, 1)
-                    if qTarget and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.comhar.hitchance:Value()) then
-                        return
-                    end
-                    if not MENU.qset.comhar.stun:Value() and LocalGameTimer() > SPELLS.LastWk + 1.33 and LocalGameTimer() > SPELLS.LastEk + 0.77 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
-                        local qTarget = TS:GetTarget(OB:GetEnemyHeroes(1050, false, 0), 1)
-                        if qTarget and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.comhar.hitchance:Value()) then
-                            return
-                        end
-                    end
-                -- Auto
-                elseif MENU.qset.auto.stun:Value() then
-                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, self.ETarget, myHero.pos, self.QData, 2) then
-                        return
-                    end
-                    local blazeList = {}
-                    local enemyList = OB:GetEnemyHeroes(1050, false, 0)
-                    for i = 1, #enemyList do
-                        local unit = enemyList[i]
-                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.5 and not IsGamsteronCollision(unit, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
-                            blazeList[#blazeList+1] = unit
-                        end
-                    end
-                    local qTarget = TS:GetTarget(blazeList, 1)
-                    if qTarget and Control.CastSpell(HK_Q, qTarget, myHero.pos, self.QData, MENU.qset.auto.hitchance:Value()) then
-                        return
-                    end
-                end
-            end
-            -- E
-            if SPELLS:IsReady(_E, { q = 0.33, w = 0.53, e = 0.5, r = 0.33 } ) then
-                -- antigap
-                local enemyList = OB:GetEnemyHeroes(635, false, 0)
-                for i = 1, #enemyList do
-                    local unit = enemyList[i]
-                    if LocalCore:GetDistanceSquared(myHero.pos, unit.pos) < 300 * 300 and Control.CastSpell(HK_E, unit) then
-                        return
-                    end
-                end
-                -- KS
-                if MENU.eset.killsteal.enabled:Value() then
-                    local baseDmg = 50
-                    local lvlDmg = 20 * myHero:GetSpellData(_E).level
-                    local apDmg = myHero.ap * 0.35
-                    local eDmg = baseDmg + lvlDmg + apDmg
-                    local minHP = MENU.eset.killsteal.minhp:Value()
-                    if eDmg > minHP then
-                        for i = 1, #enemyList do
-                            local unit = enemyList[i]
-                            if unit.health > minHP and unit.health < DMG:CalculateDamage(myHero, unit, DAMAGE_TYPE_MAGICAL, eDmg) and Control.CastSpell(HK_E, unit) then
-                                return
-                            end
-                        end
-                    end
-                end
-                -- Combo / Harass
-                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.comhar.harass:Value()) then
-                    local blazeList = {}
-                    for i = 1, #enemyList do
-                        local unit = enemyList[i]
-                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.33 then
-                            blazeList[#blazeList+1] = unit
-                        end
-                    end
-                    local eTarget = TS:GetTarget(blazeList, 1)
-                    if eTarget and Control.CastSpell(HK_E, eTarget) then
-                        self.ETarget = eTarget
-                        return
-                    end
-                    if LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastWk + 1.33 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
-                        eTarget = TS:GetTarget(enemyList, 1)
-                        if eTarget and Control.CastSpell(HK_E, eTarget) then
-                            self.ETarget = eTarget
-                            return
-                        end
-                    end
-                -- Auto
-                elseif myHero:GetSpellData(_Q).level > 0 and myHero:GetSpellData(_W).level > 0 then
-                    -- EQ -> if Q ready | no collision & W not ready $ mana for Q + E
-                    if MENU.eset.auto.stun:Value() and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
-                        if (LocalGameCanUseSpell(_Q) == 0 or myHero:GetSpellData(_Q).currentCd < 0.75) and not(LocalGameCanUseSpell(_W) == 0 or myHero:GetSpellData(_W).currentCd < 0.75) then
-                            local blazeList = {}
-                            local enemyList = OB:GetEnemyHeroes(635, false, 0)
-                            for i = 1, #enemyList do
-                                local unit = enemyList[i]
-                                if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.33 then
-                                    blazeList[#blazeList+1] = unit
-                                end
-                            end
-                            local eTarget = TS:GetTarget(blazeList, 1)
-                            if eTarget and not IsGamsteronCollision(eTarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_E, eTarget) then
-                                return
-                            end
-                            if LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastWk + 1.33 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
-                                eTarget = TS:GetTarget(enemyList, 1)
-                                if eTarget and not IsGamsteronCollision(eTarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_E, eTarget) then
-                                    self.ETarget = eTarget
-                                    return
-                                end
-                            end
-                        end
-                    end
-                    -- Passive -> If Q not ready & W not ready $ enemy has passive buff
-                    if MENU.eset.auto.passive:Value() and not(LocalGameCanUseSpell(_Q) == 0 or myHero:GetSpellData(_Q).currentCd < 0.75) and not(LocalGameCanUseSpell(_W) == 0 or myHero:GetSpellData(_W).currentCd < 0.75) then
-                        local blazeList = {}
-                        local enemyList = OB:GetEnemyHeroes(670, false, 0)
-                        for i = 1, #enemyList do
-                            local unit = enemyList[i]
-                            if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.33 then
-                                blazeList[#blazeList+1] = unit
-                            end
-                        end
-                        local eTarget = TS:GetTarget(blazeList, 1)
-                        if eTarget and Control.CastSpell(HK_E, eTarget) then
-                            self.ETarget = eTarget
-                            return
-                        end
-                    end
-                end
-            end
-            -- W
-            if SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.33, r = 0.33 } ) then
-                -- antigap
-                local gapList = OB:GetEnemyHeroes(300, false, 0)
-                for i = 1, #gapList do
-                    if Control.CastSpell(HK_W, gapList[i], myHero.pos, self.WData, 1) then
-                        return
-                    end
-                end
-                -- KS
-                if MENU.wset.killsteal.enabled:Value() then
-                    local baseDmg = 30
-                    local lvlDmg = 45 * myHero:GetSpellData(_W).level
-                    local apDmg = myHero.ap * 0.6
-                    local wDmg = baseDmg + lvlDmg + apDmg
-                    local minHP = MENU.wset.killsteal.minhp:Value()
-                    if wDmg > minHP then
-                        local enemyList = OB:GetEnemyHeroes(950, false, 0)
-                        for i = 1, #enemyList do
-                            local wTarget = enemyList[i]
-                            if wTarget.health > minHP and wTarget.health < DMG:CalculateDamage(myHero, wTarget, DAMAGE_TYPE_MAGICAL, wDmg) and Control.CastSpell(HK_W, wTarget, myHero.pos, self.WData, MENU.wset.killsteal.hitchance:Value()) then
-                                return
-                            end
-                        end
-                    end
-                end
-                -- Combo / Harass
-                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.wset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.wset.comhar.harass:Value()) then
-                    local blazeList = {}
-                    local enemyList = OB:GetEnemyHeroes(950, false, 0)
-                    for i = 1, #enemyList do
-                        local unit = enemyList[i]
-                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 1.33 then
-                            blazeList[#blazeList+1] = unit
-                        end
-                    end
-                    local wTarget = TS:GetTarget(blazeList, 1)
-                    if wTarget and Control.CastSpell(HK_W, wTarget, myHero.pos, self.WData, MENU.wset.comhar.hitchance:Value()) then
-                        return
-                    end
-                    if LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastEk + 0.77 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
-                        local enemyList = OB:GetEnemyHeroes(950, false, 0)
-                        local wTarget = TS:GetTarget(enemyList, 1)
-                        if wTarget and Control.CastSpell(HK_W, wTarget, myHero.pos, self.WData, MENU.wset.comhar.hitchance:Value()) then
-                            return
-                        end
-                    end
-                -- Auto
-                elseif MENU.wset.auto.enabled:Value() then
-                    for i = 1, 3 do
-                        local blazeList = {}
-                        local enemyList = OB:GetEnemyHeroes(1200 - (i * 100), false, 0)
-                        for j = 1, #enemyList do
-                            local unit = enemyList[j]
-                            if LocalCore:GetBuffDuration(unit, "brandablaze") > 1.33 then
-                                blazeList[#blazeList+1] = unit
-                            end
-                        end
-                        local wTarget = TS:GetTarget(blazeList, 1)
-                        if wTarget and Control.CastSpell(HK_W, wTarget, myHero.pos, self.WData, MENU.wset.auto.hitchance:Value()) then
-                            return
-                        end
-                        if LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastEk + 0.77 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
-                            local enemyList = OB:GetEnemyHeroes(1200 - (i * 100), false, 0)
-                            local wTarget = TS:GetTarget(enemyList, 1)
-                            if wTarget and Control.CastSpell(HK_W, wTarget, myHero.pos, self.WData, MENU.wset.auto.hitchance:Value()) then
-                                return
-                            end
-                        end
-                    end
-                end
-            end
-            -- R
-            if SPELLS:IsReady(_R, { q = 0.33, w = 0.33, e = 0.33, r = 0.5 } ) then
-                -- Combo / Harass
-                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.rset.comhar.harass:Value()) then
-                    local enemyList = OB:GetEnemyHeroes(750, false, 0)
-                    local xRange = MENU.rset.comhar.xrange:Value()
-                    local xEnemies = MENU.rset.comhar.xenemies:Value()
-                    for i = 1, #enemyList do
-                        local count = 0
-                        local rTarget = enemyList[i]
-                        for j = 1, #enemyList do
-                            local unit = enemyList[j]
-                            if rTarget ~= unit and rTarget.pos:DistanceTo(unit.pos) < xRange then
-                                count = count + 1
-                            end
-                        end
-                        if count >= xEnemies and Control.CastSpell(HK_R, rTarget) then
-                            return
-                        end
-                    end
-                -- Auto
-                elseif MENU.rset.auto.enabled:Value() then
-                    local enemyList = OB:GetEnemyHeroes(750, false, 0)
-                    local xRange = MENU.rset.auto.xrange:Value()
-                    local xEnemies = MENU.rset.auto.xenemies:Value()
-                    for i = 1, #enemyList do
-                        local count = 0
-                        local rTarget = enemyList[i]
-                        for j = 1, #enemyList do
-                            local unit = enemyList[j]
-                            if rTarget ~= unit and rTarget.pos:DistanceTo(unit.pos) < xRange then
-                                count = count + 1
-                            end
-                        end
-                        if count >= xEnemies and Control.CastSpell(HK_R, rTarget) then
-                            return
-                        end
-                    end
-                end
-            end
-        end
-        function c:CanMove()
-            if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0.2, e = 0.2, r = 0.2 }) then
-                return false
-            end
-            return true
-        end
-        function c:CanAttack()
-            if not SPELLS:CheckSpellDelays({ q = 0.33, w = 0.33, e = 0.33, r = 0.33 }) then
-                return false
-            end
-            -- LastHit, LaneClear
-            if not ORB.Modes[ORBWALKER_MODE_COMBO] and not ORB.Modes[ORBWALKER_MODE_HARASS] then
-                return true
-            end
-            -- W
-            if MENU.wset.disaa:Value() and myHero:GetSpellData(_W).level > 0 and myHero.mana > myHero:GetSpellData(_W).mana and ( LocalGameCanUseSpell(_W) == 0 or myHero:GetSpellData(_W).currentCd < 1 ) then
-                return false
-            end
-            -- E
-            if MENU.eset.disaa:Value() and myHero:GetSpellData(_E).level > 0 and myHero.mana > myHero:GetSpellData(_E).mana and ( LocalGameCanUseSpell(_E) == 0 or myHero:GetSpellData(_E).currentCd < 1 ) then
-                return false
-            end
-            return true
-        end
-        return result
-    end,
-    Varus = function()
-        local c = {}
-        local result =
-        {
-            HasQBuff = false,
-            QData = { delay = 0.1, radius = 70, range = 1650, speed = 1900, collision = false, sType = "line" },
-            EData = { delay = 0.5, radius = 235, range = 925, speed = 1500, collision = false, sType = "circular" },
-            RData = { delay = 0.25, radius = 120, range = 1075, speed = 1950, collision = false, sType = "line" }
-        }
-        -- init
-            c.__index = c
-            setmetatable(result, c)
-        function c:Menu()
-            MENU = MenuElement({name = "Gamsteron Varus", id = "gsovarus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/gsovarussf3f.png" })
-                MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
-                    MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
-                    MENU.qset:MenuElement({id = "stacks", name = "If enemy has 3 W stacks [ W passive ]", value = true})
-                    MENU.qset:MenuElement({id = "active", name = "If varus has W buff [ W active ]", value = true})
-                    MENU.qset:MenuElement({id = "range", name = "No enemies in AA range", value = true})
-                    MENU.qset:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
-                    MENU.wset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.wset:MenuElement({id = "harass", name = "Harass", value = false})
-                    MENU.wset:MenuElement({id = "whp", name = "min. hp %", value = 50, min = 1, max = 100, step = 1})
-                MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
-                    MENU.eset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.eset:MenuElement({id = "harass", name = "Harass", value = false})
-                    MENU.eset:MenuElement({id = "range", name = "No enemies in AA range", value = true})
-                    MENU.eset:MenuElement({id = "stacks", name = "If enemy has 3 W stacks [ W passive ]", value = false})
-                    MENU.eset:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
-                    MENU.rset:MenuElement({id = "combo", name = "Use R Combo", value = true})
-                    MENU.rset:MenuElement({id = "harass", name = "Use R Harass", value = false})
-                    MENU.rset:MenuElement({id = "rci", name = "Use R if enemy isImmobile", value = true})
-                    MENU.rset:MenuElement({id = "rcd", name = "Use R if enemy distance < X", value = true})
-                    MENU.rset:MenuElement({id = "rdist", name = "use R if enemy distance < X", value = 500, min = 250, max = 1000, step = 50})
-                    MENU.rset:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-        end
-        function c:Tick()
-            -- Check Q Buff
-            self.HasQBuff = LocalCore:HasBuff(myHero, "varusq")
-            -- Is Attacking
-            if not self.HasQBuff and ORB:IsAutoAttacking() then
-                return
-            end
-            -- Can Attack
-            local AATarget = TS:GetComboTarget()
-            if not self.HasQBuff and AATarget and not ORB.IsNone and ORB:CanAttack() then
-                return
-            end
-            -- Get Enemies
-            local enemyList = OB:GetEnemyHeroes(math.huge, false, 0)
-            --R
-            if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.rset.harass:Value())) and SPELLS:IsReady(_R, { q = 0.33, w = 0, e = 0.63, r = 0.5 } ) then
-                if MENU.rset.rcd:Value() then
-                    local t = LocalCore:GetClosestEnemy(enemyList, MENU.rset.rdist:Value())
-                    if t and Control.CastSpell(HK_R, t, myHero.pos, self.RData, MENU.rset.hitchance:Value()) then
-                        return
-                    end
-                end
-                if MENU.rset.rci:Value() then
-                    local t = LocalCore:GetImmobileEnemy(enemyList, 900)
-                    if t and myHero.pos:DistanceTo(t.pos) < self.RData.range and Control.CastSpell(HK_R, t) then
-                        return
-                    end
-                end
-            end
-            --E
-            if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value())) and SPELLS:IsReady(_E, { q = 0.33, w = 0, e = 0.63, r = 0.33 } ) then
-                local aaRange = MENU.eset.range:Value() and not AATarget
-                local onlyStacksE = MENU.eset.stacks:Value()
-                local eTargets = {}
-                for i = 1, #enemyList do
-                    local hero = enemyList[i]
-                    if myHero.pos:DistanceTo(hero.pos) < 925 and (LocalCore:GetBuffCount(hero, "varuswdebuff") == 3 or not onlyStacksE or myHero:GetSpellData(_W).level == 0 or aaRange) then
-                        eTargets[#eTargets+1] = hero
-                    end
-                end
-                local t = TS:GetTarget(eTargets, 0)
-                if t and Control.CastSpell(HK_E, t, myHero.pos, self.EData, MENU.eset.hitchance:Value()) then
-                    return
-                end
-            end
-            -- Q
-            if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.harass:Value()) then
-                local aaRange = MENU.qset.range:Value() and not AATarget
-                local wActive = MENU.qset.active:Value() and LocalGameTimer() < SPELLS.LastWk + 3
-                -- Q1
-                if not self.HasQBuff and SPELLS:IsReady(_Q, { q = 0.5, w = 0.1, e = 1, r = 0.33 } ) then
-                    if LocalControlIsKeyDown(HK_Q) then
-                        LocalControlKeyUp(HK_Q)
-                    end
-                    -- W
-                    if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.wset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.wset.harass:Value())) and SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.63, r = 0.33 } ) then
-                        local whp = MENU.wset.whp:Value()
-                        for i = 1, #enemyList do
-                            local hero = enemyList[i]
-                            local hp = 100 * ( hero.health / hero.maxHealth )
-                            if hp < whp and myHero.pos:DistanceTo(hero.pos) < 1500 and Control.CastSpell(HK_W) then
-                                return
-                            end
-                        end
-                    end
-                    local onlyStacksQ = MENU.qset.stacks:Value()
-                    for i = 1, #enemyList do
-                        local hero = enemyList[i]
-                        if myHero.pos:DistanceTo(hero.pos) < 1500 and (LocalCore:GetBuffCount(hero, "varuswdebuff") == 3 or not onlyStacksQ or myHero:GetSpellData(_W).level == 0 or wActive or aaRange) then
-                            LocalControlKeyDown(HK_Q)
-                            SPELLS.LastQ = LocalGameTimer()
-                            return
-                        end
-                    end
-                -- Q2
-                elseif self.HasQBuff and SPELLS:IsReady(_Q, { q = 0.2, w = 0, e = 0.63, r = 0.33 } ) then
-                    local qTargets = {}
-                    local onlyStacksQ = MENU.qset.stacks:Value()
-                    for i = 1, #enemyList do
-                        local hero = enemyList[i]
-                        if myHero.pos:DistanceTo(hero.pos) < 1650 and (LocalCore:GetBuffCount(hero, "varuswdebuff") == 3 or not onlyStacksQ or myHero:GetSpellData(_W).level == 0 or wActive or aaRange) then
-                            qTargets[#qTargets+1] = hero
-                        end
-                    end
-                    if #qTargets == 0 then
-                        for i = 1, #enemyList do
-                            local hero = enemyList[i]
-                            if myHero.pos:DistanceTo(hero.pos) < 1650 then
-                                qTargets[#qTargets+1] = hero
-                            end
-                        end
-                    end
-                    local qkey = SPELLS.LastQk - 0.33
-                    local qTimer = LocalGameTimer() - qkey
-                    local qExtraRange
-                    if qTimer < 2 then
-                        qExtraRange = qTimer * 0.5 * 700
-                    else
-                        qExtraRange = 700
-                    end
-                    local qRange = 925 + qExtraRange
-                    local t = TS:GetTarget(qTargets, 0)
-                    if t and Control.CastSpell(HK_Q, t, myHero.pos, self.QData, MENU.qset.hitchance:Value()) then
-                        return
-                    end
-                end
-            end
-        end
-        function c:CanAttack()
-            self.HasQBuff = LocalCore:HasBuff(myHero, "varusq")
-            if not SPELLS:CheckSpellDelays({ q = 0.33, w = 0, e = 0.33, r = 0.33 }) then
-                return false
-            end
-            if self.HasQBuff == true then
-                return false
-            end
-            return true
-        end
-        function c:CanMove()
-            if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0, e = 0.2, r = 0.2 }) then
-                return false
-            end
-            return true
-        end
-        return result
-    end,
     Vayne = function()
         require "MapPositionGOS"
-        local c = {}
-        local result =
-        {
-            LastReset = 0,
-            EData = { delay = 0.5, radius = 0, range = 550 + myHero.boundingRadius + 35, speed = 2000, collision = false, sType = "line" }
-        }
-        -- init
-            c.__index = c
-            setmetatable(result, c)
-        function c:Menu()
-            MENU = MenuElement({name = "Gamsteron Vayne", id = "gsovayne", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/vayne.png" })
-                -- Q
-                MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
-                    MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
-                -- E
-                MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
-                    MENU.eset:MenuElement({id = "interrupt", name = "Interrupt dangerous spells", value = true})
-                    MENU.eset:MenuElement({id = "combo", name = "Combo (Stun)", value = true})
-                    MENU.eset:MenuElement({id = "harass", name = "Harass (Stun)", value = false})
-                    MENU.eset:MenuElement({name = "Use on (Stun):", id = "useonstun", type = _G.MENU })
-                        LocalCore:OnEnemyHeroLoad(function(hero) MENU.eset.useonstun:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
-                --R
-                MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
-                    MENU.rset:MenuElement({id = "qready", name = "Only if Q ready or almost ready", value = true})
-                    MENU.rset:MenuElement({id = "combo", name = "Combo - if X enemies near vayne", value = true})
-                    MENU.rset:MenuElement({id = "xcount", name = "  ^^^ X enemies ^^^", value = 3, min = 1, max = 5, step = 1})
-                    MENU.rset:MenuElement({id = "xdistance", name = "^^^ max. distance ^^^", value = 500, min = 250, max = 750, step = 50})
+        local VayneVersion = 0.01
+        MENU = MenuElement({name = "Gamsteron Vayne", id = "Gamsteron_Vayne", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/vayne.png" })
+        -- Q
+        MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
+            MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
+        -- E
+        MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
+            MENU.eset:MenuElement({id = "interrupt", name = "Interrupt dangerous spells", value = true})
+            MENU.eset:MenuElement({id = "combo", name = "Combo (Stun)", value = true})
+            MENU.eset:MenuElement({id = "harass", name = "Harass (Stun)", value = false})
+            MENU.eset:MenuElement({name = "Use on (Stun):", id = "useonstun", type = _G.MENU })
+                LocalCore:OnEnemyHeroLoad(function(hero) MENU.eset.useonstun:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
+        --R
+        MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
+            MENU.rset:MenuElement({id = "qready", name = "Only if Q ready or almost ready", value = true})
+            MENU.rset:MenuElement({id = "combo", name = "Combo - if X enemies near vayne", value = true})
+            MENU.rset:MenuElement({id = "xcount", name = "  ^^^ X enemies ^^^", value = 3, min = 1, max = 5, step = 1})
+            MENU.rset:MenuElement({id = "xdistance", name = "^^^ max. distance ^^^", value = 500, min = 250, max = 750, step = 50})
+        -- Version
+        MENU:MenuElement({name = "Version " .. tostring(VayneVersion), type = _G.SPACE, id = "verspace"})
+        CHAMPION = LocalCore:Class()
+        function CHAMPION:__init()
+            self.LastReset = 0
+            self.EData = { delay = 0.5, radius = 0, range = 550 + myHero.boundingRadius - 35, speed = 2000, collision = false, type = _G.SPELLTYPE_LINE }
         end
-        function c:Tick()
+        function CHAMPION:Tick()
             -- reset attack after Q
             if LocalGameCanUseSpell(_Q) ~= 0 and LocalGameTimer() > self.LastReset + 1 and LocalCore:HasBuff(myHero, "vaynetumblebonus") then
                 ORB:__OnAutoAttackReset()
@@ -1767,19 +1220,19 @@ local AIO = {
                 end
                 if canR then
                     local enemyList = OB:GetEnemyHeroes(MENU.rset.xdistance:Value(), false, 0)
-                    if #enemyList >= MENU.rset.xcount:Value() and Control.CastSpell(HK_R) then
-                        return
+                    if #enemyList >= MENU.rset.xcount:Value() then
+                        Control.CastSpell(HK_R)
                     end
                 end
             end
             -- E
             if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value()) then
                 if SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.75, r = 0 } ) then
-                    local enemyList = OB:GetEnemyHeroes(550+myHero.boundingRadius, true, 0)
+                    local enemyList = OB:GetEnemyHeroes(self.EData.range, true, 0)
                     for i = 1, #enemyList do
                         local hero = enemyList[i]
                         local name = hero.charName
-                        local erange = 475 - 35
+                        local erange = 475
                         if MENU.eset.useonstun[name] and MENU.eset.useonstun[name]:Value() and CheckWall(myHero.pos, hero.pos, erange) and CheckWall(myHero.pos, hero:GetPrediction(math.huge,0.5+0.15+_G.LATENCY), erange) then
                             local pred = GetGamsteronPrediction(hero, self.EData, myHero.pos)
                             if pred.Hitchance >= 3 and CheckWall(myHero.pos, pred.CastPosition, erange) and CheckWall(myHero.pos, pred.UnitPosition, erange) then
@@ -1798,14 +1251,14 @@ local AIO = {
                     local enemyList = OB:GetEnemyHeroes(1000, false, 1)
                     for i = 1, #enemyList do
                         local hero = enemyList[i]
-                        if mePos:DistanceTo(mousePos) > 300 and mePos:Extended(mousePos, 300):DistanceTo(hero.pos) < meRange + hero.boundingRadius - 35 and Control.CastSpell(HK_Q) then
-                            return
+                        if mePos:DistanceTo(mousePos) > 300 and mePos:Extended(mousePos, 300):DistanceTo(hero.pos) < meRange + hero.boundingRadius - 35 then
+                            Control.CastSpell(HK_Q)
                         end
                     end
                 end
             end
         end
-        function c:Interrupter()
+        function CHAMPION:Interrupter()
             INTERRUPTER = LocalCore:__Interrupter()
             INTERRUPTER:OnInterrupt(function(enemy, activeSpell)
                 if MENU.eset.interrupt:Value() and SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.5, r = 0 } ) then
@@ -1813,80 +1266,418 @@ local AIO = {
                 end
             end)
         end
-        function c:CanAttack()
+        function CHAMPION:CanAttack()
             if not SPELLS:CheckSpellDelays({ q = 0.3, w = 0, e = 0.5, r = 0 }) then
                 return false
             end
             return true
         end
-        function c:CanMove()
+        function CHAMPION:CanMove()
             if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0, e = 0.4, r = 0 }) then
                 return false
             end
             return true
         end
-        return result
+    end,
+    Brand = function()
+        local BrandVersion = 0.01
+        MENU = MenuElement({name = "Gamsteron Brand", id = "Gamsteron_Brand", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/x1xxbrandx3xx.png" })
+        -- Q
+        MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
+            -- KS
+            MENU.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1})
+                MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            -- Auto
+            MENU.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.qset.auto:MenuElement({id = "stun", name = "Auto Stun", value = true})
+                MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            -- Combo / Harass
+            MENU.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
+                MENU.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
+                MENU.qset.comhar:MenuElement({id = "stun", name = "Only if will stun", value = true})
+                MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- W
+        MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
+            MENU.wset:MenuElement({id = "disaa", name = "Disable attack if ready or almostReady", value = true})
+            -- KS
+            MENU.wset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.wset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.wset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1})
+                MENU.wset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            -- Auto
+            MENU.wset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.wset.auto:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.wset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            -- Combo / Harass
+            MENU.wset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.wset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
+                MENU.wset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
+                MENU.wset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- E
+        MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
+            MENU.eset:MenuElement({id = "disaa", name = "Disable attack if ready or almostReady", value = true})
+            -- KS
+            MENU.eset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.eset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.eset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 100, min = 1, max = 300, step = 1})
+            -- Auto
+            MENU.eset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.eset.auto:MenuElement({id = "stun", name = "If Q ready | no collision & W not ready $ mana for Q + E", value = true})
+                MENU.eset.auto:MenuElement({id = "passive", name = "If Q not ready & W not ready $ enemy has passive buff", value = true})
+            -- Combo / Harass
+            MENU.eset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.eset.comhar:MenuElement({id = "combo", name = "Combo", value = true})
+                MENU.eset.comhar:MenuElement({id = "harass", name = "Harass", value = false})
+        --R
+        MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
+            -- Auto
+            MENU.rset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.rset.auto:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.rset.auto:MenuElement({id = "xenemies", name = ">= X enemies near target", value = 2, min = 1, max = 4, step = 1})
+                MENU.rset.auto:MenuElement({id = "xrange", name = "< X distance enemies to target", value = 300, min = 100, max = 600, step = 50})
+            -- Combo / Harass
+            MENU.rset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.rset.comhar:MenuElement({id = "combo", name = "Use R Combo", value = true})
+                MENU.rset.comhar:MenuElement({id = "harass", name = "Use R Harass", value = false})
+                MENU.rset.comhar:MenuElement({id = "xenemies", name = ">= X enemies near target", value = 1, min = 1, max = 4, step = 1})
+                MENU.rset.comhar:MenuElement({id = "xrange", name = "< X distance enemies to target", value = 300, min = 100, max = 600, step = 50})
+        -- Version
+        MENU:MenuElement({name = "Version " .. tostring(BrandVersion), type = _G.SPACE, id = "verspace"})
+        CHAMPION = LocalCore:Class()
+        function CHAMPION:__init()
+            self.ETarget = nil
+            self.QData = { Delay = 0.25, Radius = 80, Range = 1050, Speed = 1550, Collision = true, Type = _G.SPELLTYPE_LINE }
+            self.WData = { Delay = 0.625, Radius = 100, Range = 875, Speed = math.huge, Collision = false, Type = _G.SPELLTYPE_CIRCLE }
+        end
+        function CHAMPION:Tick()
+            -- Is Attacking
+            if ORB:IsAutoAttacking() then
+                return
+            end
+            local result = false
+            -- Q
+            if SPELLS:IsReady(_Q, { q = 0.5, w = 0.53, e = 0.53, r = 0.33 } ) then
+                -- KS
+                if MENU.qset.killsteal.enabled:Value() then
+                    local baseDmg = 50
+                    local lvlDmg = 30 * myHero:GetSpellData(_Q).level
+                    local apDmg = myHero.ap * 0.55
+                    local qDmg = baseDmg + lvlDmg + apDmg
+                    local minHP = MENU.qset.killsteal.minhp:Value()
+                    if qDmg > minHP then
+                        local enemyList = OB:GetEnemyHeroes(1050, false, 0)
+                        for i = 1, #enemyList do
+                            local qTarget = enemyList[i]
+                            if qTarget.health > minHP and qTarget.health < DMG:CalculateDamage(myHero, qTarget, DAMAGE_TYPE_MAGICAL, qDmg) then
+                                result = CastSpell(HK_Q, qTarget, self.QData, MENU.qset.killsteal.hitchance:Value() + 1)
+                            end
+                        end
+                    end
+                end if result then return end
+                -- Combo Harass
+                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.comhar.harass:Value()) then
+                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, self.ETarget, myHero.pos, self.QData, MENU.qset.comhar.hitchance:Value()) then
+                        return
+                    end
+                    local blazeList = {}
+                    local enemyList = OB:GetEnemyHeroes(1050, false, 0)
+                    for i = 1, #enemyList do
+                        local unit = enemyList[i]
+                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.5 and not IsGamsteronCollision(unit, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
+                            blazeList[#blazeList+1] = unit
+                        end
+                    end
+                    result = CastSpell(HK_Q, TS:GetTarget(blazeList, 1), self.QData, MENU.qset.comhar.hitchance:Value() + 1)
+                    if not result and not MENU.qset.comhar.stun:Value() and LocalGameTimer() > SPELLS.LastWk + 1.33 and LocalGameTimer() > SPELLS.LastEk + 0.77 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
+                        result = CastSpell(HK_Q, TS:GetTarget(OB:GetEnemyHeroes(1050, false, 0), 1), self.QData, MENU.qset.comhar.hitchance:Value() + 1)
+                    end
+                -- Auto
+                elseif MENU.qset.auto.stun:Value() then
+                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, self.ETarget, myHero.pos, self.QData, 2) then
+                        return
+                    end
+                    local blazeList = {}
+                    local enemyList = OB:GetEnemyHeroes(1050, false, 0)
+                    for i = 1, #enemyList do
+                        local unit = enemyList[i]
+                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.5 and not IsGamsteronCollision(unit, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
+                            blazeList[#blazeList+1] = unit
+                        end
+                    end
+                    result = CastSpell(HK_Q, TS:GetTarget(blazeList, 1), self.QData, MENU.qset.auto.hitchance:Value() + 1)
+                end
+            end if result then return end
+            -- E
+            if SPELLS:IsReady(_E, { q = 0.33, w = 0.53, e = 0.5, r = 0.33 } ) then
+                -- antigap
+                local enemyList = OB:GetEnemyHeroes(635, false, 0)
+                for i = 1, #enemyList do
+                    local unit = enemyList[i]
+                    if LocalCore:GetDistanceSquared(myHero.pos, unit.pos) < 300 * 300 then
+                        result = Control.CastSpell(HK_E, unit)
+                    end
+                end if result then return end
+                -- KS
+                if MENU.eset.killsteal.enabled:Value() then
+                    local baseDmg = 50
+                    local lvlDmg = 20 * myHero:GetSpellData(_E).level
+                    local apDmg = myHero.ap * 0.35
+                    local eDmg = baseDmg + lvlDmg + apDmg
+                    local minHP = MENU.eset.killsteal.minhp:Value()
+                    if eDmg > minHP then
+                        for i = 1, #enemyList do
+                            local unit = enemyList[i]
+                            if unit.health > minHP and unit.health < DMG:CalculateDamage(myHero, unit, DAMAGE_TYPE_MAGICAL, eDmg) then
+                                result = Control.CastSpell(HK_E, unit)
+                                if result then break end
+                            end
+                        end
+                    end
+                end if result then return end
+                -- Combo / Harass
+                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.comhar.harass:Value()) then
+                    local blazeList = {}
+                    for i = 1, #enemyList do
+                        local unit = enemyList[i]
+                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.33 then
+                            blazeList[#blazeList+1] = unit
+                        end
+                    end
+                    local eTarget = TS:GetTarget(blazeList, 1)
+                    if eTarget then
+                        result = Control.CastSpell(HK_E, eTarget)
+                        self.ETarget = eTarget
+                    end if result then return end
+                    if LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastWk + 1.33 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
+                        eTarget = TS:GetTarget(enemyList, 1)
+                        if eTarget then
+                            result = Control.CastSpell(HK_E, eTarget)
+                            self.ETarget = eTarget
+                        end
+                    end
+                -- Auto
+                elseif myHero:GetSpellData(_Q).level > 0 and myHero:GetSpellData(_W).level > 0 then
+                    -- EQ -> if Q ready | no collision & W not ready $ mana for Q + E
+                    if MENU.eset.auto.stun:Value() and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
+                        if (LocalGameCanUseSpell(_Q) == 0 or myHero:GetSpellData(_Q).currentCd < 0.75) and not(LocalGameCanUseSpell(_W) == 0 or myHero:GetSpellData(_W).currentCd < 0.75) then
+                            local blazeList = {}
+                            local enemyList = OB:GetEnemyHeroes(635, false, 0)
+                            for i = 1, #enemyList do
+                                local unit = enemyList[i]
+                                if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.33 then
+                                    blazeList[#blazeList+1] = unit
+                                end
+                            end
+                            local eTarget = TS:GetTarget(blazeList, 1)
+                            if eTarget and not IsGamsteronCollision(eTarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
+                                result = Control.CastSpell(HK_E, eTarget)
+                            end if result then return end
+                            if LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastWk + 1.33 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
+                                eTarget = TS:GetTarget(enemyList, 1)
+                                if eTarget and not IsGamsteronCollision(eTarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
+                                    result = Control.CastSpell(HK_E, eTarget)
+                                    self.ETarget = eTarget
+                                end
+                            end
+                        end
+                    end
+                    -- Passive -> If Q not ready & W not ready $ enemy has passive buff
+                    if MENU.eset.auto.passive:Value() and not(LocalGameCanUseSpell(_Q) == 0 or myHero:GetSpellData(_Q).currentCd < 0.75) and not(LocalGameCanUseSpell(_W) == 0 or myHero:GetSpellData(_W).currentCd < 0.75) then
+                        local blazeList = {}
+                        local enemyList = OB:GetEnemyHeroes(670, false, 0)
+                        for i = 1, #enemyList do
+                            local unit = enemyList[i]
+                            if LocalCore:GetBuffDuration(unit, "brandablaze") > 0.33 then
+                                blazeList[#blazeList+1] = unit
+                            end
+                        end
+                        local eTarget = TS:GetTarget(blazeList, 1)
+                        if eTarget then
+                            result = Control.CastSpell(HK_E, eTarget)
+                            self.ETarget = eTarget
+                        end
+                    end
+                end
+            end if result then return end
+            -- W
+            if SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.33, r = 0.33 } ) then
+                -- KS
+                if MENU.wset.killsteal.enabled:Value() then
+                    local baseDmg = 30
+                    local lvlDmg = 45 * myHero:GetSpellData(_W).level
+                    local apDmg = myHero.ap * 0.6
+                    local wDmg = baseDmg + lvlDmg + apDmg
+                    local minHP = MENU.wset.killsteal.minhp:Value()
+                    if wDmg > minHP then
+                        local enemyList = OB:GetEnemyHeroes(950, false, 0)
+                        for i = 1, #enemyList do
+                            local wTarget = enemyList[i]
+                            if wTarget.health > minHP and wTarget.health < DMG:CalculateDamage(myHero, wTarget, DAMAGE_TYPE_MAGICAL, wDmg) then
+                                result = CastSpell(HK_W, wTarget, self.WData, MENU.wset.killsteal.hitchance:Value() + 1)
+                                if result then break end
+                            end
+                        end
+                    end
+                end if result then return end
+                -- Combo / Harass
+                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.wset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.wset.comhar.harass:Value()) then
+                    local blazeList = {}
+                    local enemyList = OB:GetEnemyHeroes(950, false, 0)
+                    for i = 1, #enemyList do
+                        local unit = enemyList[i]
+                        if LocalCore:GetBuffDuration(unit, "brandablaze") > 1.33 then
+                            blazeList[#blazeList+1] = unit
+                        end
+                    end
+                    result = CastSpell(HK_W, TS:GetTarget(blazeList, 1), self.WData, MENU.wset.comhar.hitchance:Value() + 1)
+                    if not result and LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastEk + 0.77 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
+                        result = CastSpell(HK_W, TS:GetTarget(enemyList, 1), self.WData, MENU.wset.comhar.hitchance:Value() + 1)
+                    end
+                -- Auto
+                elseif MENU.wset.auto.enabled:Value() then
+                    for i = 1, 3 do
+                        local blazeList = {}
+                        local enemyList = OB:GetEnemyHeroes(1200 - (i * 100), false, 0)
+                        for j = 1, #enemyList do
+                            local unit = enemyList[j]
+                            if LocalCore:GetBuffDuration(unit, "brandablaze") > 1.33 then
+                                blazeList[#blazeList+1] = unit
+                            end
+                        end
+                        result = CastSpell(HK_W, TS:GetTarget(blazeList, 1), self.WData, MENU.wset.auto.hitchance:Value() + 1)
+                        if not result and LocalGameTimer() > SPELLS.LastQk + 0.77 and LocalGameTimer() > SPELLS.LastEk + 0.77 and LocalGameTimer() > SPELLS.LastRk + 0.77 then
+                            result = CastSpell(HK_W, TS:GetTarget(enemyList, 1), self.WData, MENU.wset.auto.hitchance:Value() + 1)
+                        end
+                    end
+                end
+            end if result then return end
+            -- R
+            if SPELLS:IsReady(_R, { q = 0.33, w = 0.33, e = 0.33, r = 0.5 } ) then
+                -- Combo / Harass
+                if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.rset.comhar.harass:Value()) then
+                    local enemyList = OB:GetEnemyHeroes(750, false, 0)
+                    local xRange = MENU.rset.comhar.xrange:Value()
+                    local xEnemies = MENU.rset.comhar.xenemies:Value()
+                    for i = 1, #enemyList do
+                        local count = 0
+                        local rTarget = enemyList[i]
+                        for j = 1, #enemyList do
+                            local unit = enemyList[j]
+                            if rTarget ~= unit and rTarget.pos:DistanceTo(unit.pos) < xRange then
+                                count = count + 1
+                            end
+                        end
+                        if count >= xEnemies then
+                            result = Control.CastSpell(HK_R, rTarget)
+                            if result then break end
+                        end
+                    end
+                -- Auto
+                elseif MENU.rset.auto.enabled:Value() then
+                    local enemyList = OB:GetEnemyHeroes(750, false, 0)
+                    local xRange = MENU.rset.auto.xrange:Value()
+                    local xEnemies = MENU.rset.auto.xenemies:Value()
+                    for i = 1, #enemyList do
+                        local count = 0
+                        local rTarget = enemyList[i]
+                        for j = 1, #enemyList do
+                            local unit = enemyList[j]
+                            if rTarget ~= unit and rTarget.pos:DistanceTo(unit.pos) < xRange then
+                                count = count + 1
+                            end
+                        end
+                        if count >= xEnemies then
+                            result = Control.CastSpell(HK_R, rTarget)
+                            if result then break end
+                        end
+                    end
+                end
+            end
+        end
+        function CHAMPION:CanMove()
+            if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0.2, e = 0.2, r = 0.2 }) then
+                return false
+            end
+            return true
+        end
+        function CHAMPION:CanAttack()
+            if not SPELLS:CheckSpellDelays({ q = 0.33, w = 0.33, e = 0.33, r = 0.33 }) then
+                return false
+            end
+            -- LastHit, LaneClear
+            if not ORB.Modes[ORBWALKER_MODE_COMBO] and not ORB.Modes[ORBWALKER_MODE_HARASS] then
+                return true
+            end
+            -- W
+            if MENU.wset.disaa:Value() and myHero:GetSpellData(_W).level > 0 and myHero.mana > myHero:GetSpellData(_W).mana and ( LocalGameCanUseSpell(_W) == 0 or myHero:GetSpellData(_W).currentCd < 1 ) then
+                return false
+            end
+            -- E
+            if MENU.eset.disaa:Value() and myHero:GetSpellData(_E).level > 0 and myHero.mana > myHero:GetSpellData(_E).mana and ( LocalGameCanUseSpell(_E) == 0 or myHero:GetSpellData(_E).currentCd < 1 ) then
+                return false
+            end
+            return true
+        end
     end,
     Ezreal = function()
-        local c = {}
-        local result =
-        {
-            resX = Game.Resolution().x,
-            resY = Game.Resolution().y,
-            QData = { delay = 0.25, radius = 60, range = 1150, speed = 2000, collision = true, sType = "line" },
-            WData = { delay = 0.25, radius = 80, range = 1150, speed = 1550, collision = false, sType = "line" },
-            QFarm = nil
-        }
-        -- init
-            c.__index = c
-            setmetatable(result, c)
-        function c:Menu()
-            MENU = MenuElement({name = "Gamsteron Ezreal", id = "gsoezreal", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/ezreal.png" })
-                MENU:MenuElement({name = "Spells", id = "spells", type = _G.MENU })
-                    MENU.spells:MenuElement({id = "q", name = "Q", value = false, key = string.byte("Q"), toggle = true})
-                    MENU.spells:MenuElement({id = "w", name = "W", value = false, key = string.byte("W"), toggle = true})
-                    MENU.spells:MenuElement({id = "e", name = "E", value = false, key = string.byte("E"), toggle = true})
-                    MENU.spells:MenuElement({id = "r", name = "R", value = false, key = string.byte("R"), toggle = true})
-                    MENU.spells:MenuElement({id = "d", name = "D", value = false, key = string.byte("D"), toggle = true})
-                    MENU.spells:MenuElement({id = "f", name = "F", value = false, key = string.byte("F"), toggle = true})
-                MENU:MenuElement({name = "Auto Q", id = "autoq", type = _G.MENU })
-                    MENU.autoq:MenuElement({id = "enable", name = "Enable", value = true, key = string.byte("T"), toggle = true})
-                    MENU.autoq:MenuElement({id = "mana", name = "Q Auto min. mana percent", value = 50, min = 0, max = 100, step = 1 })
-                    MENU.autoq:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
-                    MENU.qset:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                    MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
-                    MENU.qset:MenuElement({id = "clearm", name = "LaneClear/LastHit", type = _G.MENU })
-                        MENU.qset.clearm:MenuElement({id = "lhenabled", name = "LastHit Enabled", value = true})
-                        MENU.qset.clearm:MenuElement({id = "lhmana", name = "LastHit Min. Mana %", value = 50, min = 0, max = 100, step = 5 })
-                        MENU.qset.clearm:MenuElement({id = "lcenabled", name = "LaneClear Enabled", value = false})
-                        MENU.qset.clearm:MenuElement({id = "lcmana", name = "LaneClear Min. Mana %", value = 75, min = 0, max = 100, step = 5 })
-                MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
-                    MENU.wset:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
-                    MENU.wset:MenuElement({id = "combo", name = "Combo", value = true})
-                    MENU.wset:MenuElement({id = "harass", name = "Harass", value = false})
-                MENU:MenuElement({name = "Drawings", id = "draws", type = _G.MENU })
-                    MENU.draws:MenuElement({name = "Auto Q", id = "autoq", type = _G.MENU })
-                        MENU.draws.autoq:MenuElement({id = "enabled", name = "Enabled", value = true})
-                        MENU.draws.autoq:MenuElement({id = "size", name = "Text Size", value = 25, min = 1, max = 64, step = 1 })
-                        MENU.draws.autoq:MenuElement({id = "custom", name = "Custom Position", value = false})
-                        MENU.draws.autoq:MenuElement({id = "posX", name = "Text Position Width", value = self.resX * 0.5 - 150, min = 1, max = self.resX, step = 1 })
-                        MENU.draws.autoq:MenuElement({id = "posY", name = "Text Position Height", value = self.resY * 0.5, min = 1, max = self.resY, step = 1 })
-                    MENU.draws:MenuElement({name = "Q Farm", id = "qfarm", type = _G.MENU })
-                        MENU.draws.qfarm:MenuElement({name = "LastHitable Minion",  id = "lasthit", type = MENU})
-                            MENU.draws.qfarm.lasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
-                            MENU.draws.qfarm.lasthit:MenuElement({name = "Color",  id = "color", color = LocalDrawColor(150, 255, 255, 255)})
-                            MENU.draws.qfarm.lasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
-                            MENU.draws.qfarm.lasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
-                        MENU.draws.qfarm:MenuElement({name = "Almost LastHitable Minion",  id = "almostlasthit", type = MENU})
-                            MENU.draws.qfarm.almostlasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
-                            MENU.draws.qfarm.almostlasthit:MenuElement({name = "Color",  id = "color", color = LocalDrawColor(150, 239, 159, 55)})
-                            MENU.draws.qfarm.almostlasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
-                            MENU.draws.qfarm.almostlasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
+        local EzrealVersion = 0.01
+        MENU = MenuElement({name = "Gamsteron Ezreal", id = "Gamsteron_Ezreal", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/ezreal.png" })
+        -- E Manual
+        MENU:MenuElement({name = "Manual E", id = "mane", type = _G.MENU })
+            MENU.mane:MenuElement({id = "efake", name = "E Fake Key", value = false, key = string.byte("E")})
+            MENU.mane:MenuElement({id = "elol", name = "E LoL Key", value = false, key = string.byte("L")})
+        -- Auto Q
+        MENU:MenuElement({name = "Auto Q", id = "autoq", type = _G.MENU })
+            MENU.autoq:MenuElement({id = "enable", name = "Enable", value = true, key = string.byte("T"), toggle = true})
+            MENU.autoq:MenuElement({id = "mana", name = "Q Auto min. mana percent", value = 50, min = 0, max = 100, step = 1 })
+            MENU.autoq:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- Q
+        MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
+            MENU.qset:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+            MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
+            MENU.qset:MenuElement({id = "clearm", name = "LaneClear/LastHit", type = _G.MENU })
+                MENU.qset.clearm:MenuElement({id = "lhenabled", name = "LastHit Enabled", value = true})
+                MENU.qset.clearm:MenuElement({id = "lhmana", name = "LastHit Min. Mana %", value = 50, min = 0, max = 100, step = 5 })
+                MENU.qset.clearm:MenuElement({id = "lcenabled", name = "LaneClear Enabled", value = false})
+                MENU.qset.clearm:MenuElement({id = "lcmana", name = "LaneClear Min. Mana %", value = 75, min = 0, max = 100, step = 5 })
+        -- W
+        MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
+            MENU.wset:MenuElement({id = "hitchance", name = "Hitchance", value = 1, drop = { "normal", "high" } })
+            MENU.wset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.wset:MenuElement({id = "harass", name = "Harass", value = false})
+        -- Drawings
+        MENU:MenuElement({name = "Drawings", id = "draws", type = _G.MENU })
+            MENU.draws:MenuElement({name = "Auto Q", id = "autoq", type = _G.MENU })
+                MENU.draws.autoq:MenuElement({id = "enabled", name = "Enabled", value = true})
+                MENU.draws.autoq:MenuElement({id = "size", name = "Text Size", value = 25, min = 1, max = 64, step = 1 })
+                MENU.draws.autoq:MenuElement({id = "custom", name = "Custom Position", value = false})
+                MENU.draws.autoq:MenuElement({id = "posX", name = "Text Position Width", value = Game.Resolution().x * 0.5 - 150, min = 1, max = Game.Resolution().x, step = 1 })
+                MENU.draws.autoq:MenuElement({id = "posY", name = "Text Position Height", value = Game.Resolution().y * 0.5, min = 1, max = Game.Resolution().y, step = 1 })
+            MENU.draws:MenuElement({name = "Q Farm", id = "qfarm", type = _G.MENU })
+                MENU.draws.qfarm:MenuElement({name = "LastHitable Minion",  id = "lasthit", type = MENU})
+                    MENU.draws.qfarm.lasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
+                    MENU.draws.qfarm.lasthit:MenuElement({name = "Color",  id = "color", color = LocalDrawColor(150, 255, 255, 255)})
+                    MENU.draws.qfarm.lasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
+                    MENU.draws.qfarm.lasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
+                MENU.draws.qfarm:MenuElement({name = "Almost LastHitable Minion",  id = "almostlasthit", type = MENU})
+                    MENU.draws.qfarm.almostlasthit:MenuElement({name = "Enabled",  id = "enabled", value = true})
+                    MENU.draws.qfarm.almostlasthit:MenuElement({name = "Color",  id = "color", color = LocalDrawColor(150, 239, 159, 55)})
+                    MENU.draws.qfarm.almostlasthit:MenuElement({name = "Width",  id = "width", value = 3, min = 1, max = 10})
+                    MENU.draws.qfarm.almostlasthit:MenuElement({name = "Radius",  id = "radius", value = 50, min = 1, max = 100})
+        -- Version
+        MENU:MenuElement({name = "Version " .. tostring(EzrealVersion), type = _G.SPACE, id = "verspace"})
+        CHAMPION = LocalCore:Class()
+        function CHAMPION:__init()
+            self.QData = { Delay = 0.25, Radius = 60, Range = 1150, Speed = 2000, Collision = true, Type = _G.SPELLTYPE_LINE }
+            self.WData = { Delay = 0.25, Radius = 60, Range = 1150, Speed = 2000, Collision = false, Type = _G.SPELLTYPE_LINE }
+            self.QFarm = nil
+            self.LastEFake = 0
         end
-        function c:Tick()
-
+        function CHAMPION:Farm()
             -- [ mana percent ]
             local manaPercent = 100 * myHero.mana / myHero.maxMana
 
@@ -1896,9 +1687,18 @@ local AIO = {
                     self.QFarm:Tick()
                 end
             end
+        end
+        function CHAMPION:WndMsg(msg, wParam)
+            if wParam == MENU.mane.efake:Key() then
+                self.LastEFake = os.clock()
+            end
+        end
+        function CHAMPION:Tick()
             
             -- [ e manual ]
-            SPELLS:CastManualSpell(_E, { q = 0.33, w = 0.33, e = 0.5, r = 1.13 })
+            if os.clock() < self.LastEFake + 0.5 and SPELLS:IsReady(_E, { q = 0.33, w = 0.33, e = 0.2, r = 0.77 } ) then
+                Control.CastSpell(MENU.mane.elol:Key(), _G.mousePos)
+            end
 
             -- [ is attacking ]
             if ORB:IsAutoAttacking() then
@@ -1912,6 +1712,11 @@ local AIO = {
             if AATarget and not ORB.IsNone and ORB:CanAttack() then
                 return
             end
+            
+            local result = false
+
+            -- [ mana percent ]
+            local manaPercent = 100 * myHero.mana / myHero.maxMana
 
             -- [ use q ]
             if SPELLS:IsReady(_Q, { q = 0.5, w = 0.33, e = 0.33, r = 1.13 } ) then
@@ -1924,56 +1729,53 @@ local AIO = {
                     else
                         QTarget = TS:GetTarget(OB:GetEnemyHeroes(1150, false, 0), 0)
                     end
-                    if QTarget and Control.CastSpell(HK_Q, QTarget, myHero.pos, self.QData, MENU.qset.hitchance:Value()) then
-                        return
-                    end
-
+                    result = CastSpell(HK_Q, QTarget, self.QData, MENU.qset.hitchance:Value() + 1)
                 -- [ auto ]
                 elseif MENU.autoq.enable:Value() and manaPercent > MENU.autoq.mana:Value() then
                     local enemyHeroes = OB:GetEnemyHeroes(1150, false, 0)
                     for i = 1, #enemyHeroes do
-                        local unit = enemyHeroes[i]
-                        if unit and Control.CastSpell(HK_Q, unit, myHero.pos, self.QData, MENU.autoq.hitchance:Value()) then
-                            return
-                        end
+                        result = CastSpell(HK_Q, enemyHeroes[i], self.QData, MENU.autoq.hitchance:Value() + 1)
+                        if result then break end
                     end
                 end
 
                 -- [ cast q clear ]
-                if MENU.qset.clearm.lhenabled:Value() and not ORB.IsNone and not ORB.Modes[ORBWALKER_MODE_COMBO] and manaPercent > MENU.qset.clearm.lhmana:Value() then
+                if not result and MENU.qset.clearm.lhenabled:Value() and not ORB.IsNone and not ORB.Modes[ORBWALKER_MODE_COMBO] and manaPercent > MENU.qset.clearm.lhmana:Value() then
                     -- [ last hit ]
                     local lhtargets = self.QFarm:GetLastHitTargets()
                     for i = 1, #lhtargets do
                         local unit = lhtargets[i]
-                        if not unit.dead and not unit.pathing.hasMovePath and not IsGamsteronCollision(unit, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, unit) then
-                            ORB:SetAttack(false)
-                            DelayAction(function() ORB:SetAttack(true) end, self.QData.delay + (unit.pos:DistanceTo(myHero.pos) / self.QData.speed) + 0.05)
-                            return
+                        if unit.alive and unit:GetCollision(self.QData.Radius + 35, self.QData.Speed, self.QData.Delay) == 1 then
+                            result = Control.CastSpell(HK_Q, unit:GetPrediction(self.QData.Speed, self.QData.Delay))
+                            if result then
+                                ORB:SetAttack(false)
+                                DelayAction(function() ORB:SetAttack(true) end, self.QData.Delay + (unit.pos:DistanceTo(myHero.pos) / self.QData.Speed) + 0.05)
+                                break
+                            end
                         end
                     end
                 end
-                if MENU.qset.clearm.lcenabled:Value() and ORB.Modes[ORBWALKER_MODE_LANECLEAR] and not self.QFarm:ShouldWait() and manaPercent > MENU.qset.clearm.lcmana:Value() then
+                if not result and MENU.qset.clearm.lcenabled:Value() and ORB.Modes[ORBWALKER_MODE_LANECLEAR] and not self.QFarm:ShouldWait() and manaPercent > MENU.qset.clearm.lcmana:Value() then
                     -- [ enemy heroes ]
                     local enemyHeroes = OB:GetEnemyHeroes(self.Range, false, "spell")
                     for i = 1, #enemyHeroes do
-                        local unit = enemyHeroes[i]
-                        if unit and self:CastSpell(HK_Q, unit, myHero.pos, self.QData, MENU.qset.hitchance:Value()) then
-                            return
-                        end
-                    end
+                        result = CastSpell(HK_Q, enemyHeroes[i], self.QData, MENU.qset.hitchance:Value() + 1)
+                        if result then break end
+                    end if result then return end
                     -- [ lane clear ]
                     local lctargets = self.QFarm:GetLaneClearTargets()
                     for i = 1, #lctargets do
                         local unit = lctargets[i]
-                        if not unit.dead and not unit.pathing.hasMovePath and not IsGamsteronCollision(unit, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, unit) then
-                            return
+                        if unit.alive and unit:GetCollision(self.QData.Radius + 35, self.QData.Speed, self.QData.Delay) == 1 then
+                            result = Control.CastSpell(HK_Q, unit:GetPrediction(self.QData.Speed, self.QData.Delay))
+                            if result then break end
                         end
                     end
                 end
             end
 
             -- [ use w ]
-            if SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.33, r = 1.13 } ) then
+            if not result and SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.33, r = 1.13 } ) then
                 if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.wset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.wset.harass:Value()) then
                     local WTarget
                     if AATarget then
@@ -1981,13 +1783,11 @@ local AIO = {
                     else
                         WTarget = TS:GetTarget(OB:GetEnemyHeroes(1000, false, 0), 0)
                     end
-                    if WTarget and Control.CastSpell(HK_W, WTarget, myHero.pos, self.WData, MENU.wset.hitchance:Value()) then
-                        return
-                    end
+                    CastSpell(HK_W, WTarget, self.WData, MENU.wset.hitchance:Value() + 1)
                 end
             end
         end
-        function c:Draw()
+        function CHAMPION:Draw()
             if MENU.draws.autoq.enabled:Value() then
                 local mePos = myHero.pos:To2D()
                 local isCustom = MENU.draws.autoq.custom:Value()
@@ -2020,22 +1820,176 @@ local AIO = {
                 end
             end
         end
-        function c:QClear()
+        function CHAMPION:QClear()
             self.QFarm = SPELLS:SpellClear(_Q, self.QData, function() return ((25 * myHero:GetSpellData(_Q).level) - 10) + (1.1 * myHero.totalDamage) + (0.4 * myHero.ap) end)
         end
-        function c:CanAttack()
+        function CHAMPION:CanAttack()
             if not SPELLS:CheckSpellDelays({ q = 0.33, w = 0.33, e = 0.33, r = 1.13 }) then
                 return false
             end
             return true
         end
-        function c:CanMove()
+        function CHAMPION:CanMove()
             if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0.2, e = 0.2, r = 1 }) then
                 return false
             end
             return true
         end
-        return result
+    end,
+    Varus = function()
+        local VarusVersion = 0.01
+        MENU = MenuElement({name = "Gamsteron Varus", id = "Gamsteron_Varus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/gsovarussf3f.png" })
+        -- Q
+        MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
+            MENU.qset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
+            MENU.qset:MenuElement({id = "stacks", name = "If enemy has 3 W stacks [ W passive ]", value = true})
+            MENU.qset:MenuElement({id = "active", name = "If varus has W buff [ W active ]", value = true})
+            MENU.qset:MenuElement({id = "range", name = "No enemies in AA range", value = true})
+            MENU.qset:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- W
+        MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
+            MENU.wset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.wset:MenuElement({id = "harass", name = "Harass", value = false})
+            MENU.wset:MenuElement({id = "whp", name = "min. hp %", value = 50, min = 1, max = 100, step = 1})
+        -- E
+        MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
+            MENU.eset:MenuElement({id = "combo", name = "Combo", value = true})
+            MENU.eset:MenuElement({id = "harass", name = "Harass", value = false})
+            MENU.eset:MenuElement({id = "range", name = "No enemies in AA range", value = true})
+            MENU.eset:MenuElement({id = "stacks", name = "If enemy has 3 W stacks [ W passive ]", value = false})
+            MENU.eset:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- R
+        MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
+            MENU.rset:MenuElement({id = "combo", name = "Use R Combo", value = true})
+            MENU.rset:MenuElement({id = "harass", name = "Use R Harass", value = false})
+            MENU.rset:MenuElement({id = "rci", name = "Use R if enemy isImmobile", value = true})
+            MENU.rset:MenuElement({id = "rcd", name = "Use R if enemy distance < X", value = true})
+            MENU.rset:MenuElement({id = "rdist", name = "use R if enemy distance < X", value = 500, min = 250, max = 1000, step = 50})
+            MENU.rset:MenuElement({id = "hitchance", name = "Hitchance", value = 2, drop = { "normal", "high" } })
+        -- Version
+        MENU:MenuElement({name = "Version " .. tostring(VarusVersion), type = _G.SPACE, id = "verspace"})
+        CHAMPION = LocalCore:Class()
+        function CHAMPION:__init()
+            self.HasQBuff = false
+            self.QStartTime = 0
+            self.QData = { Delay = 0.1, Radius = 70, Range = 1650, Speed = 1900, Collision = false, Type = _G.SPELLTYPE_LINE }
+            self.EData = { Delay = 0.5, Radius = 235, Range = 925, Speed = 1500, Collision = false, Type = _G.SPELLTYPE_CIRCLE }
+            self.RData = { Delay = 0.25, Radius = 120, Range = 1075, Speed = 1950, Collision = false, Type = _G.SPELLTYPE_LINE }
+        end
+        function CHAMPION:WndMsg(msg, wParam)
+            if wParam == HK_Q then
+                self.QStartTime = os.clock()
+            end
+        end
+        function CHAMPION:Tick()
+            -- Check Q Buff
+            self.HasQBuff = LocalCore:HasBuff(myHero, "varusq")
+            -- Is Attacking
+            if not self.HasQBuff and ORB:IsAutoAttacking() then
+                return
+            end
+            -- Can Attack
+            local AATarget = TS:GetComboTarget()
+            if not self.HasQBuff and AATarget and not ORB.IsNone and ORB:CanAttack() then
+                return
+            end
+            local result = false
+            -- Get Enemies
+            local enemyList = OB:GetEnemyHeroes(math.huge, false, 0)
+            --R
+            if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.rset.harass:Value())) and SPELLS:IsReady(_R, { q = 0.33, w = 0, e = 0.63, r = 0.5 } ) then
+                if MENU.rset.rcd:Value() then
+                    result = CastSpell(HK_R, LocalCore:GetClosestEnemy(enemyList, MENU.rset.rdist:Value()), self.RData, MENU.rset.hitchance:Value() + 1)
+                end
+                if not result and MENU.rset.rci:Value() then
+                    local t = LocalCore:GetImmobileEnemy(enemyList, 900)
+                    if t and myHero.pos:DistanceTo(t.pos) < self.RData.range then
+                        result = Control.CastSpell(HK_R, t)
+                    end
+                end
+            end if result then return end
+            --E
+            if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value())) and SPELLS:IsReady(_E, { q = 0.33, w = 0, e = 0.63, r = 0.33 } ) then
+                local aaRange = MENU.eset.range:Value() and not AATarget
+                local onlyStacksE = MENU.eset.stacks:Value()
+                local eTargets = {}
+                for i = 1, #enemyList do
+                    local hero = enemyList[i]
+                    if myHero.pos:DistanceTo(hero.pos) < 925 and (LocalCore:GetBuffCount(hero, "varuswdebuff") == 3 or not onlyStacksE or myHero:GetSpellData(_W).level == 0 or aaRange) then
+                        eTargets[#eTargets+1] = hero
+                    end
+                end
+                result = CastSpell(HK_E, TS:GetTarget(eTargets, 0), self.EData, MENU.eset.hitchance:Value() + 1)
+            end if result then return end
+            -- Q
+            if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.harass:Value()) then
+                local aaRange = MENU.qset.range:Value() and not AATarget
+                local wActive = MENU.qset.active:Value() and LocalGameTimer() < SPELLS.LastWk + 3
+                -- Q1
+                if not self.HasQBuff and SPELLS:IsReady(_Q, { q = 0.5, w = 0.1, e = 1, r = 0.33 } ) then
+                    if LocalControlIsKeyDown(HK_Q) then
+                        LocalControlKeyUp(HK_Q)
+                    end
+                    -- W
+                    if ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.wset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.wset.harass:Value())) and SPELLS:IsReady(_W, { q = 0.33, w = 0.5, e = 0.63, r = 0.33 } ) then
+                        local whp = MENU.wset.whp:Value()
+                        for i = 1, #enemyList do
+                            local hero = enemyList[i]
+                            local hp = 100 * ( hero.health / hero.maxHealth )
+                            if hp < whp and myHero.pos:DistanceTo(hero.pos) < 1500 then
+                                result = Control.CastSpell(HK_W)
+                                if result then break end
+                            end
+                        end
+                    end if result then return end
+                    local onlyStacksQ = MENU.qset.stacks:Value()
+                    for i = 1, #enemyList do
+                        local hero = enemyList[i]
+                        if myHero.pos:DistanceTo(hero.pos) < 1500 and (LocalCore:GetBuffCount(hero, "varuswdebuff") == 3 or not onlyStacksQ or myHero:GetSpellData(_W).level == 0 or wActive or aaRange) then
+                            LocalControlKeyDown(HK_Q)
+                            SPELLS.LastQ = LocalGameTimer()
+                            result = true
+                            break
+                        end
+                    end
+                -- Q2
+                elseif self.HasQBuff and SPELLS:IsReady(_Q, { q = 0.2, w = 0, e = 0.63, r = 0.33 } ) then
+                    local qTargets = {}
+                    local onlyStacksQ = MENU.qset.stacks:Value()
+                    local qTimer = os.clock() - self.QStartTime
+                    local qExtraRange
+                    if qTimer < 2 then
+                        qExtraRange = qTimer * 0.5 * 700
+                    else
+                        qExtraRange = 700
+                    end
+                    for i = 1, #enemyList do
+                        local hero = enemyList[i]
+                        if myHero.pos:DistanceTo(hero.pos) < 925 + qExtraRange and (LocalCore:GetBuffCount(hero, "varuswdebuff") == 3 or not onlyStacksQ or myHero:GetSpellData(_W).level == 0 or wActive or aaRange) then
+                            table.insert(qTargets, hero)
+                        end
+                    end
+                    CastSpell(HK_Q, TS:GetTarget(qTargets, 0), self.QData, MENU.qset.hitchance:Value() + 1)
+                end
+            end
+        end
+        function CHAMPION:CanAttack()
+            self.HasQBuff = LocalCore:HasBuff(myHero, "varusq")
+            if not SPELLS:CheckSpellDelays({ q = 0.33, w = 0, e = 0.33, r = 0.33 }) then
+                return false
+            end
+            if self.HasQBuff == true then
+                return false
+            end
+            return true
+        end
+        function CHAMPION:CanMove()
+            if not SPELLS:CheckSpellDelays({ q = 0.2, w = 0, e = 0.2, r = 0.2 }) then
+                return false
+            end
+            return true
+        end
     end
 }
 
@@ -2044,6 +1998,18 @@ AIO[LocalCharName]()
 AddLoadCallback(function()
     ORB, TS, OB, DMG, SPELLS = _G.SDK.Orbwalker, _G.SDK.TargetSelector, _G.SDK.ObjectManager, _G.SDK.Damage, _G.SDK.Spells
     CHAMPION = CHAMPION()
+    if CHAMPION.Interrupter then
+        CHAMPION:Interrupter()
+    end
+    if CHAMPION.CanAttack then
+        ORB:CanAttackEvent(function() return CHAMPION:CanAttack() end)
+    end
+    if CHAMPION.CanMove then
+        ORB:CanMoveEvent(function() return CHAMPION:CanMove() end)
+    end
+    if CHAMPION.PreAttack then
+        ORB:OnPreAttack(function(args) CHAMPION:PreAttack(args) end)
+    end
     if CHAMPION.QClear then
         CHAMPION:QClear()
     end
@@ -2056,17 +2022,14 @@ AddLoadCallback(function()
     if CHAMPION.RClear then
         CHAMPION:RClear()
     end
-    if CHAMPION.Interrupter then
-        CHAMPION:Interrupter()
-    end
-    if CHAMPION.CanAttack then
-        ORB:CanAttackEvent(function() return CHAMPION:CanAttack() end)
-    end
-    if CHAMPION.CanMove then
-        ORB:CanMoveEvent(function() return CHAMPION:CanMove() end)
-    end
-    if CHAMPION.PreAttack then
-        ORB:OnPreAttack(function(args) CHAMPION:PreAttack(args) end)
+    if CHAMPION.Farm then
+        Callback.Add("Tick", function()
+            if _G.GamsteronDebug then
+                local status, err = pcall(function () CHAMPION:Farm() end) if not status then print("CHAMPION.Farm " .. tostring(err)) end
+            else
+                CHAMPION:Farm()
+            end
+        end)
     end
     if CHAMPION.Tick then
         Callback.Add("Draw", function()
@@ -2089,7 +2052,7 @@ AddLoadCallback(function()
     if CHAMPION.WndMsg then
         Callback.Add('WndMsg', function(msg, wParam)
             if _G.GamsteronDebug then
-                local status, err = pcall(function(msg, wParam) CHAMPION:WndMsg(msg, wParam) end) if not status then print("CHAMPION.WndMsg " .. tostring(err)) end
+                local status, err = pcall(function() CHAMPION:WndMsg(msg, wParam) end) if not status then print("CHAMPION.WndMsg " .. tostring(err)) end
             else
                 CHAMPION:WndMsg(msg, wParam)
             end
