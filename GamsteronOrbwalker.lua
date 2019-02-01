@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0755
+local GamsteronOrbVer = 0.0756
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -467,7 +467,7 @@ do
 		end
 		function c:GetLaneClearTargets()
 			local result = {}
-			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] and self:CanLaneClear() then
+			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_LANECLEAR] then
 				for i, minion in pairs(self.FarmMinions) do
 					local unit = minion.Minion
 					if LocalCore:IsValidTarget(unit) and unit.handle ~= HealthPrediction.LastLCHandle then
@@ -477,117 +477,16 @@ do
 			end
 			return result
 		end
-		function c:GetObjects(team)
-			if team == LocalCore.TEAM_ALLY then
-				return HealthPrediction.CachedTeamAlly
-			elseif team == LocalCore.TEAM_ENEMY then
-				return HealthPrediction.CachedTeamEnemy
-			elseif team == LocalCore.TEAM_JUNGLE then
-				return HealthPrediction.CachedTeamJungle
-			end
-		end
-		function c:SetAttacks(target)
-			-- target handle
-			local handle = target.handle
-			-- Cached Attacks
-			if HealthPrediction.CachedAttacks[handle] == nil then
-				HealthPrediction.CachedAttacks[handle] = {}
-				-- target team
-				local team = target.team
-				-- charName
-				local name = target.charName
-				-- set attacks
-				local pos = target.pos
-				-- cached objects
-				HealthPrediction:SetObjects(team)
-				local attackers = self:GetObjects(team)
-				for i = 1, #attackers do
-					local obj = attackers[i]
-					local objname = obj.charName
-					if HealthPrediction.CachedAttackData[objname] == nil then
-						HealthPrediction.CachedAttackData[objname] = {}
-					end
-					if HealthPrediction.CachedAttackData[objname][name] == nil then
-						HealthPrediction.CachedAttackData[objname][name] = { Range = LocalCore:GetAutoAttackRange(obj, target), Damage = 0 }
-					end
-					local range = HealthPrediction.CachedAttackData[objname][name].Range + 100
-					if LocalCore:IsInRange(obj.pos, pos, range) then
-						if HealthPrediction.CachedAttackData[objname][name].Damage == 0 then
-							HealthPrediction.CachedAttackData[objname][name].Damage = Damage:GetAutoAttackDamage(obj, target)
-						end
-						TableInsert(HealthPrediction.CachedAttacks[handle], {
-							Attacker = obj,
-							Damage = HealthPrediction.CachedAttackData[objname][name].Damage,
-							Type = obj.type
-						})
-					end
-				end
-			end
-			return HealthPrediction.CachedAttacks[handle]
-		end
-		function c:GetPossibleDmg(target)
-			local result = 0
-			local handle = target.handle
-			local attacks = HealthPrediction.CachedAttacks[handle]
-			if #attacks == 0 then return 0 end
-			for i = 1, #attacks do
-				local attack = attacks[i]
-				local attacker = attack.Attacker
-				if (not self.TurretHasTarget and attack.Type == Obj_AI_Turret) or (attack.Type == Obj_AI_Minion and attacker.pathing.hasMovePath) then
-					result = result + attack.Damage
-				end
-			end
-			return result
-		end
-		function c:GetPrediction(target, time)
-			self:SetAttacks(target)
-			local handle = target.handle
-			local attacks = HealthPrediction.CachedAttacks[handle]
-			local hp = LocalCore:TotalShieldHealth(target)
-			if #attacks == 0 then return hp end
-			local pos = target.pos
-			for i = 1, #attacks do
-				local attack = attacks[i]
-				local attacker = attack.Attacker
-				local dmg = attack.Damage
-				local objtype = attack.Type
-				local isTurret = objtype == Obj_AI_Turret
-				local ismoving = false
-				if not isTurret then ismoving = attacker.pathing.hasMovePath end
-				if attacker.attackData.target == handle and not ismoving then
-					if isTurret and self.CanCheckTurret then
-						self.TurretHasTarget = true
-					end
-					local flyTime
-					local projSpeed = attacker.attackData.projectileSpeed
-					if isTurret then projSpeed = 700 end
-					if projSpeed and projSpeed > 0 then
-						flyTime = LocalCore:GetDistance(attacker.pos, pos) / projSpeed
-					else
-						flyTime = 0
-					end
-					local endTime = (attacker.attackData.endTime - attacker.attackData.animationTime) + flyTime + attacker.attackData.windUpTime
-					if endTime <= GameTimer() then
-						endTime = endTime + attacker.attackData.animationTime + flyTime
-					end
-					while endTime - GameTimer() < time do
-						hp = hp - dmg
-						endTime = endTime + attacker.attackData.animationTime + flyTime
-					end
-				end
-			end
-			return hp
-		end
 		function c:ShouldWait()
 			return GameTimer() <= self.ShouldWaitTime + Menu.orb.lclear.swait:Value() * 0.001
 		end
 		function c:SetLastHitable(target, time, damage)
-			local hpPred = self:GetPrediction(target, time)
+			local hpPred = HealthPrediction:GetPrediction(target, time)
 			local lastHitable = hpPred - damage < 0
 			if lastHitable then self.IsLastHitable = true end
 			local almostLastHitable = false
 			if not lastHitable then
-				local dmg = self:GetPrediction(target, myHero:GetSpellData(spell).cd + (time * 3)) - self:GetPossibleDmg(target)
+				local dmg = HealthPrediction:GetPrediction(target, myHero:GetSpellData(spell).cd + (time * 3))
 				almostLastHitable = dmg - damage < 0
 			end
 			if almostLastHitable then
