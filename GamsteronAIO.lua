@@ -1,7 +1,7 @@
-local GamsteronAIOVer = 0.073
+local GamsteronAIOVer = 0.02
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
-	if _G.GamsteronAIOLoaded == true then return end
+    if _G.GamsteronAIOLoaded == true then return end
     _G.GamsteronAIOLoaded = true
 
     local SUPPORTED_CHAMPIONS =
@@ -216,7 +216,7 @@ local AIO = {
                 MENU.draws.qnotification:MenuElement({id = "enabled", name = "Enabled", value = true})
                 MENU.draws.qnotification:MenuElement({id = "color", name = "Color ", color = Draw.Color(200, 188, 77, 26)})
         -- Version
-        Menu:MenuElement({name = "Version " .. tostring(TwitchVersion), type = _G.SPACE, id = "verspace"})
+        MENU:MenuElement({name = "Version " .. tostring(TwitchVersion), type = _G.SPACE, id = "verspace"})
         CHAMPION = LocalCore:Class()
         function CHAMPION:__init()
             self.HasQBuff = false
@@ -508,73 +508,73 @@ local AIO = {
         {
             Range = 625
         }
-        Menu = MenuElement({name = "Gamsteron Morgana", id = "GamsteronMorgana", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/morganads83fd.png" })
+        MENU = MenuElement({name = "Gamsteron Morgana", id = "GamsteronMorgana", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GoSExt/master/Icons/morganads83fd.png" })
         -- Q
-        Menu:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
+        MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
             -- Disable Attack
-            Menu.qset:MenuElement({id = "disaa", name = "Disable attack if ready or almostReady", value = false, callback = function(value) Q_DISABLEAA = value end})
+            MENU.qset:MenuElement({id = "disaa", name = "Disable attack if ready or almostReady", value = false, callback = function(value) Q_DISABLEAA = value end})
             -- Interrupt:
-            Menu.qset:MenuElement({id = "interrupter", name = "Interrupter", value = true, callback = function(value) Q_INTERRUPTER_ON = value end})
+            MENU.qset:MenuElement({id = "interrupter", name = "Interrupter", value = true, callback = function(value) Q_INTERRUPTER_ON = value end})
             -- KS
-            Menu.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                Menu.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) Q_KS_ON = value end})
-                Menu.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) Q_KS_MINHP = value end})
-                Menu.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_KS_HITCHANCE = value end })
+            MENU.qset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.qset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) Q_KS_ON = value end})
+                MENU.qset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) Q_KS_MINHP = value end})
+                MENU.qset.killsteal:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_KS_HITCHANCE = value end })
             -- Auto
-            Menu.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                Menu.qset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) Q_AUTO_ON = value end})
-                Menu.qset.auto:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
-                    LocalCore:OnEnemyHeroLoad(function(hero) Menu.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
-                Menu.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_AUTO_HITCHANCE = value end })
+            MENU.qset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.qset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) Q_AUTO_ON = value end})
+                MENU.qset.auto:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
+                    LocalCore:OnEnemyHeroLoad(function(hero) MENU.qset.auto.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
+                MENU.qset.auto:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_AUTO_HITCHANCE = value end })
             -- Combo / Harass
-            Menu.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                Menu.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true, callback = function(value) Q_COMBO_ON = value end})
-                Menu.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false, callback = function(value) Q_HARASS_ON = value end})
-                Menu.qset.comhar:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
-                    LocalCore:OnEnemyHeroLoad(function(hero) Menu.qset.comhar.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
-                Menu.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_COMBO_HITCHANCE = value end })
+            MENU.qset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.qset.comhar:MenuElement({id = "combo", name = "Combo", value = true, callback = function(value) Q_COMBO_ON = value end})
+                MENU.qset.comhar:MenuElement({id = "harass", name = "Harass", value = false, callback = function(value) Q_HARASS_ON = value end})
+                MENU.qset.comhar:MenuElement({name = "Use on:", id = "useon", type = _G.MENU })
+                    LocalCore:OnEnemyHeroLoad(function(hero) MENU.qset.comhar.useon:MenuElement({id = hero.charName, name = hero.charName, value = true}) end)
+                MENU.qset.comhar:MenuElement({id = "hitchance", name = "Hitchance", value = 3, drop = { "Collision", "Normal", "High", "Immobile" }, callback = function(value) Q_COMBO_HITCHANCE = value end })
         -- W
-        Menu:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
+        MENU:MenuElement({name = "W settings", id = "wset", type = _G.MENU })
             -- KS
-            Menu.wset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                Menu.wset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) W_KS_ON = value end})
-                Menu.wset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) W_KS_MINHP = value end})
+            MENU.wset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.wset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) W_KS_ON = value end})
+                MENU.wset.killsteal:MenuElement({id = "minhp", name = "minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) W_KS_MINHP = value end})
             -- Auto
-            Menu.wset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                Menu.wset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) W_AUTO_ON = value end})
+            MENU.wset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.wset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) W_AUTO_ON = value end})
             -- Combo / Harass
-            Menu.wset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                Menu.wset.comhar:MenuElement({id = "combo", name = "Use W Combo", value = false, callback = function(value) W_COMBO_ON = value end})
-                Menu.wset.comhar:MenuElement({id = "harass", name = "Use W Harass", value = false, callback = function(value) W_HARASS_ON = value end})
+            MENU.wset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.wset.comhar:MenuElement({id = "combo", name = "Use W Combo", value = false, callback = function(value) W_COMBO_ON = value end})
+                MENU.wset.comhar:MenuElement({id = "harass", name = "Use W Harass", value = false, callback = function(value) W_HARASS_ON = value end})
             -- Clear
-            Menu.wset:MenuElement({name = "Clear", id = "laneclear", type = _G.MENU })
-                Menu.wset.laneclear:MenuElement({id = "enabled", name = "Enbaled", value = false, callback = function(value) W_CLEAR_ON = value end})
-                Menu.wset.laneclear:MenuElement({id = "xminions", name = "Min minions W Clear", value = 3, min = 1, max = 5, step = 1, callback = function(value) W_CLEAR_MINX = value end})
+            MENU.wset:MenuElement({name = "Clear", id = "laneclear", type = _G.MENU })
+                MENU.wset.laneclear:MenuElement({id = "enabled", name = "Enbaled", value = false, callback = function(value) W_CLEAR_ON = value end})
+                MENU.wset.laneclear:MenuElement({id = "xminions", name = "Min minions W Clear", value = 3, min = 1, max = 5, step = 1, callback = function(value) W_CLEAR_MINX = value end})
         -- E
-        Menu:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
+        MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
             -- Auto
-            Menu.eset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                Menu.eset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) E_AUTO_ON = value end})
-                Menu.eset.auto:MenuElement({id = "ally", name = "Use on ally", value = true, callback = function(value) E_ALLY_ON = value end})
-                Menu.eset.auto:MenuElement({id = "selfish", name = "Use on yourself", value = true, callback = function(value) E_SELF_ON = value end})
+            MENU.eset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.eset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) E_AUTO_ON = value end})
+                MENU.eset.auto:MenuElement({id = "ally", name = "Use on ally", value = true, callback = function(value) E_ALLY_ON = value end})
+                MENU.eset.auto:MenuElement({id = "selfish", name = "Use on yourself", value = true, callback = function(value) E_SELF_ON = value end})
         --R
-        Menu:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
+        MENU:MenuElement({name = "R settings", id = "rset", type = _G.MENU })
             -- KS
-            Menu.rset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
-                Menu.rset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) R_KS_ON = value end})
-                Menu.rset.killsteal:MenuElement({id = "minhp", name = "Minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) R_KS_MINHP = value end})
+            MENU.rset:MenuElement({name = "KS", id = "killsteal", type = _G.MENU })
+                MENU.rset.killsteal:MenuElement({id = "enabled", name = "Enabled", value = false, callback = function(value) R_KS_ON = value end})
+                MENU.rset.killsteal:MenuElement({id = "minhp", name = "Minimum enemy hp", value = 200, min = 1, max = 300, step = 1, callback = function(value) R_KS_MINHP = value end})
             -- Auto
-            Menu.rset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
-                Menu.rset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) R_AUTO_ON = value end})
-                Menu.rset.auto:MenuElement({id = "xenemies", name = ">= X enemies near morgana", value = 3, min = 1, max = 5, step = 1, callback = function(value) R_AUTO_ENEMIESX = value end})
-                Menu.rset.auto:MenuElement({id = "xrange", name = "< X distance enemies to morgana", value = 300, min = 100, max = 550, step = 50, callback = function(value) R_AUTO_RANGEX = value end})
+            MENU.rset:MenuElement({name = "Auto", id = "auto", type = _G.MENU })
+                MENU.rset.auto:MenuElement({id = "enabled", name = "Enabled", value = true, callback = function(value) R_AUTO_ON = value end})
+                MENU.rset.auto:MenuElement({id = "xenemies", name = ">= X enemies near morgana", value = 3, min = 1, max = 5, step = 1, callback = function(value) R_AUTO_ENEMIESX = value end})
+                MENU.rset.auto:MenuElement({id = "xrange", name = "< X distance enemies to morgana", value = 300, min = 100, max = 550, step = 50, callback = function(value) R_AUTO_RANGEX = value end})
             -- Combo / Harass
-            Menu.rset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
-                Menu.rset.comhar:MenuElement({id = "combo", name = "Use R Combo", value = true, callback = function(value) R_COMBO_ON = value end})
-                Menu.rset.comhar:MenuElement({id = "harass", name = "Use R Harass", value = false, callback = function(value) R_HARASS_ON = value end})
-                Menu.rset.comhar:MenuElement({id = "xenemies", name = ">= X enemies near morgana", value = 2, min = 1, max = 4, step = 1, callback = function(value) R_COMBO_ENEMIESX = value end})
-                Menu.rset.comhar:MenuElement({id = "xrange", name = "< X distance enemies to morgana", value = 300, min = 100, max = 550, step = 50, callback = function(value) R_COMBO_RANGEX = value end})
-        Menu:MenuElement({name = "Version " .. tostring(MorganaVersion), type = _G.SPACE, id = "verspace"})
+            MENU.rset:MenuElement({name = "Combo / Harass", id = "comhar", type = _G.MENU })
+                MENU.rset.comhar:MenuElement({id = "combo", name = "Use R Combo", value = true, callback = function(value) R_COMBO_ON = value end})
+                MENU.rset.comhar:MenuElement({id = "harass", name = "Use R Harass", value = false, callback = function(value) R_HARASS_ON = value end})
+                MENU.rset.comhar:MenuElement({id = "xenemies", name = ">= X enemies near morgana", value = 2, min = 1, max = 4, step = 1, callback = function(value) R_COMBO_ENEMIESX = value end})
+                MENU.rset.comhar:MenuElement({id = "xrange", name = "< X distance enemies to morgana", value = 300, min = 100, max = 550, step = 50, callback = function(value) R_COMBO_RANGEX = value end})
+        MENU:MenuElement({name = "Version " .. tostring(MorganaVersion), type = _G.SPACE, id = "verspace"})
         local function QLogic()
             local result = false
             if SPELLS:IsReady(_Q, { q = 1, w = 0.3, e = 0.3, r = 0.3 } ) then
@@ -603,7 +603,7 @@ local AIO = {
                     for i = 1, #EnemyHeroes do
                         local hero = EnemyHeroes[i]
                         local heroName = hero.charName
-                        if Menu.qset.comhar.useon[heroName] and Menu.qset.comhar.useon[heroName]:Value() then
+                        if MENU.qset.comhar.useon[heroName] and MENU.qset.comhar.useon[heroName]:Value() then
                             qList[#qList+1] = hero
                         end
                     end
@@ -621,7 +621,7 @@ local AIO = {
                     for i = 1, #EnemyHeroes do
                         local hero = EnemyHeroes[i]
                         local heroName = hero.charName
-                        if Menu.qset.auto.useon[heroName] and Menu.qset.auto.useon[heroName]:Value() then
+                        if MENU.qset.auto.useon[heroName] and MENU.qset.auto.useon[heroName]:Value() then
                             qList[#qList+1] = hero
                         end
                     end
