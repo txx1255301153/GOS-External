@@ -1,5 +1,5 @@
-local GamsteronCoreVer = 0.098
-local DebugMode = false
+local GamsteronCoreVer = 0.099
+_G.GamsteronDebug = false
 
 -- locals update START
     local function DownloadFile(url, path)
@@ -1483,7 +1483,7 @@ function __GamsteronCore:__Interrupter()
         ["InfiniteDuress"] = true,
         ["XerathLocusOfPower2"] = true
     }
-    Callback.Add("Draw", function()
+    local function InterrupterTick()
         local mePos = myHero.pos
         for i = 1, GameHeroCount() do
             local unit = GameHero(i)
@@ -1495,6 +1495,13 @@ function __GamsteronCore:__Interrupter()
                     end
                 end
             end
+        end
+    end
+    Callback.Add("Draw", function()
+        if _G.GamsteronDebug then
+            local status, err = pcall(function() InterrupterTick() end) if not status then print("INTERRUPTER TICK: " .. tostring(err)) end
+        else
+            InterrupterTick()
         end
     end)
     function c:OnInterrupt(cbb)
@@ -1534,7 +1541,7 @@ function AddLoadCallback(cb)
     TableInsert(OnLoadC, cb)
 end
 
-Callback.Add("Tick", function()
+local function CallbackTick()
     if not GeneralLoaded then
         PreLoad()
         return
@@ -1648,9 +1655,16 @@ Callback.Add("Tick", function()
             end
         end
     end
+end
+Callback.Add("Tick", function()
+    if _G.GamsteronDebug then
+        local status, err = pcall(function() CallbackTick() end) if not status then print("CallbackTick(): " .. tostring(err)) end
+    else
+        CallbackTick()
+    end
 end)
 
-Callback.Add("Draw", function()
+local function CallbackDraw()
     if not GeneralLoaded then
         PreLoad()
         return
@@ -1659,6 +1673,13 @@ Callback.Add("Draw", function()
         if GameTimer() > action[2] or action[1]() == true then
             TableRemove(TickActions, i)
         end
+    end
+end
+Callback.Add("Draw", function()
+    if _G.GamsteronDebug then
+        local status, err = pcall(function() CallbackDraw() end) if not status then print("CallbackDraw(): " .. tostring(err)) end
+    else
+        CallbackDraw()
     end
 end)
 
