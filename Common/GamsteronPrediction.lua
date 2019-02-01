@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.11
+local GamsteronPredictionVer = 0.12
 local DebugMode = false
 
 -- LOAD START
@@ -1341,6 +1341,69 @@ local DebugMode = false
             end
         end
         return false, result
+    end
+    local function ClosestPointOnLineSegment(p, p1, p2)
+        --local px,pz,py = p.x, p.z, p.y
+        --local ax,az,ay = p1.x, p1.z, p1.y
+        --local bx,bz,by = p2.x, p2.z, p2.y
+        local px,pz = p.x, p.z
+        local ax,az = p1.x, p1.z
+        local bx,bz = p2.x, p2.z
+        local bxax = bx - ax
+        local bzaz = bz - az
+        --local byay = by - by
+        --local t = ((px - ax) * bxax + (pz - az) * bzaz + (py - ay) * byay) / (bxax * bxax + bzaz * bzaz + byay * byay)
+        local t = ((px - ax) * bxax + (pz - az) * bzaz) / (bxax * bxax + bzaz * bzaz)
+        if t < 0 then
+            return p1, false
+        elseif t > 1 then
+            return p2, false
+        else
+            return { x = ax + t * bxax, z = az + t * bzaz }, true
+            --return Vector({ x = ax + t * bxax, z = az + t * bzaz, y = ay + t * byay }), true
+        end
+    end
+    local function IsMinionCollision(unit, radius, speed, delay, prediction)
+        local width = radius * 0.77
+        local enemyMinions = GetEnemyMinions(myHero.pos, 2000)
+        local mePos = myHero.pos
+        for i = 1, #enemyMinions do
+            local minion = enemyMinions[i]
+            if minion ~= unit then
+                local bbox = minion.boundingRadius
+                local predWidth = width + bbox + 20
+                local minionPos = minion.pos
+                local predPos
+                if prediction then
+                    predPos = unit:GetPrediction(speed,delay)
+                else
+                    predPos = unit.pos
+                end
+                local point,onLineSegment = ClosestPointOnLineSegment(minionPos, predPos, myHero.pos)
+                local x = minionPos.x - point.x
+                local z = minionPos.z - point.z
+                if onLineSegment and x * x + z * z < predWidth * predWidth then
+                    return true
+                end
+                local mPathing = minion.pathing
+                if mPathing.hasMovePath then
+                    local minionPosPred = minionPos:Extended(mPathing.endPos, delay + (mePos:DistanceTo(minionPos) / speed))
+                    point,onLineSegment = ClosestPointOnLineSegment(minionPosPred, predPos, myHero.pos)
+                    local xx = minionPosPred.x - point.x
+                    local zz = minionPosPred.z - point.z
+                    if onLineSegment and xx * xx + zz * zz < predWidth * predWidth then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end
+    function IsGamsteronCollision(unit, radius, speed, delay)
+        if unit:GetCollision(radius, speed, delay) > 0 or IsMinionCollision(unit, radius, speed, delay) or IsMinionCollision(unit, radius, speed, delay, true) then
+            return true
+        end
+        return false
     end
 -- COLLISION END
 
