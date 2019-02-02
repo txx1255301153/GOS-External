@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.076
+local GamsteronAIOVer = 0.077
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -464,7 +464,7 @@ local AIO = {
         end
     end,
     Morgana = function()
-        local MorganaVersion = 0.01
+        local MorganaVersion = "0.02 - fixed error"
         MENU = MenuElement({name = "Gamsteron Morgana", id = "Gamsteron_Morgana", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/morganads83fd.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
@@ -758,7 +758,7 @@ local AIO = {
                 return true
             end
             -- Q
-            if MENU.qset.disaa:Value() and myHero:GetSpellData(_Q).level > 0 and myHero.mana > myHero:GetSpellData(_Q).mana and (GameCanUseSpell(_Q) == 0 or myHero:GetSpellData(_Q).currentCd < 1) then
+            if MENU.qset.disaa:Value() and myHero:GetSpellData(_Q).level > 0 and myHero.mana > myHero:GetSpellData(_Q).mana and (LocalGameCanUseSpell(_Q) == 0 or myHero:GetSpellData(_Q).currentCd < 1) then
                 return false
             end
             return true
