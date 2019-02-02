@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.099
+local GamsteronCoreVer = 0.100
 _G.GamsteronDebug = false
 
 -- locals update START
@@ -250,6 +250,11 @@ function __GamsteronCore:__init()
         ["Xerath"] = function(unit)
             return self:HasBuff(unit, "XerathArcanopulseChargeUp") or self:HasBuff(unit, "XerathLocusOfPower2")
         end
+    }
+
+    self.BlockAA =
+    {
+        ["Vayne"] = { [_E] = true }
     }
 
     self.MinionsRange                     =
