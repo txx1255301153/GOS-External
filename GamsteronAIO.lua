@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.077
+local GamsteronAIOVer = 0.078
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -1281,7 +1281,7 @@ local AIO = {
         end
     end,
     Brand = function()
-        local BrandVersion = 0.01
+        local BrandVersion = "0.02 - fixed q casting, no bugs, faster combo"
         MENU = MenuElement({name = "Gamsteron Brand", id = "Gamsteron_Brand", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/x1xxbrandx3xx.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
@@ -1380,8 +1380,9 @@ local AIO = {
                 end if result then return end
                 -- Combo Harass
                 if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.comhar.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.comhar.harass:Value()) then
-                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, self.ETarget, myHero.pos, self.QData, MENU.qset.comhar.hitchance:Value()) then
-                        return
+                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
+                        result = CastSpell(HK_Q, self.ETarget, self.QData, MENU.qset.comhar.hitchance:Value() + 1)
+                        if result then return end
                     end
                     local blazeList = {}
                     local enemyList = OB:GetEnemyHeroes(1050, false, 0)
@@ -1397,8 +1398,9 @@ local AIO = {
                     end
                 -- Auto
                 elseif MENU.qset.auto.stun:Value() then
-                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) and Control.CastSpell(HK_Q, self.ETarget, myHero.pos, self.QData, 2) then
-                        return
+                    if LocalGameTimer() < SPELLS.LastEk + 1 and LocalGameTimer() > SPELLS.LastE + 0.33 and self.ETarget and not self.ETarget.dead and not IsGamsteronCollision(self.ETarget, self.QData.Radius, self.QData.Speed, self.QData.Delay) then
+                        result = CastSpell(HK_Q, self.ETarget, self.QData, MENU.qset.auto.hitchance:Value() + 1)
+                        if result then return end
                     end
                     local blazeList = {}
                     local enemyList = OB:GetEnemyHeroes(1050, false, 0)
