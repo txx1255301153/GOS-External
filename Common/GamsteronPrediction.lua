@@ -1,4 +1,4 @@
-local GamsteronPredictionVer = 0.14
+local GamsteronPredictionVer = 0.141
 
 -- LOAD START
     local IsLoaded, StartTime = false, os.clock() + 5
@@ -1464,7 +1464,7 @@ local GamsteronPredictionVer = 0.14
     local function GetHitChance(unit, path, moveSpeed, slowDuration, delay, spellType, radius, spellDelay)
         local hitChance = _G.HITCHANCE_NORMAL
         local toUnit, fromUnit, toEnd = GetPathDistance(unit, path)
-        if toUnit <= 1 or fromUnit <= 1 or toEnd <= 1 then
+        if toEnd <= 50 or fromUnit <= 50 then
             return _G.HITCHANCE_IMPOSSIBLE
         end
         local lastMoveTime = toUnit / moveSpeed
@@ -1477,15 +1477,7 @@ local GamsteronPredictionVer = 0.14
         elseif Game.Timer() - Waypoints[unit.networkID].Tick < HighAccuracy then
             hitChance = _G.HITCHANCE_HIGH
         end
-        if spellType == _G.SPELLTYPE_LINE then
-            if fromUnit < 150 then
-                hitChance = _G.HITCHANCE_NORMAL
-            end
-            if fromUnit < 75 then
-                hitChance = _G.HITCHANCE_IMPOSSIBLE
-            end
-        end
-        if fromUnit < (spellDelay * moveSpeed) - radius then
+        if fromUnit <= 75 then
             hitChance = _G.HITCHANCE_NORMAL
         end
         return hitChance
@@ -1570,8 +1562,10 @@ local GamsteronPredictionVer = 0.14
         elseif not unit.pathing.hasMovePath and not Waypoints[id].IsMoving then
             if Game.Timer() - Waypoints[id].Tick > 3 and os.clock() - data.VisibleTimer > 3 then
                 return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = pos, UnitPosition = pos })
-            elseif Game.Timer() - Waypoints[id].Tick > 0.77 and os.clock() - data.VisibleTimer > 0.77 then
-                return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_NORMAL, CastPosition = pos, UnitPosition = pos })
+            elseif os.clock() - data.VisibleTimer > 0.5 then
+                if Game.Timer() - Waypoints[id].Tick > 0.77 or Game.Timer() - Waypoints[id].Tick < 0.15 then
+                    return PredictionOutput({ Input = input, Hitchance = _G.HITCHANCE_NORMAL, CastPosition = pos, UnitPosition = pos })
+                end
             end
         end
         return PredictionOutput({ Input = input })
