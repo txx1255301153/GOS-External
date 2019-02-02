@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0757
+local GamsteronOrbVer = 0.0758
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -2156,7 +2156,11 @@ _G.Control.CastSpell = function(key, a, b, c)
 			return false
 		end
 		if position ~= nil and MenuChamp.spell.isaa:Value() then
-			if Orbwalker:IsAutoAttacking(myHero) and not LocalCore.BlockAA[heroName][spell] then
+			local blockAttack = false
+			if LocalCore.BlockAA[heroName] and LocalCore.BlockAA[heroName][spell] then
+				blockAttack = true
+			end
+			if Orbwalker:IsAutoAttacking(myHero) and blockAttack == false then
 				return false
 			end
 		end
