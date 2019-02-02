@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0758
+local GamsteronOrbVer = 0.0759
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -120,7 +120,7 @@ local function GetWindup()
 	if HAS_LETHAL_TEMPO then
 		return myHero.attackData.windUpTime
 	elseif os.clock() < AttackSpeedData.tickwindup and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
-		return myHero.attackData.animationTime
+		return myHero.attackData.windUpTime
 	end
 	return ATTACK_WINDUP
 end
@@ -1333,7 +1333,7 @@ do
 		end
 		return true
 	end
-
+local x = 0
 	function __Orbwalker:CanMoveLocal()
 		if not self.CanMoveC() then return false end
 		if ExtLibEvade and ExtLibEvade.Evading then
@@ -1350,19 +1350,24 @@ do
 		end
 		if LocalCore:IsChanneling(myHero) then
 			if LocalCore.AllowMovement[myHero.charName] == nil or (not LocalCore.AllowMovement[myHero.charName](myHero)) then
+				print("channeling")
 				return false
 			end
 		end
 		if self.ChampionCanMove[myHero.charName] ~= nil and not self.ChampionCanMove[myHero.charName]() then
+			print("champ canmove")
 			return false
 		end
 		local mePos = myHero.pos
 		if LocalCore:IsInRange(mePos, _G.mousePos, 120) then
+			print("in range")
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
 			local extraWindUp = Menu.orb.extrawindup:Value() * 0.001; extraWindUp = extraWindUp - LATENCY
 			if GameTimer() >= self.AttackServerStart + GetWindup() + extraWindUp + 0.015 then
+				x = x + 1
+				print("ok1 " .. x)
 				return true
 			end
 			return false
@@ -1370,6 +1375,8 @@ do
 		if GameTimer() < self.AttackLocalStart + 0.2 then
 			return false
 		end
+		x = x + 2
+		print("ok2 " .. x)
 		return true
 	end
 
