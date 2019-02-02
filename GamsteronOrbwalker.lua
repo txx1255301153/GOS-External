@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0760
+local GamsteronOrbVer = 0.0761
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -160,16 +160,14 @@ do
 	local __Cursor = LocalCore:Class()
 
 	function __Cursor:SetCursor(work, pos, extradelay)
+		extradelay = extradelay + Menu.orb.excdelay:Value() * 0.001
 		CURSOR_READY = false -- champion can't use spells if ready == false, if it's true cursor logic works
 		CURSOR_POS = _G.cursorPos -- work is not done yet so we save correct cursor pos (not on cast pos)
-		CURSOR_POSDONE = false -- set cursor pos only once
 		CURSOR_WORK = work -- setcursor to cast pos + cast spell or attack
-		CURSOR_SETTIME = _G.Game.Timer() + 0.05 + extradelay -- set cursor pos delay for work done
 		CURSOR_ENDTIME = _G.Game.Timer() + 0.075 + extradelay -- next spells for set cursor pos done
 		CURSOR_CASTPOS = pos
 		-- STEP 1
 		self:SetCursorPos()
-		CURSOR_WORK()
 	end
 
 	function __Cursor:SetCursorPos()
@@ -183,28 +181,21 @@ do
 			castpos = CURSOR_CASTPOS
 		end
 		ControlSetCursorPos(castpos.x, castpos.y)
+		CURSOR_WORK()
 	end
 
 	function __Cursor:Tick()
 		if not CURSOR_READY then
 			-- STEP 4
-			if CURSOR_POSDONE and _G.Game.Timer() > CURSOR_ENDTIME then
+			if _G.Game.Timer() > CURSOR_ENDTIME then
 				_G.Control.SetCursorPos(CURSOR_POS.x, CURSOR_POS.y)
 				if LocalCore:IsInRange(CURSOR_POS, _G.cursorPos, 120) then
 					CURSOR_READY = true
 				end
 				return
 			end
-			-- STEP 3
-			if not CURSOR_POSDONE and _G.Game.Timer() > CURSOR_SETTIME then
-				_G.Control.SetCursorPos(CURSOR_POS.x, CURSOR_POS.y)
-				CURSOR_POSDONE = true
-				return
-			end
 			-- STEP 2
-			if not CURSOR_POSDONE then
-				self:SetCursorPos()
-			end
+			self:SetCursorPos()
 		end
 	end
 
@@ -243,7 +234,6 @@ do
 		self.SpellEndTime = 0
 		self.CanNext = true
 		self.StartTime = 0
-		self.DelayedSpell = {}
 		self.WindupList =
 		{
 			["VayneCondemn"] = 0.6,
@@ -310,41 +300,22 @@ do
 	end
 
 	function __Spells:WndMsg(msg, wParam)
-		local manualNum = -1
 		local currentTime = GameTimer()
 		if wParam == HK_Q and currentTime > self.LastQk + 0.33 and GameCanUseSpell(_Q) == 0 then
 			self.LastQk = currentTime
-			manualNum = 0
 		elseif wParam == HK_W and currentTime > self.LastWk + 0.33 and GameCanUseSpell(_W) == 0 then
 			self.LastWk = currentTime
-			manualNum = 1
 		elseif wParam == HK_E and currentTime > self.LastEk + 0.33 and GameCanUseSpell(_E) == 0 then
 			self.LastEk = currentTime
-			manualNum = 2
 		elseif wParam == HK_R and currentTime > self.LastRk + 0.33 and GameCanUseSpell(_R) == 0 then
 			self.LastRk = currentTime
-			manualNum = 3
-		end
-		if manualNum > -1 and not self.DelayedSpell[manualNum] and not _G.SDK.Orbwalker.IsNone then
-			self.DelayedSpell[manualNum] =
-			{
-				function()
-					ControlKeyDown(wParam)
-					ControlKeyUp(wParam)
-					ControlKeyDown(wParam)
-					ControlKeyUp(wParam)
-					ControlKeyDown(wParam)
-					ControlKeyUp(wParam)
-				end,
-				currentTime
-			}
 		end
 	end
 
 	function __Spells:IsReady(spell, delays)
 		delays = delays or { q = 0.25, w = 0.25, e = 0.25, r = 0.25 }
 		local currentTime = GameTimer()
-		if not CURSOR_READY or CONTROLL ~= nil or currentTime <= _G.ORB_NEXT_CONTROLL + 0.05 then
+		if not CURSOR_READY or CONTROLL ~= nil or currentTime <= _G.ORB_NEXT_CONTROLL + 0.075 then
 			return false
 		end
 		if currentTime < self.LastQ + delays.q or currentTime < self.LastQk + delays.q then
@@ -363,58 +334,6 @@ do
 			return false
 		end
 		return true
-	end
-
-	function __Spells:CastManualSpell(spell, delays)
-		if self:IsReady(spell, delays) then
-			local kNum = 0
-			if spell == _W then
-					kNum = 1
-			elseif spell == _E then
-					kNum = 2
-			elseif spell == _R then
-					kNum = 3
-			end
-			local currentTime = GameTimer()
-			for k,v in pairs(self.DelayedSpell) do
-				if currentTime - v[2] > 0.125 then
-					self.DelayedSpell[k] = nil
-				elseif k == kNum then
-					v[1]()
-					if k == 0 then
-						self.LastQ = currentTime
-					elseif k == 1 then
-						self.LastW = currentTime
-					elseif k == 2 then
-						self.LastE = currentTime
-					elseif k == 3 then
-						self.LastR = currentTime
-					end
-					self.DelayedSpell[k] = nil
-					break
-				end
-			end
-		end
-	end
-
-	function __Spells:CustomIsReady(spell, cd)
-		local passT
-		if spell == _Q then
-			passT = GameTimer() - self.LastQk
-		elseif spell == _W then
-			passT = GameTimer() - self.LastWk
-		elseif spell == _E then
-			passT = GameTimer() - self.LastEk
-		elseif spell == _R then
-			passT = GameTimer() - self.LastRk
-		end
-		local cdr = 1 - myHero.cdr
-		cd = cd * cdr
-		local latency = LATENCY
-		if passT - latency - 0.15 > cd then
-			return true
-		end
-		return false
 	end
 
 	function __Spells:GetLastSpellTimers()
@@ -1173,7 +1092,7 @@ do
 				Menu.orb.humanizer:MenuElement({name = "Humanizer", id = "standard", value = 200, min = 60, max = 300, step = 10 })
 					self.Menu.General.MovementDelay = Menu.orb.humanizer.standard
 			Menu.orb:MenuElement({ name = "Extra Windup", id = "extrawindup", value = 0, min = 0, max = 30, step = 1 })
-			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 50, step = 5 })
+			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = -50, max = 100, step = 1 })
 			Menu.orb:MenuElement({name = "Player Attack Only Click", id = "aamoveclick", key = string.byte("U")})
 			MenuChamp = Menu.orb:MenuElement({name = myHero.charName, id = myHero.charName, type = _G.MENU})
 				MenuChamp:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
@@ -1258,9 +1177,9 @@ do
 		Cursor:SetCursor(function()
 			ControlKeyDown(attackKey)
 			ControlKeyUp(attackKey)
-			self.LastMoveLocal = 0
-			self.AttackLocalStart = GameTimer()
 		end, unit, 0)
+		self.LastMoveLocal = 0
+		self.AttackLocalStart = GameTimer()
 	end
 
 	function __Orbwalker:Move()
@@ -1277,9 +1196,9 @@ do
 		Cursor:SetCursor(function()
 			ControlMouseEvent(MOUSEEVENTF_RIGHTDOWN)
 			ControlMouseEvent(MOUSEEVENTF_RIGHTUP)
-			self.LastMoveLocal = GameTimer() + GetHumanizer()
-			self.LastMoveTime = GameTimer()
 		end, pos, 0.015)
+		self.LastMoveLocal = GameTimer() + GetHumanizer()
+		self.LastMoveTime = GameTimer()
 	end
 
 	function __Orbwalker:CanAttackLocal()
@@ -2121,7 +2040,7 @@ _G.Control.Move = function(a, b, c)
 end
 
 _G.Control.CastSpell = function(key, a, b, c)
-	if CONTROLL == nil and GameTimer() > _G.ORB_NEXT_CONTROLL + 0.05 then
+	if CONTROLL == nil and GameTimer() > _G.ORB_NEXT_CONTROLL + 0.075 then
 		local extradelay = 0.015
 		local position
 		if a and b and c then
@@ -2197,12 +2116,8 @@ _G.Control.CastSpell = function(key, a, b, c)
 			Cursor:SetCursor(function()
 				ControlKeyDown(key)
 				ControlKeyUp(key)
-				ControlKeyDown(key)
-				ControlKeyUp(key)
-				ControlKeyDown(key)
-				ControlKeyUp(key)
-				Orbwalker.LastMoveLocal = 0
 			end, position, extradelay)
+			Orbwalker.LastMoveLocal = 0
 		else
 			ControlKeyDown(key)
 			ControlKeyUp(key)
@@ -2319,9 +2234,9 @@ AddLoadCallback(function()
 
 	Callback.Add('WndMsg', function(msg, wParam)
 		if _G.GamsteronDebug then
-			local status, err = pcall(function (msg, wParam) TargetSelector:WndMsg(msg, wParam) end); if not status then print("TargetSelector:WndMsg: " .. tostring(err)) end
-			status, err = pcall(function (msg, wParam) Orbwalker:WndMsg(msg, wParam) end); if not status then print("Orbwalker:WndMsg: " .. tostring(err)) end
-			status, err = pcall(function (msg, wParam) Spells:WndMsg(msg, wParam) end); if not status then print("Spells:WndMsg: " .. tostring(err)) end
+			local status, err = pcall(function () TargetSelector:WndMsg(msg, wParam) end); if not status then print("TargetSelector:WndMsg: " .. tostring(err)) end
+			status, err = pcall(function () Orbwalker:WndMsg(msg, wParam) end); if not status then print("Orbwalker:WndMsg: " .. tostring(err)) end
+			status, err = pcall(function () Spells:WndMsg(msg, wParam) end); if not status then print("Spells:WndMsg: " .. tostring(err)) end
 		else
 			TargetSelector:WndMsg(msg, wParam)
 			Orbwalker:WndMsg(msg, wParam)
