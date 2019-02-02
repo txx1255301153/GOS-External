@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.075
+local GamsteronAIOVer = 0.076
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -1169,7 +1169,7 @@ local AIO = {
     end,
     Vayne = function()
         require "MapPositionGOS"
-        local VayneVersion = 0.01
+        local VayneVersion = "0.02 - fixed E, faster usage"
         MENU = MenuElement({name = "Gamsteron Vayne", id = "Gamsteron_Vayne", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/vayne.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
@@ -1196,6 +1196,25 @@ local AIO = {
             self.EData = { delay = 0.5, radius = 0, range = 550 + myHero.boundingRadius - 35, speed = 2000, collision = false, type = _G.SPELLTYPE_LINE }
         end
         function CHAMPION:Tick()
+            local result = false
+            -- E
+            if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value()) then
+                if SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.75, r = 0 } ) then
+                    local enemyList = OB:GetEnemyHeroes(self.EData.range, true, 0)
+                    for i = 1, #enemyList do
+                        local hero = enemyList[i]
+                        local name = hero.charName
+                        local erange = 475
+                        if MENU.eset.useonstun[name] and MENU.eset.useonstun[name]:Value() and CheckWall(myHero.pos, hero.pos, erange) and CheckWall(myHero.pos, hero:GetPrediction(self.EData.delay+0.06+LATENCY,self.EData.speed), erange) then
+                            local pred = GetGamsteronPrediction(hero, self.EData, myHero.pos)
+                            if pred.Hitchance >= 2 and CheckWall(myHero.pos, pred.CastPosition, erange) and CheckWall(myHero.pos, pred.UnitPosition, erange) then
+                                result = Control.CastSpell(HK_E, hero)
+                                break
+                            end
+                        end
+                    end
+                end
+            end if result then return end
             -- reset attack after Q
             if LocalGameCanUseSpell(_Q) ~= 0 and LocalGameTimer() > self.LastReset + 1 and LocalCore:HasBuff(myHero, "vaynetumblebonus") then
                 ORB:__OnAutoAttackReset()
@@ -1222,24 +1241,6 @@ local AIO = {
                     local enemyList = OB:GetEnemyHeroes(MENU.rset.xdistance:Value(), false, 0)
                     if #enemyList >= MENU.rset.xcount:Value() then
                         Control.CastSpell(HK_R)
-                    end
-                end
-            end
-            -- E
-            if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value()) then
-                if SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.75, r = 0 } ) then
-                    local enemyList = OB:GetEnemyHeroes(self.EData.range, true, 0)
-                    for i = 1, #enemyList do
-                        local hero = enemyList[i]
-                        local name = hero.charName
-                        local erange = 475
-                        if MENU.eset.useonstun[name] and MENU.eset.useonstun[name]:Value() and CheckWall(myHero.pos, hero.pos, erange) and CheckWall(myHero.pos, hero:GetPrediction(math.huge,0.5+0.15+_G.LATENCY), erange) then
-                            local pred = GetGamsteronPrediction(hero, self.EData, myHero.pos)
-                            if pred.Hitchance >= 3 and CheckWall(myHero.pos, pred.CastPosition, erange) and CheckWall(myHero.pos, pred.UnitPosition, erange) then
-                                Control.CastSpell(HK_E, hero)
-                                return
-                            end
-                        end
                     end
                 end
             end
@@ -1623,7 +1624,7 @@ local AIO = {
         end
     end,
     Ezreal = function()
-        local EzrealVersion = 0.01
+        local EzrealVersion = "0.02 - smoother and faster E usage"
         MENU = MenuElement({name = "Gamsteron Ezreal", id = "Gamsteron_Ezreal", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/ezreal.png" })
         -- E Manual
         MENU:MenuElement({name = "Manual E", id = "mane", type = _G.MENU })
@@ -1697,7 +1698,14 @@ local AIO = {
             
             -- [ e manual ]
             if os.clock() < self.LastEFake + 0.5 and SPELLS:IsReady(_E, { q = 0.33, w = 0.33, e = 0.2, r = 0.77 } ) then
-                Control.CastSpell(MENU.mane.elol:Key(), _G.mousePos)
+                local key = MENU.mane.elol:Key()
+                LocalControlKeyDown(key)
+				LocalControlKeyUp(key)
+				LocalControlKeyDown(key)
+				LocalControlKeyUp(key)
+				LocalControlKeyDown(key)
+				LocalControlKeyUp(key)
+                _G.ORB_NEXT_CONTROLL = LocalGameTimer() + 0.25
             end
 
             -- [ is attacking ]
@@ -1837,7 +1845,7 @@ local AIO = {
         end
     end,
     Varus = function()
-        local VarusVersion = 0.01
+        local VarusVersion = "0.02 - fixed Q, added dist check to predPos"
         MENU = MenuElement({name = "Gamsteron Varus", id = "Gamsteron_Varus", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/gsovarussf3f.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
@@ -1970,7 +1978,13 @@ local AIO = {
                             table.insert(qTargets, hero)
                         end
                     end
-                    CastSpell(HK_Q, TS:GetTarget(qTargets, 0), self.QData, MENU.qset.hitchance:Value() + 1)
+                    local qt = TS:GetTarget(qTargets, 0)
+                    if LocalCore:IsValidTarget(qt) then
+                        local Pred = GetGamsteronPrediction(qt, self.QData, myHero.pos)
+                        if Pred.Hitchance >= MENU.qset.hitchance:Value() + 1 and LocalCore:IsInRange(Pred.CastPosition, myHero.pos, 925 + qExtraRange) and LocalCore:IsInRange(Pred.UnitPosition, myHero.pos, 925 + qExtraRange) then
+                            LocalCore:CastSpell(HK_Q, nil, Pred.CastPosition)
+                        end
+                    end
                 end
             end
         end
