@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0756
+local GamsteronOrbVer = 0.0757
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -39,10 +39,11 @@ local ATTACK_ANIMATION				= 0
 
 local GAMSTERON_MODE_DMG			= false
 local CONTROLL						= nil
-local NEXT_CONTROLL					= 0
+_G.ORB_NEXT_CONTROLL				= 0
 
 local GetTickCount					= GetTickCount
 local myHero						= _G.myHero
+local heroName						= myHero.charName
 local Vector						= Vector
 local DrawLine						= Draw.Line
 local DrawColor						= Draw.Color
@@ -116,14 +117,18 @@ local function GetWindup()
 			return SpecialWindUpTime
 		end
 	end
-	if HAS_LETHAL_TEMPO or os.clock() < AttackSpeedData.tickwindup then
+	if HAS_LETHAL_TEMPO then
 		return myHero.attackData.windUpTime
+	elseif os.clock() < AttackSpeedData.tickwindup and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
+		return myHero.attackData.animationTime
 	end
 	return ATTACK_WINDUP
 end
 
 local function GetAnimation()
-	if HAS_LETHAL_TEMPO or os.clock() < AttackSpeedData.tickanim then
+	if HAS_LETHAL_TEMPO then
+		return myHero.attackData.animationTime
+	elseif os.clock() < AttackSpeedData.tickanim and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
 		return myHero.attackData.animationTime
 	end
 	return ATTACK_ANIMATION
@@ -339,7 +344,7 @@ do
 	function __Spells:IsReady(spell, delays)
 		delays = delays or { q = 0.25, w = 0.25, e = 0.25, r = 0.25 }
 		local currentTime = GameTimer()
-		if not CURSOR_READY or CONTROLL ~= nil or currentTime <= NEXT_CONTROLL + 0.05 then
+		if not CURSOR_READY or CONTROLL ~= nil or currentTime <= _G.ORB_NEXT_CONTROLL + 0.05 then
 			return false
 		end
 		if currentTime < self.LastQ + delays.q or currentTime < self.LastQk + delays.q then
@@ -1183,7 +1188,6 @@ do
 					MenuChamp.dkey:MenuElement({name = "Hold together !", id = "space", type = SPACE})
 					MenuChamp.dkey:MenuElement({name = "1", id = "def1", key = string.byte("U"), callback = function() if MenuChamp.dkey.def2:Value() then ResetMenu() end end})
 					MenuChamp.dkey:MenuElement({name = "2", id = "def2", key = string.byte("Y"), callback = function() if MenuChamp.dkey.def1:Value() then ResetMenu() end end})
-
 	end
 
 	function __Orbwalker:CreateDrawMenu(menu)
@@ -2067,11 +2071,11 @@ do
 end
 
 _G.Control.Attack = function(target)
-	if CONTROLL == nil and GameTimer() > NEXT_CONTROLL + 0.05 then
+	if CONTROLL == nil and GameTimer() > _G.ORB_NEXT_CONTROLL + 0.05 then
 		CONTROLL = function()
 			if CURSOR_READY then
 				Orbwalker:Attack(target)
-				NEXT_CONTROLL = GameTimer()
+				_G.ORB_NEXT_CONTROLL = GameTimer()
 				Spells.CanNext = true
 				return true
 			end
@@ -2083,7 +2087,7 @@ _G.Control.Attack = function(target)
 end
 
 _G.Control.Move = function(a, b, c)
-	if CONTROLL == nil and GameTimer() > NEXT_CONTROLL + 0.05 then
+	if CONTROLL == nil and GameTimer() > _G.ORB_NEXT_CONTROLL + 0.05 then
 		local position
 		if a and b and c then
 			position = Vector(a, b, c)
@@ -2117,7 +2121,7 @@ _G.Control.Move = function(a, b, c)
 end
 
 _G.Control.CastSpell = function(key, a, b, c)
-	if CONTROLL == nil and GameTimer() > NEXT_CONTROLL + 0.05 then
+	if CONTROLL == nil and GameTimer() > _G.ORB_NEXT_CONTROLL + 0.05 then
 		local extradelay = 0.015
 		local position
 		if a and b and c then
@@ -2151,8 +2155,10 @@ _G.Control.CastSpell = function(key, a, b, c)
 		if position ~= nil and not CURSOR_READY then
 			return false
 		end
-		if position ~= nil and MenuChamp.spell.isaa:Value() and Orbwalker:IsAutoAttacking(myHero) then
-			return false
+		if position ~= nil and MenuChamp.spell.isaa:Value() then
+			if Orbwalker:IsAutoAttacking(myHero) and not LocalCore.BlockAA[heroName][spell] then
+				return false
+			end
 		end
 		if spell == _Q then
 			if GameTimer() < Spells.LastQ + 0.25 then
@@ -2179,7 +2185,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 				Spells.LastR = GameTimer()
 			end
 		end
-		NEXT_CONTROLL = GameTimer()
+		_G.ORB_NEXT_CONTROLL = GameTimer()
 		if position then
 			if spell ~= nil and MenuChamp.spell.baa:Value() then
 				Spells.CanNext = false
