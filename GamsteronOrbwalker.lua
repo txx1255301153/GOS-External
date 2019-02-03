@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0762
+local GamsteronOrbVer = 0.0763
 local LocalCore, Menu, MenuChamp, Cursor, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -1273,10 +1273,6 @@ do
 			end
 		end
 		if self.ChampionCanMove[myHero.charName] ~= nil and not self.ChampionCanMove[myHero.charName]() then
-			return false
-		end
-		local mePos = myHero.pos
-		if LocalCore:IsInRange(mePos, _G.mousePos, 120) then
 			return false
 		end
 		if self.AttackCastEndTime > self.AttackLocalStart then
