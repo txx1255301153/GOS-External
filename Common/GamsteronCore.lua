@@ -1,5 +1,5 @@
-local GamsteronCoreVer = 0.101
-_G.GamsteronDebug = false
+local GamsteronCoreVer = 0.102
+_G.GamsteronDebug = true
 
 -- locals update START
     local function DownloadFile(url, path)
@@ -738,7 +738,7 @@ function __GamsteronCore:__init()
         end,
         ["Graves"] = function(args)
             local t = { 70, 71, 72, 74, 75, 76, 78, 80, 81, 83, 85, 87, 89, 91, 95, 96, 97, 100 };
-            args.RawTotal = args.RawTotal * t[Damage:GetMaxLevel(args.From)] * 0.01;
+            args.RawTotal = args.RawTotal * t[_G.SDK.Damage:GetMaxLevel(args.From)] * 0.01;
         end,
         ["Jinx"] = function(args)
             if self:HasBuff(args.From, "JinxQ") then
@@ -878,7 +878,7 @@ function __GamsteronCore:__init()
         [3087] = function(args)
             if self:GetBuffCount(args.From, "itemstatikshankcharge") == 100 then
                 local t = { 50, 50, 50, 50, 50, 56, 61, 67, 72, 77, 83, 88, 94, 99, 104, 110, 115, 120 };
-                args.RawMagical = args.RawMagical + (1 + (args.TargetIsMinion and 1.2 or 0)) * t[Damage:GetMaxLevel(args.From)];
+                args.RawMagical = args.RawMagical + (1 + (args.TargetIsMinion and 1.2 or 0)) * t[_G.SDK.Damage:GetMaxLevel(args.From)];
             end
         end,
         [3091] = function(args)
@@ -887,7 +887,7 @@ function __GamsteronCore:__init()
         [3094] = function(args)
             if self:GetBuffCount(args.From, "itemstatikshankcharge") == 100 then
                 local t = { 50, 50, 50, 50, 50, 58, 66, 75, 83, 92, 100, 109, 117, 126, 134, 143, 151, 160 };
-                args.RawMagical = args.RawMagical + t[Damage:GetMaxLevel(args.From)];
+                args.RawMagical = args.RawMagical + t[_G.SDK.Damage:GetMaxLevel(args.From)];
             end
         end,
         [3100] = function(args)
