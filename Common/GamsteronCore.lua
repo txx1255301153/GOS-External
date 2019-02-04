@@ -1,5 +1,5 @@
-local GamsteronCoreVer = 0.100
-_G.GamsteronDebug = false
+local GamsteronCoreVer = 0.101
+_G.GamsteronDebug = true
 
 -- locals update START
     local function DownloadFile(url, path)
@@ -87,36 +87,22 @@ _G.GamsteronDebug = false
     local GameMissileCount              = _G.Game.MissileCount
     local GameMissile                   = _G.Game.Missile
 
-    local GeneralLoaded                 = false
-    local GeneralLoadTimers             = { EndTime = 0, Active = false, PreActive = false }
-
-    local BuildingsLoaded               = false
-    local BuildingsLoad                 =
+    local Obj_HQ 						= "obj_HQ"
+    local Structures =
     {
-        Performance                 = 0,
-        EndTime                     = 0,
-        Turrets                     = {},
-        Nexuses                     = {},
-        Inhibitors                  = {}
+        [Obj_AI_Barracks] = true,
+        [Obj_AI_Turret] = true,
+        [Obj_HQ] = true
     }
 
     local HeroesLoaded                  = false
     local HeroesLoad                    =
     {
-        Performance                 = 0,
-        EndTime                     = 120,
         Count                       = 0,
         Heroes                      = {},
         OnEnemyHeroLoadC            = {},
         OnAllyHeroLoadC             = {}
     }
-
-    local OnLoadC                       = {}
-
-    local Menu                          = MenuElement({name = "Gamsteron Core", id = "GamCore", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/GamsteronCore.png" })
-        Menu:MenuElement({id = "ping", name = "Your Ping", value = 50, min = 0, max = 150, step = 5, callback = function(value) _G.LATENCY = value * 0.001 end })
-        Menu:MenuElement({name = "Version " .. tostring(GamsteronCoreVer), type = _G.SPACE, id = "vercorespace"})
-        _G.LATENCY = Menu.ping:Value() * 0.001
 
     local AllyNexus                     = nil
     local EnemyNexus                    = nil
@@ -124,8 +110,16 @@ _G.GamsteronDebug = false
     local EnemyInhibitors               = {}
     local AllyTurrets                   = {}
     local EnemyTurrets                  = {}
+    local EnemyHeroes                   = {}
+    local AllyHeroes                    = {}
 
+    local OnLoadC                       = {}
     local TickActions                   = {}
+
+    local Menu = MenuElement({name = "Gamsteron Core", id = "GamCore", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/GamsteronCore.png" })
+    Menu:MenuElement({id = "ping", name = "Your Ping", value = 50, min = 0, max = 150, step = 1, callback = function(value) _G.LATENCY = value * 0.001 end })
+    Menu:MenuElement({name = "Version " .. tostring(GamsteronCoreVer), type = _G.SPACE, id = "vercorespace"})
+    _G.LATENCY = Menu.ping:Value() * 0.001
 
     local function Class()
         local cls = {}
@@ -174,6 +168,8 @@ function __GamsteronCore:__init()
         ["SRUAP_Turret_Chaos3"] = true,
         ["SRUAP_Turret_Chaos4"] = true
     }
+
+
 
     self.Obj_AI_Bases                     =
     {
@@ -1521,171 +1517,79 @@ _G.TickAction = function(cb, remainingTime)
     TableInsert(TickActions, { cb, GameTimer() + remainingTime })
 end
 
-local function PreLoad()
-    if GameTimer() > 15 then
-        if not GeneralLoadTimers.Active then
-            GeneralLoadTimers.Active = true
-            GeneralLoadTimers.EndTime = GameTimer() + 5
-            BuildingsLoad.EndTime = GameTimer() + 5
-            HeroesLoad.EndTime = GameTimer() + 120
-            return
-        end
-        if GeneralLoadTimers.Active and GameTimer() > GeneralLoadTimers.EndTime then
-            GeneralLoaded = true
-            -- ty Maxxxel
-            _G.drawCircleQuality = 22
-            _G.clickerSleepDelay = 0
-            for i, cb in pairs(OnLoadC) do
-                cb()
-            end
-        end
-    end
-end
-
 function AddLoadCallback(cb)
     TableInsert(OnLoadC, cb)
 end
 
-local function CallbackTick()
-    if not GeneralLoaded then
-        PreLoad()
-        return
+Callback.Add("Load", function()
+    for i, cb in pairs(OnLoadC) do
+        cb()
     end
-    if not BuildingsLoaded then
-        if GameTimer() > BuildingsLoad.Performance then
-            for i = 1, GameObjectCount() do
-                local obj = GameObject(i)
-                if obj then
-                    local type = obj.type
-                    if type and (type == Obj_AI_Barracks or type == Obj_AI_Turret or type == Obj_AI_Nexus) then
-                        local team = obj.team
-                        local name = obj.name
-                        if team and name and #name > 0 then
-                            local isnew = true
-                            local isally = obj.team == myHero.team
-                            if type == Obj_AI_Barracks then
-                                for j, id in pairs(BuildingsLoad.Inhibitors) do
-                                    if name == id then
-                                        isnew = false
-                                        break
-                                    end
-                                end
-                                if isnew then
-                                    if team == myHero.team then
-                                        TableInsert(AllyInhibitors, obj)
-                                    else
-                                        TableInsert(EnemyInhibitors, obj)
-                                    end
-                                    TableInsert(BuildingsLoad.Inhibitors, name)
-                                end
-                            elseif type == Obj_AI_Turret then
-                                if name ~= "Turret_OrderTurretShrine_A" and name ~= "Turret_ChaosTurretShrine_A" then
-                                    for j, id in pairs(BuildingsLoad.Turrets) do
-                                        if name == id then
-                                            isnew = false
-                                            break
-                                        end
-                                    end
-                                    if isnew then
-                                        if team == myHero.team then
-                                            TableInsert(AllyTurrets, obj)
-                                        else
-                                            TableInsert(EnemyTurrets, obj)
-                                        end
-                                        TableInsert(BuildingsLoad.Turrets, name)
-                                    end
-                                end
-                            elseif type == Obj_AI_Nexus then
-                                for j, id in pairs(BuildingsLoad.Nexuses) do
-                                    if name == id then
-                                        isnew = false
-                                        break
-                                    end
-                                end
-                                if isnew then
-                                    if team == myHero.team then
-                                        AllyNexus = obj
-                                    else
-                                        EnemyNexus = obj
-                                    end
-                                    TableInsert(BuildingsLoad.Nexuses, name)
-                                end
-                            end
-                        end
+    --Maxxxel
+    _G.drawCircleQuality = 22
+    _G.clickerSleepDelay = 0
+    --Maxxxel
+    for i = 1, GameObjectCount() do
+        local obj = GameObject(i)
+        if obj then
+            local t = obj.type
+            if Structures[t] then
+                if t == Obj_AI_Barracks then
+                    if obj.isEnemy then
+                        TableInsert(EnemyInhibitors, obj)
+                    elseif obj.isAlly then
+                        TableInsert(AllyInhibitors, obj)
+                    end
+                elseif t == Obj_AI_Turret then
+                    if obj.isEnemy then
+                        TableInsert(EnemyTurrets, obj)
+                    elseif obj.isAlly then
+                        TableInsert(AllyTurrets, obj)
+                    end
+                elseif t == Obj_AI_Nexus then
+                    if obj.isEnemy then
+                        EnemyNexus = obj
+                    elseif obj.isAlly then
+                        AllyNexus = obj
                     end
                 end
             end
-            if GameTimer() > BuildingsLoad.EndTime then
-                BuildingsLoaded = true
-            else
-                BuildingsLoad.Performance = GameTimer() + 0.5
-            end
         end
     end
-    if not HeroesLoaded then
-        if GameTimer() > HeroesLoad.Performance then
-            for i = 1, GameHeroCount() do
-                local obj = GameHero(i)
-                if obj then
-                    local name = obj.charName
-                    if name and #name > 0 then
-                        local objID = obj.networkID
-                        local isnew = true
-                        for i, id in pairs(HeroesLoad.Heroes) do
-                            if objID == id then
-                                isnew = false
-                                break
-                            end
+    Callback.Add("Tick", function()
+        if HeroesLoad.Count >= 10 then return end
+        for i = 1, GameHeroCount() do
+            local obj = GameHero(i)
+            if obj then
+                local id = obj.networkID
+                if id and id > 0 and HeroesLoad.Heroes[id] == nil then
+                    HeroesLoad.Count = HeroesLoad.Count + 1
+                    HeroesLoad.Heroes[id] = true
+                    if obj.isAlly then
+                        for i, cb in pairs(HeroesLoad.OnAllyHeroLoadC) do
+                            cb(obj)
                         end
-                        if isnew then
-                            HeroesLoad.Count = HeroesLoad.Count + 1
-                            if obj.team == myHero.team then
-                                for i, cb in pairs(HeroesLoad.OnAllyHeroLoadC) do
-                                    cb(obj)
-                                end
-                            else
-                                for i, cb in pairs(HeroesLoad.OnEnemyHeroLoadC) do
-                                    cb(obj)
-                                end
-                            end
-                            TableInsert(HeroesLoad.Heroes, objID)
+                        TableInsert(AllyHeroes, obj)
+                    else
+                        for i, cb in pairs(HeroesLoad.OnEnemyHeroLoadC) do
+                            cb(obj)
                         end
+                        TableInsert(EnemyHeroes, obj)
                     end
                 end
             end
-            if HeroesLoad.Count >= 10 or GameTimer() > HeroesLoad.EndTime then
-                HeroesLoaded = true
-            else
-                HeroesLoad.Performance = GameTimer() + 0.5
-            end
         end
-    end
-end
-Callback.Add("Tick", function()
-    if _G.GamsteronDebug then
-        local status, err = pcall(function() CallbackTick() end) if not status then print("CallbackTick(): " .. tostring(err)) end
-    else
-        CallbackTick()
-    end
-end)
-
-local function CallbackDraw()
-    if not GeneralLoaded then
-        PreLoad()
-        return
-    end
-    for i, action in pairs(TickActions) do
-        if GameTimer() > action[2] or action[1]() == true then
-            TableRemove(TickActions, i)
+    end)
+    Callback.Add("Draw", function()
+        if _G.GamsteronDebug then
+            local status, err = pcall(function()
+                for i, action in pairs(TickActions) do if GameTimer() > action[2] or action[1]() == true then TableRemove(TickActions, i) end end
+            end)
+            if not status then print("CallbackDraw(): " .. tostring(err)) end
+        else
+            for i, action in pairs(TickActions) do if GameTimer() > action[2] or action[1]() == true then TableRemove(TickActions, i) end end
         end
-    end
-end
-Callback.Add("Draw", function()
-    if _G.GamsteronDebug then
-        local status, err = pcall(function() CallbackDraw() end) if not status then print("CallbackDraw(): " .. tostring(err)) end
-    else
-        CallbackDraw()
-    end
+    end)
 end)
 
 _G.GamsteronCoreLoaded = true
