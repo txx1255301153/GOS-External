@@ -1,5 +1,5 @@
 local GamsteronCoreVer = 0.101
-_G.GamsteronDebug = true
+_G.GamsteronDebug = false
 
 -- locals update START
     local function DownloadFile(url, path)
