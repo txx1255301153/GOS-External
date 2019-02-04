@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0764
+local GamsteronOrbVer = 0.0765
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -130,7 +130,7 @@ end
 local function IsInDistance2D(v1, v2, range)
 	local dx = v1.x - v2.x
 	local dy = v1.y - v2.y
-	return dx * dx + dy * dy <= range
+	return dx * dx + dy * dy <= range * range
 end
 
 local function GetHumanizer()
