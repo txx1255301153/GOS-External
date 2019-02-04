@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0765
+local GamsteronOrbVer = 0.0766
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -256,9 +256,9 @@ do
 			["glp"] = {name = "Hextech GLP-800", id = 3030, range = 800, icon = "https://vignette4.wikia.nocookie.net/leagueoflegends/images/c/c9/Hextech_GLP-800_item.png"}
 		}
 		self.ItemBotrk = {
-			["bot"] = {name = "Blade of the Ruined King", id = 3153, range = 600, icon = "https://vignette2.wikia.nocookie.net/leagueoflegends/images/2/2f/Blade_of_the_Ruined_King_item.png"},
-			["bil"] = {name = "Bilgewater Cutlass", id = 3144, range = 600, icon = "https://vignette1.wikia.nocookie.net/leagueoflegends/images/4/44/Bilgewater_Cutlass_item.png"},
-			["gun"] = {name = "Hextech Gunblade", id = 3146, range = 700, icon = "https://vignette4.wikia.nocookie.net/leagueoflegends/images/6/64/Hextech_Gunblade_item.png"}
+			["bot"] = {name = "Blade of the Ruined King", onlyOrbTS = true, dmgType = 1, id = 3153, range = 550, icon = "https://vignette2.wikia.nocookie.net/leagueoflegends/images/2/2f/Blade_of_the_Ruined_King_item.png"},
+			["bil"] = {name = "Bilgewater Cutlass", onlyOrbTS = true, dmgType = 1, id = 3144, range = 550, icon = "https://vignette1.wikia.nocookie.net/leagueoflegends/images/4/44/Bilgewater_Cutlass_item.png"},
+			["gun"] = {name = "Hextech Gunblade", onlyOrbTS = false, dmgType = 2, id = 3146, range = 700, icon = "https://vignette4.wikia.nocookie.net/leagueoflegends/images/6/64/Hextech_Gunblade_item.png"}
 		}
 		self.ItemQss = {
 			["qss"] = {name = "Quicksilver Sash", id = 3140, icon = "https://vignette.wikia.nocookie.net/leagueoflegends/images/f/f9/Quicksilver_Sash_item.png"},
@@ -266,24 +266,62 @@ do
 		}
 		-- maxxxel
 		Callback.Add("Tick", function()
-			--[[
-				Example:
-				local item = self:IsReady(myHero, self.ItemBotrk["bot"].id)
-				if item.IsReady then
-					local target = TargetSelector:GetComboTarget()
-					if target ~= nil then Control.CastSpell(item.Key, target) end
-				end
-			--]]
+			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] then
+				self:UseBotrk()
+			end
 			self.CachedItems = {}
 		end)
 	end
+
+	function __Items:UseBotrk()
+		local result = false
+		for i, item in pairs(self.ItemBotrk) do
+			local menu = MenuItem[i]
+			if menu.enabled:Value() then
+				local Item = self:IsReady(myHero, item.id)
+				if Item.IsReady then
+					local target, range
+					if menu.onlyorb:Value() then
+						target = TargetSelector:GetComboTarget()
+					elseif i == "gun" then
+						target = TargetSelector:GetTarget(item.range-35, menu.dmgType:Value() - 1)
+					else
+						target = TargetSelector:GetTarget(item.range+myHero.boundingRadius-35, menu.dmgType:Value() - 1, true)
+					end
+					if target ~= nil then
+						if i == "gun" then
+							range = item.range-35
+						else
+							range = item.range+myHero.boundingRadius+target.boundingRadius-35
+						end
+						local distance = target.pos:DistanceTo(myHero.pos)
+						if distance <= range then
+							local meHealth = 100 * ( myHero.health / myHero.maxHealth )
+							local targetHealth = 100 * ( target.health / target.maxHealth )
+							if distance <= menu.xrangel:Value() or distance >= menu.xrangeh:Value() or meHealth <= menu.xhealtha:Value() or targetHealth <= menu.xhealthe:Value() then
+								Control.CastSpell(Item.Key, target)
+								result = true
+								break
+							end
+						end
+					end
+				end
+			end
+		end
+		return result
+	end
+
 	function __Items:CreateMenu()
 		MenuItem = MenuElement({name = "Gamsteron Items", id = "gamsteronitems", type = _G.MENU, leftIcon = "https://vignette.wikia.nocookie.net/leagueoflegends/images/a/aa/Ace_in_the_Hole.png" })
 		for i, k in pairs(self.ItemBotrk) do
 			MenuItem:MenuElement({name = k.name, id = i, type = MENU, leftIcon = k.icon })
 			MenuItem[i]:MenuElement({ id = "enabled", name = "Enabled", value = true })
+			MenuItem[i]:MenuElement({ id = "onlyorb", name = "Only Orb[attack] Target", value = k.onlyOrbTS })
+			MenuItem[i]:MenuElement({ id = "dmgType", name = "TargetSelector DamageType", value = k.dmgType, drop = { "AD", "AP" } })
 			MenuItem[i]:MenuElement({ id = "xhealtha", name = myHero.charName .. " %HP < X", value = 30, min = 0, max = 100, step = 1 })
 			MenuItem[i]:MenuElement({ id = "xhealthe", name = "Enemy %HP < X", value = 30, min = 0, max = 100, step = 1 })
+			MenuItem[i]:MenuElement({ id = "xrangel", name = "Enemy in distance < X", value = 200, min = 0, max = 550, step = 1 })
+			MenuItem[i]:MenuElement({ id = "xrangeh", name = "Enemy in distance > X", value = 550, min = 550, max = k.range + 100, step = 1 })
 		end
 		--[[
 		for i, k in pairs(self.ItemQss) do
@@ -1209,11 +1247,11 @@ do
 			Menu.orb:MenuElement({ name = "Extra Cursor Delay", id = "excdelay", value = 25, min = 0, max = 75, step = 1 })
 			if Menu.orb.excdelay:Value() > 75 then Menu.orb.excdelay:Value(25) end
 			Menu.orb:MenuElement({name = "Player Attack Only Click", id = "aamoveclick", key = string.byte("U")})
-			Menu:MenuElement({ name = "Hold Radius", id = "hold", type = _G.MENU })
-				Menu.hold:MenuElement({ id = "HoldRadius", name = "Hold Radius", value = 120, min = 100, max = 250, step = 10 })
-					self.Menu.General.HoldRadius = Menu.hold.HoldRadius
-				Menu.hold:MenuElement({ id = "HoldPosButton", name = "Hold position button", key = string.byte("H"), tooltip = "Should be same in game keybinds", onKeyChange = function(kb) HoldPositionButton = kb; end });
-					HoldPositionButton = Menu.hold.HoldPosButton:Key()
+			Menu.orb:MenuElement({ name = "Hold Radius", id = "hold", type = _G.MENU })
+				Menu.orb.hold:MenuElement({ id = "HoldRadius", name = "Hold Radius", value = 120, min = 100, max = 250, step = 10 })
+					self.Menu.General.HoldRadius = Menu.orb.hold.HoldRadius
+				Menu.orb.hold:MenuElement({ id = "HoldPosButton", name = "Hold position button", key = string.byte("H"), tooltip = "Should be same in game keybinds", onKeyChange = function(kb) HoldPositionButton = kb; end });
+					HoldPositionButton = Menu.orb.hold.HoldPosButton:Key()
 	end
 
 	function __Orbwalker:CreateDrawMenu(menu)
