@@ -1,5 +1,6 @@
-local GamsteronCoreVer = 0.102
+local GamsteronCoreVer = 0.103
 _G.GamsteronDebug = true
+--_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
 -- locals update START
     local function DownloadFile(url, path)
@@ -1435,22 +1436,12 @@ function __GamsteronCore:GetEnemyTurrets()
     return EnemyTurrets
 end
 
-function __GamsteronCore:IsFacing(source, target)
-    local sourceDir = source.dir
-    local targetPos = target.pos
-    local sourcePos = source.pos
-    local targetDir = self:Normalized(targetPos, sourcePos)
-    if self:AngleBetween(sourceDir, targetDir) < 90 then
-        local sourceEndPos = source.pathing.endPos
-        local sourceExtended = self:Extended(sourcePos, self:Normalized(sourceEndPos - sourcePos), 0.5 * source.ms)
-        if not self:EqualVector(sourceExtended, sourcePos) then
-            sourceDir = self:Normalized(sourceExtended, sourcePos)
-        end
-        local targetEndPos = target.pathing.endPos
-        local targetExtended = self:Extended(targetPos, self:Normalized(targetEndPos - targetPos), 0.5 * target.ms)
-        if self:AngleBetween(sourceDir, self:Normalized(targetExtended, sourceExtended)) < 90 then
-            return true
-        end
+function __GamsteronCore:IsFacing(source, target, angle)
+    angle = angle or 90
+    --local ext = source.pos + source.dir * 500
+    --Draw.Line(source.pos:To2D(), ext:To2D())
+    if self:AngleBetween(self:To2D(source.dir), self:To2D(target.pos-source.pos)) < angle then
+        return true
     end
     return false
 end
