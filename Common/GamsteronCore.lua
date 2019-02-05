@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.105
+local GamsteronCoreVer = 0.106
 _G.GamsteronDebug = true
 --_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
@@ -1459,7 +1459,7 @@ function __GamsteronCore:IsFacing(source, target, angle)
 end
 
 function __GamsteronCore:IsBothFacing(source, target, angle)
-    if self:IsFacing(source, target, angle) and IsFacing(target, source, angle) then
+    if self:IsFacing(source, target, angle) and self:IsFacing(target, source, angle) then
         return true
     end
     return false
