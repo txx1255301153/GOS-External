@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.103
+local GamsteronCoreVer = 0.104
 _G.GamsteronDebug = true
 --_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
@@ -1438,9 +1438,21 @@ end
 
 function __GamsteronCore:IsFacing(source, target, angle)
     angle = angle or 90
+    local sd = self:To2D(source.dir)
+    local sp = self:To2D(source.pos)
+    local dir = self:To2D(target.pos - source.pos)
     --local ext = source.pos + source.dir * 500
     --Draw.Line(source.pos:To2D(), ext:To2D())
-    if self:AngleBetween(self:To2D(source.dir), self:To2D(target.pos-source.pos)) < angle then
+    if self:AngleBetween(sd, dir) < angle then
+        if source.posTo then
+            local normalized = self:Normalized(source.posTo, sp)
+            --local ext = self:Extended(sp, normalized, 1000)
+            --Draw.Circle(Vector(ext.x, 0, ext.y))
+            --Draw.Line(source.pos:To2D(), Vector(ext.x, 0, ext.y):To2D())
+            if normalized == nil or self:AngleBetween(normalized, dir) < angle then
+                return true
+            end
+        end
         return true
     end
     return false
