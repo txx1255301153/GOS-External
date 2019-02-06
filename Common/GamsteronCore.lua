@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.108
+local GamsteronCoreVer = 0.109
 _G.GamsteronDebug = true
 --_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
@@ -247,11 +247,6 @@ function __GamsteronCore:__init()
         ["Xerath"] = function(unit)
             return self:HasBuff(unit, "XerathArcanopulseChargeUp") or self:HasBuff(unit, "XerathLocusOfPower2")
         end
-    }
-
-    self.BlockAA =
-    {
-        ["Vayne"] = { [_E] = true }
     }
 
     self.MinionsRange                     =
@@ -1497,14 +1492,13 @@ function __GamsteronCore:__Interrupter()
         ["XerathLocusOfPower2"] = true
     }
     local function InterrupterTick()
-        local mePos = myHero.pos
         for i = 1, GameHeroCount() do
             local unit = GameHero(i)
-            if unit and unit.valid and not unit.dead and unit.alive and unit.isTargetable and unit.visible and self:IsInRange(mePos, unit.pos, 1500) then
-                local a = unit.activeSpell
-                if a and a.valid and a.isChanneling and spells[a.name] and a.castEndTime - GameTimer() > 0.33 then
+            if self:IsValidTarget(unit) and myHero.pos:DistanceTo(unit.pos) < 1500 then
+                local spell = unit.activeSpell
+                if spell and spell.valid and spells[spell.name] and spell.castEndTime - GameTimer() > 0.33 then
                     for j = 1, #cb do
-                        cb[j](unit, a)
+                        cb[j](unit)
                     end
                 end
             end
