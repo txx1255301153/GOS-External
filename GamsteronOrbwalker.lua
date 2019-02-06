@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0768
+local GamsteronOrbVer = 0.0769
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -171,6 +171,11 @@ do
 		self.WorkDone = true
 		self.EndTime = 0
 		self.StartTime = 0
+		ControlSetCursorPos(self.CursorPos.x, self.CursorPos.y)
+		if IsInDistance2D(self.CursorPos, _G.cursorPos, 120) then
+			self.IsReady = true
+			_G.GAMSTERON_CONTROLL = nil
+		end
 	end
 
 	function __Cursor:CastKey()
