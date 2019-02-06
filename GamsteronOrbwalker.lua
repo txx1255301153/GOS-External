@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0774
+local GamsteronOrbVer = 0.0775
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -506,7 +506,7 @@ do
 			for i = 1, #self.ItemSlots do
 				local slot = self.ItemSlots[i]
 				local item = unit:GetItemData(slot)
-				if item ~= nil and item.itemID > 0 then
+				if item ~= nil and item.itemID ~= nil and item.itemID > 0 then
 					t[item.itemID] = i
 				end
 			end
