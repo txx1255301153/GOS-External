@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0775
+local GamsteronOrbVer = 0.0776
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -1743,38 +1743,26 @@ do
 			AttackSpeedData.tickanim = OsClock() + 1
 			AttackSpeedData.anim = myHero.attackData.animationTime
 		end
-		local spellCastEndTime = 0
 		local spell = myHero.activeSpell
-		if spell and spell.valid then
-			if not LocalCore.NoAutoAttacks[spell.name] and (not myHero.isChanneling or LocalCore.SpecialAutoAttacks[spell.name]) then
-				if spell.castEndTime > self.AttackCastEndTime then
-					for i = 1, #self.OnAttackC do
-						self.OnAttackC[i]()
-					end
-					self.AttackCastEndTime = spell.castEndTime
-					self.AttackServerStart = spell.startTime
-					ATTACK_WINDUP = spell.windup
-					ATTACK_ANIMATION = spell.animation
-					if GAMSTERON_MODE_DMG then
-						if self.TestCount == 0 then
-							self.TestStartTime = GameTimer()
-						end
-						self.TestCount = self.TestCount + 1
-						if self.TestCount == 5 then
-							print("5 attacks in time: " .. tostring(GameTimer() - self.TestStartTime) .. "[sec]")
-							self.TestCount = 0
-							self.TestStartTime = 0
-						end
-					end
-				end
-			else
-				spellCastEndTime = spell.castEndTime - _G.LATENCY - 0.04
+		if spell and spell.valid and spell.target > 0 and spell.castEndTime > self.AttackCastEndTime and ((LocalCore.NoAutoAttacks[spell.name] == nil and spell.name:lower():find("attack")) or LocalCore.SpecialAutoAttacks[spell.name] ~= nil) then
+			for i = 1, #self.OnAttackC do
+				self.OnAttackC[i]()
 			end
-		end
-		if GameTimer() <= spellCastEndTime then
-			self.IsCastingSpell = true
-		else
-			self.IsCastingSpell = false
+			self.AttackCastEndTime = spell.castEndTime
+			self.AttackServerStart = spell.startTime
+			ATTACK_WINDUP = spell.windup
+			ATTACK_ANIMATION = spell.animation
+			if GAMSTERON_MODE_DMG then
+				if self.TestCount == 0 then
+					self.TestStartTime = GameTimer()
+				end
+				self.TestCount = self.TestCount + 1
+				if self.TestCount == 5 then
+					print("5 attacks in time: " .. tostring(GameTimer() - self.TestStartTime) .. "[sec]")
+					self.TestCount = 0
+					self.TestStartTime = 0
+				end
+			end
 		end
 		self:Orbwalk()
 	end
