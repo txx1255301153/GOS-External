@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0772
+local GamsteronOrbVer = 0.0773
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -2322,7 +2322,7 @@ _G.Control.Move = function(a, b, c)
 		end
 		_G.GAMSTERON_CONTROLL = true
 		if position then
-			if Cursor.IsReady then
+			if Cursor.IsReady and position:ToScreen().onScreen then
 				Orbwalker:MoveToPos(position)
 			else
 				_G.GAMSTERON_CONTROLL = nil
@@ -2339,8 +2339,8 @@ end
 
 _G.Control.CastSpell = function(key, a, b, c)
 	if a and GameTimer() < Orbwalker.AttackLocalStart + 0.2 and myHero.attackSpeed < 2 and Orbwalker.AttackCastEndTime < GameTimer() then
-		self.AttackEnabled = false
-		DelayAction(function() self.AttackEnabled = true end, 0.1)
+		Orbwalker.AttackEnabled = false
+		DelayAction(function() Orbwalker.AttackEnabled = true end, 0.1)
 		Orbwalker.AttackLocalStart = 0
 		Cursor:LastStep()
 	end
