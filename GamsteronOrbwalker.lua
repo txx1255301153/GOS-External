@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0766
+local GamsteronOrbVer = 0.0767
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -256,17 +256,17 @@ do
 			["glp"] = {name = "Hextech GLP-800", id = 3030, range = 800, icon = "https://vignette4.wikia.nocookie.net/leagueoflegends/images/c/c9/Hextech_GLP-800_item.png"}
 		}
 		self.ItemBotrk = {
-			["bot"] = {name = "Blade of the Ruined King", onlyOrbTS = true, dmgType = 1, id = 3153, range = 550, icon = "https://vignette2.wikia.nocookie.net/leagueoflegends/images/2/2f/Blade_of_the_Ruined_King_item.png"},
-			["bil"] = {name = "Bilgewater Cutlass", onlyOrbTS = true, dmgType = 1, id = 3144, range = 550, icon = "https://vignette1.wikia.nocookie.net/leagueoflegends/images/4/44/Bilgewater_Cutlass_item.png"},
-			["gun"] = {name = "Hextech Gunblade", onlyOrbTS = false, dmgType = 2, id = 3146, range = 700, icon = "https://vignette4.wikia.nocookie.net/leagueoflegends/images/6/64/Hextech_Gunblade_item.png"}
+			["bot"] = {name = "Botrk & Ornn Botrk & Cutlass", onlyOrbTS = true, dmgType = 1, id = { 3153, 3144, 3389 }, range = 550, icon = "https://vignette2.wikia.nocookie.net/leagueoflegends/images/2/2f/Blade_of_the_Ruined_King_item.png"},
+			["gun"] = {name = "Hextech Gunblade", onlyOrbTS = false, dmgType = 2, id = { 3146 }, range = 700, icon = "https://vignette4.wikia.nocookie.net/leagueoflegends/images/6/64/Hextech_Gunblade_item.png"}
 		}
 		self.ItemQss = {
-			["qss"] = {name = "Quicksilver Sash", id = 3140, icon = "https://vignette.wikia.nocookie.net/leagueoflegends/images/f/f9/Quicksilver_Sash_item.png"},
-			["msc"] = {name = "Mercurial Scimittar", id = 3139, icon = "https://vignette.wikia.nocookie.net/leagueoflegends/images/0/0a/Mercurial_Scimitar_item.png"}
+			["qss"] = {name = "QSS & Mercurial Scimittar", id = {3139, 3140}, icon = "https://vignette.wikia.nocookie.net/leagueoflegends/images/f/f9/Quicksilver_Sash_item.png"}
 		}
 		-- maxxxel
 		Callback.Add("Tick", function()
-			if Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] then
+			local result = false
+			local result = self:UseQss()
+			if not result and Orbwalker.Modes[LocalCore.ORBWALKER_MODE_COMBO] then
 				self:UseBotrk()
 			end
 			self.CachedItems = {}
@@ -278,34 +278,134 @@ do
 		for i, item in pairs(self.ItemBotrk) do
 			local menu = MenuItem[i]
 			if menu.enabled:Value() then
-				local Item = self:IsReady(myHero, item.id)
-				if Item.IsReady then
-					local target, range
-					if menu.onlyorb:Value() then
-						target = TargetSelector:GetComboTarget()
-					elseif i == "gun" then
-						target = TargetSelector:GetTarget(item.range-35, menu.dmgType:Value() - 1)
-					else
-						target = TargetSelector:GetTarget(item.range+myHero.boundingRadius-35, menu.dmgType:Value() - 1, true)
-					end
-					if target ~= nil then
-						if i == "gun" then
-							range = item.range-35
+				local isGun = false; if i == "gun" then isGun = true end
+				for j, id in pairs(item.id) do
+					local Item = self:IsReady(myHero, id)
+					if Item.IsReady then
+						local target, range
+						if menu.onlyorb:Value() then
+							target = TargetSelector:GetComboTarget()
+						elseif isGun then
+							target = TargetSelector:GetTarget(item.range-35, menu.dmgType:Value() - 1)
 						else
-							range = item.range+myHero.boundingRadius+target.boundingRadius-35
+							target = TargetSelector:GetTarget(item.range+myHero.boundingRadius-35, menu.dmgType:Value() - 1, true)
 						end
-						local distance = target.pos:DistanceTo(myHero.pos)
-						if distance <= range then
-							local meHealth = 100 * ( myHero.health / myHero.maxHealth )
-							local targetHealth = 100 * ( target.health / target.maxHealth )
-							if distance <= menu.xrangel:Value() or distance >= menu.xrangeh:Value() or meHealth <= menu.xhealtha:Value() or targetHealth <= menu.xhealthe:Value() then
-								Control.CastSpell(Item.Key, target)
-								result = true
-								break
+						if target ~= nil then
+							if isGun then
+								range = item.range-35
+							else
+								range = item.range+myHero.boundingRadius+target.boundingRadius-35
+							end
+							local distance = target.pos:DistanceTo(myHero.pos)
+							if distance <= range then
+								if isGun and distance < menu.xrange:Value() then
+									Control.CastSpell(Item.Key, target)
+									result = true
+								else
+
+									-- myHero.health < x
+									local meHealth = 100 * ( myHero.health / myHero.maxHealth )
+									if meHealth <= menu.xhealtha:Value() then
+										Control.CastSpell(Item.Key, target)
+										result = true
+										break
+									end
+									-- myHero.health < x
+
+									-- melee
+									if menu.melee:Value() then
+										local meleeHeroes = {}
+										for i = 1, GameHeroCount() do
+											local hero = GameHero(i)
+											if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and hero.range < 400 and myHero.pos:DistanceTo(hero.pos) < hero.range + myHero.boundingRadius + hero.boundingRadius then
+												TableInsert(meleeHeroes, hero)
+											end
+										end
+										if #meleeHeroes > 0 then
+											_G.table.sort(meleeHeroes, function(a,b) a.health + (a.totalDamage*2) + (a.attackSpeed*100) > b.health + (b.totalDamage*2) + (b.attackSpeed*100) end)
+											local meleeTarget = meleeHeroes[1]
+											if LocalCore:IsFacing(meleeTarget, myHero, 60) then
+												Control.CastSpell(Item.Key, meleeHeroes[1])
+												result = true
+												break
+											end
+										end
+									end
+									-- melee
+									
+									-- fleeing
+									if distance >= menu.flee.range:Value() and 100 * ( target.health / target.maxHealth ) <= menu.flee.health:Value() and LocalCore:IsFacing(myHero, target, 60) and not LocalCore:IsFacing(target, myHero, 60) then
+										Control.CastSpell(Item.Key, target)
+										result = true
+										break
+									end
+									-- fleeing
+								end
 							end
 						end
 					end
 				end
+				if result then break end
+			end
+		end
+		return result
+	end
+
+	function __Items:UseQss()
+		local result = false
+		for i, item in pairs(self.ItemQss) do
+			local menu = MenuItem[i]
+			if menu.enabled:Value() then
+				for j, id in pairs(item.id) do
+					local Item = self:IsReady(myHero, id)
+					if Item.IsReady then
+						local enemiesCount = 0
+						local menuDistance = menu.types.distance:Value()
+						for i = 1, GameHeroCount() do
+							local hero = GameHero(i)
+							if hero and hero.valid and hero.alive and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) <= menuDistance then
+								enemiesCount = enemiesCount + 1
+							end
+						end
+						if enemiesCount >= menu.types.count:Value() then
+							local menuDuration = menu.types.duration:Value() * 0.001
+							local menuBuffs = {
+								[5] = menu.types.stun:Value(),
+								[11] = menu.types.snare:Value(),
+								[24] = menu.types.supress:Value(),
+								[29] = menu.types.knockup:Value(),
+								[21] = menu.types.fear:Value(),
+								[22] = menu.types.charm:Value(),
+								[8] = menu.types.taunt:Value(),
+								[30] = menu.types.knockback:Value(),
+								[25] = menu.types.blind:Value(),
+								[31] = menu.types.disarm:Value()
+							}
+							for k = 0, myHero.buffCount do
+								local buff = myHero:GetBuff(k)
+								if buff and buff.count > 0 then
+									local buffType = buff.type
+									local buffDuration = buff.duration
+									if menuBuffs[buffType] then
+										if buffDuration >= menuDuration then
+											result = true
+											ControlKeyDown(Item.Key)
+											ControlKeyUp(Item.Key)
+											break
+										end
+									elseif buffType == 10 and menu.types.slowm.slow:Value() and buffDuration >= menu.types.slowm.duration:Value() * 0.001 and myHero.ms <= menu.types.slowm.speed:Value() then
+										result = true
+										ControlKeyDown(Item.Key)
+										ControlKeyUp(Item.Key)
+										break
+									end
+								end
+							end
+							if result then break end
+						end
+					end
+				end
+				if result then break end
 			end
 		end
 		return result
@@ -314,20 +414,53 @@ do
 	function __Items:CreateMenu()
 		MenuItem = MenuElement({name = "Gamsteron Items", id = "gamsteronitems", type = _G.MENU, leftIcon = "https://vignette.wikia.nocookie.net/leagueoflegends/images/a/aa/Ace_in_the_Hole.png" })
 		for i, k in pairs(self.ItemBotrk) do
-			MenuItem:MenuElement({name = k.name, id = i, type = MENU, leftIcon = k.icon })
+			MenuItem:MenuElement({name = k.name, id = i, type = _G.MENU, leftIcon = k.icon })
 			MenuItem[i]:MenuElement({ id = "enabled", name = "Enabled", value = true })
+			if i == "gun" then MenuItem[i]:MenuElement({ id = "xrange", name = "Enemy in distance < X (700 = always ON)", value = 0, min = 0, max = 700, step = 10 }) end
+			MenuItem[i]:MenuElement({ id = "melee", name = "AntiMelee - isfacing and distance < enemy melee range", value = true })
 			MenuItem[i]:MenuElement({ id = "onlyorb", name = "Only Orb[attack] Target", value = k.onlyOrbTS })
 			MenuItem[i]:MenuElement({ id = "dmgType", name = "TargetSelector DamageType", value = k.dmgType, drop = { "AD", "AP" } })
-			MenuItem[i]:MenuElement({ id = "xhealtha", name = myHero.charName .. " %HP < X", value = 30, min = 0, max = 100, step = 1 })
-			MenuItem[i]:MenuElement({ id = "xhealthe", name = "Enemy %HP < X", value = 30, min = 0, max = 100, step = 1 })
-			MenuItem[i]:MenuElement({ id = "xrangel", name = "Enemy in distance < X", value = 200, min = 0, max = 550, step = 1 })
-			MenuItem[i]:MenuElement({ id = "xrangeh", name = "Enemy in distance > X", value = 550, min = 550, max = k.range + 100, step = 1 })
+			MenuItem[i]:MenuElement({ id = "xhealtha", name = myHero.charName .. " %HP < X", value = 15, min = 0, max = 100, step = 1 })
+			MenuItem[i]:MenuElement({ id = "flee", name = "On Fleeing Target", type = _G.MENU })
+				MenuItem[i].flee:MenuElement({ id = "range", name = "Enemy in distance > X", value = 550, min = 300, max = 600, step = 10 })
+				MenuItem[i].flee:MenuElement({ id = "health", name = "Enemy %HP < X", value = 50, min = 0, max = 100, step = 1 })
+		end
+		for i, k in pairs(self.ItemQss) do
+			--[[
+				STUN = 5
+				SNARE = 11
+				SUPRESS = 24
+				KNOCKUP = 29
+				FEAR = 21 -> fiddle Q, ...
+				CHARM = 22 -> ahri E, ...
+				TAUNT = 8 -> rammus E, ...
+				SLOW = 10 -> nasus W, zilean E
+				KNOCKBACK = 30 -> alistar W, lee sin R, ...
+				BLIND = 25 -> teemo Q
+				DISARM = 31 -> Lulu W
+			]]
+			MenuItem:MenuElement({ id = i, name = k.name, type = _G.MENU, leftIcon = k.icon })
+			MenuItem[i]:MenuElement({ id = "enabled", name = "Enabled", value = true })
+			MenuItem[i]:MenuElement({ id = "types", name = "Buff Types", type = _G.MENU })
+			MenuItem[i].types:MenuElement({ id = "stun", name = "Stun - sona r", value = true })
+			MenuItem[i].types:MenuElement({ id = "snare", name = "Snare - xayah e", value = true })
+			MenuItem[i].types:MenuElement({ id = "supress", name = "Supress - warwick r", value = true })
+			MenuItem[i].types:MenuElement({ id = "knockup", name = "Knockup - yasuo q3", value = true })
+			MenuItem[i].types:MenuElement({ id = "fear", name = "Fear - fiddle q", value = true })
+			MenuItem[i].types:MenuElement({ id = "charm", name = "Charm - ahri e", value = true })
+			MenuItem[i].types:MenuElement({ id = "taunt", name = "Taunt - rammus e", value = true })
+			MenuItem[i].types:MenuElement({ id = "knockback", name = "Knockback - alistar w", value = true })
+			MenuItem[i].types:MenuElement({ id = "blind", name = "Blind - teemo q", value = true })
+			MenuItem[i].types:MenuElement({ id = "disarm", name = "Disarm - lulu w", value = true })
+			MenuItem[i].types:MenuElement({ id = "duration", name = "Minimum duration - in ms", value = 500, min = 0, max = 1000, step = 50 })
+			MenuItem[i].types:MenuElement({ id = "count", name = "Enemies Around - Count", value = 1, min = 0, max = 5, step = 1 })
+			MenuItem[i].types:MenuElement({ id = "distance", name = "Enemies Around - Distance", value = 1200, min = 0, max = 1500, step = 50 })
+			MenuItem[i].types:MenuElement({ id = "slowm", name = "Slow Settings", type = _G.MENU })
+			MenuItem[i].types.slowm:MenuElement({ id = "slow", name = "Slow", value = true })
+			MenuItem[i].types.slowm:MenuElement({ id = "speed", name = "Maximum " .. myHero.charName .. " Move Speed", value = 200, min = 0, max = 250, step = 10 })
+			MenuItem[i].types.slowm:MenuElement({ id = "duration", name = "Minimum duration - in ms", value = 1500, min = 1000, max = 3000, step = 50 })
 		end
 		--[[
-		for i, k in pairs(self.ItemQss) do
-			MenuItem:MenuElement({name = k.name, id = i, type = MENU, leftIcon = k.icon })
-			MenuItem[i]:MenuElement({ id = "enable", name = "Enabled", value = true })
-		end
 		for i, k in pairs(self.ItemSkillshot) do
 			MenuItem:MenuElement({name = k.name, id = i, type = MENU, leftIcon = k.icon })
 			MenuItem[i]:MenuElement({ id = "enable", name = "Enabled", value = true })
@@ -2216,14 +2349,8 @@ _G.Control.CastSpell = function(key, a, b, c)
 		if position then
 			if Cursor.IsReady then
 				Cursor:SetCursor(_G.cursorPos, position, key, function()
-					if isTarget then
-						Control.KeyDown(HK_TCO)
-					end
 					ControlKeyDown(key)
 					ControlKeyUp(key)
-					if isTarget then
-						Control.KeyUp(HK_TCO)
-					end
 				end)
 				Orbwalker.LastMoveLocal = 0
 			else
