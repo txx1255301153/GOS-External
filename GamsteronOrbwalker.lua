@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0769
+local GamsteronOrbVer = 0.0771
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -337,7 +337,7 @@ do
 											end
 										end
 										if #meleeHeroes > 0 then
-											_G.table.sort(meleeHeroes, function(a,b) a.health + (a.totalDamage*2) + (a.attackSpeed*100) > b.health + (b.totalDamage*2) + (b.attackSpeed*100) end)
+											_G.table.sort(meleeHeroes, function(a,b) return a.health + (a.totalDamage*2) + (a.attackSpeed*100) > b.health + (b.totalDamage*2) + (b.attackSpeed*100) end)
 											local meleeTarget = meleeHeroes[1]
 											if LocalCore:IsFacing(meleeTarget, myHero, 60) then
 												Control.CastSpell(Item.Key, meleeHeroes[1])
