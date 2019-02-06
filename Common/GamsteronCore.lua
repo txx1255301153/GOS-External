@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.106
+local GamsteronCoreVer = 0.107
 _G.GamsteronDebug = true
 --_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
@@ -1438,9 +1438,10 @@ end
 
 function __GamsteronCore:IsFacing(source, target, angle)
     angle = angle or 90
+    if target.pos then target = target.pos end
     local sd = self:To2D(source.dir)
     local sp = self:To2D(source.pos)
-    local dir = self:To2D(target.pos - source.pos)
+    local dir = self:To2D(Vector(target) - source.pos)
     --local ext = source.pos + source.dir * 500
     --Draw.Line(source.pos:To2D(), ext:To2D())
     if self:AngleBetween(sd, dir) < angle then
