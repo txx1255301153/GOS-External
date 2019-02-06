@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0767
+local GamsteronOrbVer = 0.0768
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -40,8 +40,11 @@ local ATTACK_ANIMATION				= 0
 local GAMSTERON_MODE_DMG			= false
 local CASTSPELL_TICK				= 0
 local CASTSPELL_CANMOVE				= 0
+local LAST_KEYPRESS					= 0
+local LAST_MOUSECLICK				= 0
 _G.GAMSTERON_CONTROLL				= nil
 
+local OsClock						= _G.os.clock
 local GetTickCount					= GetTickCount
 local myHero						= _G.myHero
 local heroName						= myHero.charName
@@ -112,7 +115,7 @@ local function GetWindup()
 	end
 	if HAS_LETHAL_TEMPO then
 		return myHero.attackData.windUpTime
-	elseif os.clock() < AttackSpeedData.tickwindup and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
+	elseif OsClock() < AttackSpeedData.tickwindup and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
 		return myHero.attackData.windUpTime
 	end
 	return ATTACK_WINDUP
@@ -121,7 +124,7 @@ end
 local function GetAnimation()
 	if HAS_LETHAL_TEMPO then
 		return myHero.attackData.animationTime
-	elseif os.clock() < AttackSpeedData.tickanim and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
+	elseif OsClock() < AttackSpeedData.tickanim and myHero.attackSpeed * (1 / myHero.attackData.animationTime / myHero.attackSpeed) <= 2.5 then
 		return myHero.attackData.animationTime
 	end
 	return ATTACK_ANIMATION
@@ -162,6 +165,12 @@ do
 		self.Work = nil
 		self.WorkDone = true
 		self.EndTime = 0
+	end
+
+	function __Cursor:LastStep()
+		self.WorkDone = true
+		self.EndTime = 0
+		self.StartTime = 0
 	end
 
 	function __Cursor:CastKey()
@@ -275,6 +284,7 @@ do
 
 	function __Items:UseBotrk()
 		local result = false
+		if OsClock() < LAST_KEYPRESS then return false end
 		for i, item in pairs(self.ItemBotrk) do
 			local menu = MenuItem[i]
 			if menu.enabled:Value() then
@@ -353,6 +363,7 @@ do
 
 	function __Items:UseQss()
 		local result = false
+		if OsClock() < LAST_KEYPRESS then return false end
 		for i, item in pairs(self.ItemQss) do
 			local menu = MenuItem[i]
 			if menu.enabled:Value() then
@@ -389,12 +400,14 @@ do
 									if menuBuffs[buffType] then
 										if buffDuration >= menuDuration then
 											result = true
+											LAST_KEYPRESS = OsClock() + 0.07
 											ControlKeyDown(Item.Key)
 											ControlKeyUp(Item.Key)
 											break
 										end
 									elseif buffType == 10 and menu.types.slowm.slow:Value() and buffDuration >= menu.types.slowm.duration:Value() * 0.001 and myHero.ms <= menu.types.slowm.speed:Value() then
 										result = true
+										LAST_KEYPRESS = OsClock() + 0.07
 										ControlKeyDown(Item.Key)
 										ControlKeyUp(Item.Key)
 										break
@@ -598,7 +611,7 @@ do
 	function __Spells:IsReady(spell, delays)
 		delays = delays or { q = 0, w = 0, e = 0, r = 0 }
 		local currentTime = GameTimer()
-		if not Cursor.IsReady or _G.GAMSTERON_CONTROLL ~= nil or currentTime <= CASTSPELL_TICK then
+		if not Cursor.IsReady or _G.GAMSTERON_CONTROLL ~= nil or OsClock() <= CASTSPELL_TICK then
 			return false
 		end
 		if currentTime < self.LastQ + delays.q or currentTime < self.LastQk + delays.q then
@@ -1458,6 +1471,7 @@ do
 		end)
 		self.LastMoveLocal = 0
 		self.AttackLocalStart = GameTimer()
+		LAST_KEYPRESS = OsClock() + 0.07
 	end
 
 	function __Orbwalker:Move()
@@ -1465,6 +1479,7 @@ do
 		self.LastMovePos = _G.mousePos
 		ControlMouseEvent(MOUSEEVENTF_RIGHTDOWN)
 		ControlMouseEvent(MOUSEEVENTF_RIGHTUP)
+		LAST_MOUSECLICK = OsClock() + 0.05
 		self.LastMoveLocal = GameTimer() + GetHumanizer()
 		self.LastMoveTime = GameTimer()
 	end
@@ -1475,6 +1490,7 @@ do
 			ControlMouseEvent(MOUSEEVENTF_RIGHTDOWN)
 			ControlMouseEvent(MOUSEEVENTF_RIGHTUP)
 		end)
+		LAST_MOUSECLICK = OsClock() + 0.05
 		self.LastMoveLocal = GameTimer() + GetHumanizer()
 		self.LastMoveTime = GameTimer()
 	end
@@ -1660,8 +1676,9 @@ do
 		self.IsNone = self:HasMode(LocalCore.ORBWALKER_MODE_NONE)
 		self.Modes = self:GetModes()
 		if self.IsNone then
-			if GameTimer() < self.LastMouseDown + 1 then
+			if GameTimer() < self.LastMouseDown + 1 and OsClock() > LAST_MOUSECLICK then
 				ControlMouseEvent(MOUSEEVENTF_RIGHTDOWN)
+				LAST_MOUSECLICK = OsClock() + 0.05
 				self.LastMouseDown = 0
 			end
 			return
@@ -1712,11 +1729,11 @@ do
 
 	function __Orbwalker:Tick()
 		if AttackSpeedData.windup ~= myHero.attackData.windUpTime then
-			AttackSpeedData.tickwindup = os.clock() + 1
+			AttackSpeedData.tickwindup = OsClock() + 1
 			AttackSpeedData.windup = myHero.attackData.windUpTime
 		end
 		if AttackSpeedData.anim ~= myHero.attackData.animationTime then
-			AttackSpeedData.tickanim = os.clock() + 1
+			AttackSpeedData.tickanim = OsClock() + 1
 			AttackSpeedData.anim = myHero.attackData.animationTime
 		end
 		local spellCastEndTime = 0
@@ -2276,7 +2293,7 @@ do
 end
 
 _G.Control.Attack = function(target)
-	if Cursor.IsReady and _G.GAMSTERON_CONTROLL == nil and GameTimer() > CASTSPELL_TICK then
+	if Cursor.IsReady and _G.GAMSTERON_CONTROLL == nil and OsClock() > CASTSPELL_TICK and OsClock() > LAST_KEYPRESS then
 		_G.GAMSTERON_CONTROLL = true
 		Orbwalker:Attack(target)
 		return true
@@ -2285,7 +2302,7 @@ _G.Control.Attack = function(target)
 end
 
 _G.Control.Move = function(a, b, c)
-	if _G.GAMSTERON_CONTROLL == nil then
+	if _G.GAMSTERON_CONTROLL == nil and OsClock() > LAST_KEYPRESS and OsClock() > LAST_MOUSECLICK then
 		local position
 		if a and b and c then
 			position = Vector(a, b, c)
@@ -2316,7 +2333,13 @@ _G.Control.Move = function(a, b, c)
 end
 
 _G.Control.CastSpell = function(key, a, b, c)
-	if _G.GAMSTERON_CONTROLL == nil and GameTimer() > CASTSPELL_TICK then
+	if a and GameTimer() < Orbwalker.AttackLocalStart + 0.2 and myHero.attackSpeed < 2 and Orbwalker.AttackCastEndTime < GameTimer() then
+		self.AttackEnabled = false
+		DelayAction(function() self.AttackEnabled = true end, 0.1)
+		Orbwalker.AttackLocalStart = 0
+		Cursor:LastStep()
+	end
+	if _G.GAMSTERON_CONTROLL == nil and OsClock() > CASTSPELL_TICK and OsClock() > LAST_KEYPRESS then
 		local position
 		local isTarget = false
 		if a and b and c then
@@ -2344,7 +2367,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 			if GameTimer() < Spells.LastR + 0.15 then return false end
 			Spells.LastR = GameTimer()
 		end
-		CASTSPELL_TICK = GameTimer() + _G.LATENCY + 0.08
+		CASTSPELL_TICK = OsClock() + _G.LATENCY + 0.08
 		_G.GAMSTERON_CONTROLL = true
 		if position then
 			if Cursor.IsReady then
@@ -2352,6 +2375,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 					ControlKeyDown(key)
 					ControlKeyUp(key)
 				end)
+				LAST_KEYPRESS = OsClock() + 0.07
 				Orbwalker.LastMoveLocal = 0
 			else
 				_G.GAMSTERON_CONTROLL = nil
@@ -2360,6 +2384,7 @@ _G.Control.CastSpell = function(key, a, b, c)
 		else
 			ControlKeyDown(key)
 			ControlKeyUp(key)
+			LAST_KEYPRESS = OsClock() + 0.07
 			_G.GAMSTERON_CONTROLL = nil
 		end
 		return true
