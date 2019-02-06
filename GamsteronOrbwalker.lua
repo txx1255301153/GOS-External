@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0776
+local GamsteronOrbVer = 0.0777
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -318,15 +318,6 @@ do
 									result = true
 								else
 
-									-- myHero.health < x
-									local meHealth = 100 * ( myHero.health / myHero.maxHealth )
-									if meHealth <= menu.xhealtha:Value() then
-										Control.CastSpell(Item.Key, target)
-										result = true
-										break
-									end
-									-- myHero.health < x
-
 									-- melee
 									if menu.melee:Value() then
 										local meleeHeroes = {}
@@ -347,6 +338,15 @@ do
 										end
 									end
 									-- melee
+
+									-- myHero.health < x
+									local meHealth = 100 * ( myHero.health / myHero.maxHealth )
+									if meHealth <= menu.xhealtha:Value() then
+										Control.CastSpell(Item.Key, target)
+										result = true
+										break
+									end
+									-- myHero.health < x
 									
 									-- fleeing
 									if distance >= menu.flee.range:Value() and 100 * ( target.health / target.maxHealth ) <= menu.flee.health:Value() and LocalCore:IsFacing(myHero, target, 60) and not LocalCore:IsFacing(target, myHero, 60) then
@@ -534,6 +534,7 @@ do
 		self.WorkEndTime = 0
 		self.ObjectEndTime = 0
 		self.SpellEndTime = 0
+		self.CanNext = true
 		self.StartTime = 0
 		self.WindupList =
 		{
@@ -1389,6 +1390,10 @@ do
 				Menu.orb.lclear:MenuElement({name = "Attack Heroes", id = "laneset", value = true })
 				Menu.orb.lclear:MenuElement({name = "Extra Farm Delay", id = "farmdelay", value = 50, min = 0, max = 100, step = 1 })
 				Menu.orb.lclear:MenuElement({name = "Should Wait Time", id = "swait", value = 500, min = 0, max = 1000, step = 100 })
+			Menu.orb:MenuElement({ name = "Spell Manager", id = "spell", type = _G.MENU })
+				Menu.orb.spell:MenuElement({name = "Block if is attacking", id = "isaa", value = true })
+				Menu.orb.spell:MenuElement({name = "Spells between attacks", id = "baa", value = false })
+				_G.GamsteronMenuSpell = Menu.orb.spell
 			Menu.orb:MenuElement({ name = "Humanizer", id = "humanizer", type = _G.MENU })
 				Menu.orb.humanizer:MenuElement({ name = "Random", id = "random", type = _G.MENU })
 					Menu.orb.humanizer.random:MenuElement({name = "Enabled", id = "enabled", value = true })
@@ -1529,6 +1534,15 @@ do
 		if GameTimer() < Spells.ObjectEndTime then
 			return false
 		end
+		local hasDisarm = false
+		for i = 0, myHero.buffCount do
+			local buff = myHero:GetBuff(i)
+			if buff and buff.count > 0 and (buff.type == 31 or buff.type == 25) then
+				hasDisarm = true
+				break
+			end
+		end
+		if hasDisarm then return false end
 		if self.AttackCastEndTime > self.AttackLocalStart then
 			if self.ResetAttack or GameTimer() >= self.AttackServerStart + GetAnimation() - 0.05 - LATENCY then
 				return true
@@ -2291,6 +2305,7 @@ _G.Control.Attack = function(target)
 	if Cursor.IsReady and _G.GAMSTERON_CONTROLL == nil and OsClock() > CASTSPELL_TICK and OsClock() > LAST_KEYPRESS then
 		_G.GAMSTERON_CONTROLL = true
 		Orbwalker:Attack(target)
+		Spells.CanNext = true
 		return true
 	end
 	return false
@@ -2328,7 +2343,7 @@ _G.Control.Move = function(a, b, c)
 end
 
 _G.Control.CastSpell = function(key, a, b, c)
-	if a and GameTimer() < Orbwalker.AttackLocalStart + 0.2 and myHero.attackSpeed < 2 and Orbwalker.AttackCastEndTime < GameTimer() then
+	if a and GameTimer() < Orbwalker.AttackLocalStart + 0.1 and myHero.attackSpeed < 2 and Orbwalker.AttackCastEndTime < GameTimer() then
 		Orbwalker.AttackEnabled = false
 		DelayAction(function() Orbwalker.AttackEnabled = true end, 0.1)
 		Orbwalker.AttackLocalStart = 0
@@ -2336,36 +2351,73 @@ _G.Control.CastSpell = function(key, a, b, c)
 	end
 	if _G.GAMSTERON_CONTROLL == nil and OsClock() > CASTSPELL_TICK and OsClock() > LAST_KEYPRESS then
 		local position
-		local isTarget = false
+		local isTargetPos = false
 		if a and b and c then
 			position = Vector(a, b, c)
 		elseif a and b then
 			position = { x = a, y = b}
 		elseif a then
 			if a.pos then
-				isTarget = true
+				isTargetPos = true
 				position = a
 			else
 				position = Vector(a)
 			end
 		end
+		if isTargetPos and not Vector(position.pos):ToScreen().onScreen then return false end
+		if not isTargetPos and position ~= nil and not Vector(position):ToScreen().onScreen then return false end
+		local spell
 		if key == HK_Q then
-			if GameTimer() < Spells.LastQ + 0.15 then return false end
-			Spells.LastQ = GameTimer()
+			spell = _Q
 		elseif key == HK_W then
-			if GameTimer() < Spells.LastW + 0.15 then return false end
-			Spells.LastW = GameTimer()
+			spell = _W
 		elseif key == HK_E then
-			if GameTimer() < Spells.LastE + 0.15 then return false end
-			Spells.LastE = GameTimer()
+			spell = _E
 		elseif key == HK_R then
-			if GameTimer() < Spells.LastR + 0.15 then return false end
+			spell = _R
+		end
+		if spell ~= nil and GameCanUseSpell(spell) ~= 0 then
+			return false
+		end
+		if spell ~= nil and not Spells.CanNext then
+			local isTarget = false
+			for i = 1, GameHeroCount() do
+				local hero = GameHero(i)
+				if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) < myHero.range + myHero.boundingRadius + hero.boundingRadius and not ObjectManager:IsHeroImmortal(hero, true) then
+					isTarget = true
+					break
+				end
+			end
+			if isTarget then
+				return false
+			end
+		end
+		if position ~= nil and not Cursor.IsReady then
+			return false
+		end
+		if position ~= nil and _G.GamsteronMenuSpell.isaa:Value() and Orbwalker:IsAutoAttacking(myHero) then
+			return false
+		end
+		if spell == _Q then
+			if GameTimer() < Spells.LastQ + 0.25 then return false end
+			Spells.LastQ = GameTimer()
+		elseif spell == _W then
+			if GameTimer() < Spells.LastW + 0.25 then return false end
+			Spells.LastW = GameTimer()
+		elseif spell == _E then
+			if GameTimer() < Spells.LastE + 0.25 then return false end
+			Spells.LastE = GameTimer()
+		elseif spell == _R then
+			if GameTimer() < Spells.LastR + 0.25 then return false end
 			Spells.LastR = GameTimer()
 		end
 		CASTSPELL_TICK = OsClock() + _G.LATENCY + 0.08
 		_G.GAMSTERON_CONTROLL = true
 		if position then
 			if Cursor.IsReady then
+				if spell ~= nil and _G.GamsteronMenuSpell.baa:Value() then
+					Spells.CanNext = false
+				end
 				Cursor:SetCursor(_G.cursorPos, position, key, function()
 					ControlKeyDown(key)
 					ControlKeyUp(key)
