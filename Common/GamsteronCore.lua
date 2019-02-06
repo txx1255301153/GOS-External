@@ -1,4 +1,4 @@
-local GamsteronCoreVer = 0.107
+local GamsteronCoreVer = 0.108
 _G.GamsteronDebug = true
 --_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
@@ -371,7 +371,8 @@ function __GamsteronCore:__init()
 
     self.NoAutoAttacks                    =
     {
-        ["GravesAutoAttackRecoil"] = true
+        ["GravesAutoAttackRecoil"] = true,
+        ["LeonaShieldOfDaybreakAttack"] = true
     }
 
     self.SpecialAutoAttacks               =
@@ -1509,7 +1510,7 @@ function __GamsteronCore:__Interrupter()
             end
         end
     end
-    Callback.Add("Draw", function()
+    Callback.Add("Tick", function()
         if _G.GamsteronDebug then
             local status, err = pcall(function() InterrupterTick() end) if not status then print("INTERRUPTER TICK: " .. tostring(err)) end
         else
