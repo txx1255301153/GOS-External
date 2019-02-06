@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0771
+local GamsteronOrbVer = 0.0772
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -766,7 +766,7 @@ do
 		local SelectedID = -1
 		local mePos = myHero.pos
 		--selected:
-		if Menu.ts.selected.enable:Value() and self.SelectedTarget ~= nil and LocalCore:IsValidTarget(self.SelectedTarget) and not ObjectManager:IsHeroImmortal(self.SelectedTarget, false) and self.SelectedTarget.pos.onScreen then
+		if Menu.ts.selected.enable:Value() and self.SelectedTarget ~= nil and LocalCore:IsValidTarget(self.SelectedTarget) and not ObjectManager:IsHeroImmortal(self.SelectedTarget, false) and self.SelectedTarget.pos:ToScreen().onScreen then
 			SelectedID = self.SelectedTarget.networkID
 			if Menu.ts.selected.onlysel:Value() then
 				if type(a) == "number" then
