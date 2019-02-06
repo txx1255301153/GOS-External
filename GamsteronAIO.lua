@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.079
+local GamsteronAIOVer = 0.0791
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -1150,6 +1150,17 @@ local AIO = {
         -- E
         MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
             MENU.eset:MenuElement({id = "melee", name = "AntiMelee", value = true})
+            MENU.eset:MenuElement({name = "Use on (AntiMelee):", id = "useonmelee", type = _G.MENU })
+                LocalCore:OnEnemyHeroLoad(function(hero)
+                    local notMelee = {
+                        ["Thresh"] = true,
+                        ["Azir"] = true,
+                        ["Velkoz"] = true
+                    }
+                    if LocalCore.IsMelee[hero.charName] and not notMelee[hero.charName] then
+                        MENU.eset.useonmelee:MenuElement({id = hero.charName, name = hero.charName, value = true})
+                    end
+                end)
             MENU.eset:MenuElement({id = "dash", name = "AntiDash - kha e, rangar r", value = true})
             MENU.eset:MenuElement({id = "interrupt", name = "Interrupt dangerous spells", value = true})
             MENU.eset:MenuElement({id = "combo", name = "Combo (Stun)", value = true})
@@ -1184,8 +1195,9 @@ local AIO = {
             if ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.combo:Value() and SPELLS:IsReady(_R, { q = 0.5, w = 0, e = 0.5, r = 0.5 } ) then
                 local canR = true
                 if MENU.rset.qready:Value() then
-                    if LocalGameCanUseSpell(_Q) ~= 0 then canR = false end
-                    if LocalGameCanUseSpell(_Q) == 32 and (myHero.mana < myHero:GetSpellData(_Q).mana or myHero:GetSpellData(_Q).currentCd > 0.75) then canR = false end
+                    canR = false
+                    if LocalGameCanUseSpell(_Q) == 0 then canR = true end
+                    if LocalGameCanUseSpell(_Q) == 32 and myHero.mana > myHero:GetSpellData(_Q).mana and myHero:GetSpellData(_Q).currentCd < 0.75 then canR = true end
                 end
                 if canR then
                     local countEnemies = 0
@@ -1210,7 +1222,7 @@ local AIO = {
                     local meleeHeroes = {}
                     for i = 1, LocalGameHeroCount() do
                         local hero = LocalGameHero(i)
-                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and hero.range < 400 and myHero.pos:DistanceTo(hero.pos) < hero.range + myHero.boundingRadius + hero.boundingRadius then
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and hero.range < 400 and MENU.eset.useonmelee[hero.charName] and MENU.eset.useonmelee[hero.charName]:Value() and myHero.pos:DistanceTo(hero.pos) < hero.range + myHero.boundingRadius + hero.boundingRadius then
                             _G.table.insert(meleeHeroes, hero)
                         end
                     end
@@ -1247,7 +1259,7 @@ local AIO = {
                     for i = 1, LocalGameHeroCount() do
                         local hero = LocalGameHero(i)
                         if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) < eRange + hero.boundingRadius and not OB:IsHeroImmortal(hero, false) then
-                            if MENU.eset.useonstun[hero.charName] and CheckWall(myHero.pos, hero.pos, 450) and CheckWall(myHero.pos, hero:GetPrediction(self.EData.delay+0.06+LATENCY,self.EData.speed), 450) then
+                            if MENU.eset.useonstun[hero.charName] and MENU.eset.useonstun[hero.charName]:Value() and CheckWall(myHero.pos, hero.pos, 450) and CheckWall(myHero.pos, hero:GetPrediction(self.EData.delay+0.06+LATENCY,self.EData.speed), 450) then
                                 result = Control.CastSpell(HK_E, hero)
                                 break
                             end
