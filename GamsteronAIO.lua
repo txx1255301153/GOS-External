@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.078
+local GamsteronAIOVer = 0.079
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -143,34 +143,6 @@ end
             return true
         end
         return false
-    end
-    local function isValidTarget(obj, range)
-        range = range or math.huge
-        return obj ~= nil and obj.valid and obj.visible and not obj.dead and obj.isTargetable and not obj.isImmortal and obj.distance <= range
-    end
-    local function CountObjectsNearPos(pos, range, radius, objects)
-        local n = 0
-        for i, object in pairs(objects) do
-            if LocalCore:GetDistanceSquared(pos, object.pos) <= radius * radius then
-                n = n + 1
-            end
-        end
-        return n
-    end
-    local function GetBestCircularFarmPosition(range, radius, objects)
-        local BestPos 
-        local BestHit = 0
-        for i, object in pairs(objects) do
-            local hit = CountObjectsNearPos(object.pos, range, radius, objects)
-            if hit > BestHit then
-                BestHit = hit
-                BestPos = object.pos
-                if BestHit == #objects then
-                    break
-                end
-            end
-        end
-        return BestPos, BestHit
     end
     local function CastSpell(spell, unit, spelldata, hitchance)
         if LocalCore:IsValidTarget(unit) then
@@ -743,9 +715,9 @@ local AIO = {
         end
         function CHAMPION:Interrupter()
             INTERRUPTER = LocalCore:__Interrupter()
-            INTERRUPTER:OnInterrupt(function(enemy, activeSpell)
-                if MENU.qset.interrupter:Value() and SPELLS:IsReady(_Q, { q = 1, w = 0.3, e = 0.3, r = 0.3 } ) then
-                    CastSpell(HK_Q, enemy, self.QData, _G.HITCHANCE_HIGH)
+            INTERRUPTER:OnInterrupt(function(enemy)
+                if MENU.qset.interrupter:Value() and SPELLS:IsReady(_Q, { q = 1, w = 0.3, e = 0.3, r = 0.3 } ) and enemy.pos:ToScreen().onScreen and myHero.pos:DistanceTo(enemy.pos) < 1000 then
+                    CastSpell(HK_Q, enemy, self.QData, _G.HITCHANCE_NORMAL)
                 end
             end)
         end
@@ -1177,6 +1149,8 @@ local AIO = {
             MENU.qset:MenuElement({id = "harass", name = "Harass", value = false})
         -- E
         MENU:MenuElement({name = "E settings", id = "eset", type = _G.MENU })
+            MENU.eset:MenuElement({id = "melee", name = "AntiMelee", value = true})
+            MENU.eset:MenuElement({id = "dash", name = "AntiDash - kha e, rangar r", value = true})
             MENU.eset:MenuElement({id = "interrupt", name = "Interrupt dangerous spells", value = true})
             MENU.eset:MenuElement({id = "combo", name = "Combo (Stun)", value = true})
             MENU.eset:MenuElement({id = "harass", name = "Harass (Stun)", value = false})
@@ -1193,76 +1167,133 @@ local AIO = {
         CHAMPION = LocalCore:Class()
         function CHAMPION:__init()
             self.LastReset = 0
-            self.EData = { delay = 0.5, radius = 0, range = 550 + myHero.boundingRadius - 35, speed = 2000, collision = false, type = _G.SPELLTYPE_LINE }
+            self.EData = { delay = 0.5, radius = 0, range = 550 - 35, speed = 2000, collision = false, type = _G.SPELLTYPE_LINE }
         end
         function CHAMPION:Tick()
+
+            -- reset attack after Q
+            if LocalGameCanUseSpell(_Q) ~= 0 and LocalGameTimer() > self.LastReset + 1 and LocalCore:HasBuff(myHero, "vaynetumblebonus") then
+                ORB:__OnAutoAttackReset()
+                self.LastReset = LocalGameTimer()
+            end
+            -- reset attack after Q
+
             local result = false
-            -- E
-            if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value()) then
-                if SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.75, r = 0 } ) then
-                    local enemyList = OB:GetEnemyHeroes(self.EData.range, true, 0)
-                    for i = 1, #enemyList do
-                        local hero = enemyList[i]
-                        local name = hero.charName
-                        local erange = 475
-                        if MENU.eset.useonstun[name] and MENU.eset.useonstun[name]:Value() and CheckWall(myHero.pos, hero.pos, erange) and CheckWall(myHero.pos, hero:GetPrediction(self.EData.delay+0.06+LATENCY,self.EData.speed), erange) then
-                            local pred = GetGamsteronPrediction(hero, self.EData, myHero.pos)
-                            if pred.Hitchance >= 2 and CheckWall(myHero.pos, pred.CastPosition, erange) and CheckWall(myHero.pos, pred.UnitPosition, erange) then
+
+            -- r
+            if ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.combo:Value() and SPELLS:IsReady(_R, { q = 0.5, w = 0, e = 0.5, r = 0.5 } ) then
+                local canR = true
+                if MENU.rset.qready:Value() then
+                    if LocalGameCanUseSpell(_Q) ~= 0 then canR = false end
+                    if LocalGameCanUseSpell(_Q) == 32 and (myHero.mana < myHero:GetSpellData(_Q).mana or myHero:GetSpellData(_Q).currentCd > 0.75) then canR = false end
+                end
+                if canR then
+                    local countEnemies = 0
+                    for i = 1, LocalGameHeroCount() do
+                        local hero = LocalGameHero(i)
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) < MENU.rset.xdistance:Value() and not OB:IsHeroImmortal(hero, false) then
+                            countEnemies = countEnemies + 1
+                        end
+                    end
+                    if countEnemies >= MENU.rset.xcount:Value() then
+                        result = Control.CastSpell(HK_R)
+                    end
+                end
+            end
+            -- r
+
+            -- e
+            if not result and SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.75, r = 0 } ) then
+
+                -- e antiMelee
+                if MENU.eset.melee:Value() then
+                    local meleeHeroes = {}
+                    for i = 1, LocalGameHeroCount() do
+                        local hero = LocalGameHero(i)
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and hero.range < 400 and myHero.pos:DistanceTo(hero.pos) < hero.range + myHero.boundingRadius + hero.boundingRadius then
+                            _G.table.insert(meleeHeroes, hero)
+                        end
+                    end
+                    if #meleeHeroes > 0 then
+                        _G.table.sort(meleeHeroes, function(a,b) return a.health + (a.totalDamage*2) + (a.attackSpeed*100) > b.health + (b.totalDamage*2) + (b.attackSpeed*100) end)
+                        local meleeTarget = meleeHeroes[1]
+                        if LocalCore:IsFacing(meleeTarget, myHero, 60) then
+                            Control.CastSpell(HK_E, meleeTarget)
+                            result = true
+                        end
+                    end
+                end
+                -- e antiMelee
+
+                -- e antiDash
+                if not result and MENU.eset.dash:Value() then
+                    for i = 1, LocalGameHeroCount() do
+                        local hero = LocalGameHero(i)
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) < 515 + myHero.boundingRadius + hero.boundingRadius then
+                            local path = hero.pathing
+                            if path and path.isDashing and hero.posTo and myHero.pos:DistanceTo(hero.posTo) < 500 and LocalCore:IsFacing(hero, myHero, 60) then
+                                Control.CastSpell(HK_E, hero)
+                                result = true
+                                break
+                            end
+                        end
+                    end
+                end
+                -- e antiDash
+
+                -- e stun
+                if not result and ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.eset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.eset.harass:Value())) then
+                    local eRange = self.EData.range + myHero.boundingRadius
+                    for i = 1, LocalGameHeroCount() do
+                        local hero = LocalGameHero(i)
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) < eRange + hero.boundingRadius and not OB:IsHeroImmortal(hero, false) then
+                            if MENU.eset.useonstun[hero.charName] and CheckWall(myHero.pos, hero.pos, 450) and CheckWall(myHero.pos, hero:GetPrediction(self.EData.delay+0.06+LATENCY,self.EData.speed), 450) then
                                 result = Control.CastSpell(HK_E, hero)
                                 break
                             end
                         end
                     end
                 end
-            end if result then return end
-            -- reset attack after Q
-            if LocalGameCanUseSpell(_Q) ~= 0 and LocalGameTimer() > self.LastReset + 1 and LocalCore:HasBuff(myHero, "vaynetumblebonus") then
-                ORB:__OnAutoAttackReset()
-                self.LastReset = LocalGameTimer()
+                -- e stun
             end
-            -- Is Attacking
-            if ORB:IsAutoAttacking() then
-                return
-            end
-            -- Can Attack
-            local AATarget = TS:GetComboTarget()
-            if AATarget and not ORB.IsNone and ORB:CanAttack() then
-                return
-            end
-            -- R
-            if ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.rset.combo:Value() and SPELLS:IsReady(_R, { q = 0.5, w = 0, e = 0.5, r = 0.5 } ) then
-                local canR = true
-                if MENU.rset.qready:Value() then
-                    if not((LocalGameCanUseSpell(_Q) == 0) or (LocalGameCanUseSpell(_Q) == 32 and myHero.mana > myHero:GetSpellData(_Q).mana and myHero:GetSpellData(_Q).currentCd < 0.75)) then
-                        canR = false
-                    end
+            -- e
+
+            -- q
+            if not result and SPELLS:IsReady(_Q, { q = 0.5, w = 0, e = 0.5, r = 0 } ) then
+
+                -- Is Attacking
+                local isAttacking = false
+                if ORB:IsAutoAttacking() then
+                    isAttacking = true
                 end
-                if canR then
-                    local enemyList = OB:GetEnemyHeroes(MENU.rset.xdistance:Value(), false, 0)
-                    if #enemyList >= MENU.rset.xcount:Value() then
-                        Control.CastSpell(HK_R)
-                    end
+                -- Can Attack
+                local AATarget = TS:GetComboTarget()
+                if AATarget and not ORB.IsNone and ORB:CanAttack() then
+                    isAttacking = true
                 end
-            end
-            --Q
-            if (ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.harass:Value()) then
-                if SPELLS:IsReady(_Q, { q = 0.5, w = 0, e = 0.5, r = 0 } ) then
+                --Q
+                if not isAttacking and ((ORB.Modes[ORBWALKER_MODE_COMBO] and MENU.qset.combo:Value()) or (ORB.Modes[ORBWALKER_MODE_HARASS] and MENU.qset.harass:Value())) then
                     local mePos = myHero.pos
+                    local extended = Vector(myHero.pos):Extended(Vector(_G.mousePos), 300)
                     local meRange = myHero.range + myHero.boundingRadius
-                    local enemyList = OB:GetEnemyHeroes(1000, false, 1)
-                    for i = 1, #enemyList do
-                        local hero = enemyList[i]
-                        if mePos:DistanceTo(mousePos) > 300 and mePos:Extended(mousePos, 300):DistanceTo(hero.pos) < meRange + hero.boundingRadius - 35 then
-                            Control.CastSpell(HK_Q)
+                    for i = 1, LocalGameHeroCount() do
+                        local hero = LocalGameHero(i)
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and extended and Vector(extended):DistanceTo(hero.pos) < meRange + hero.boundingRadius - 35 and not OB:IsHeroImmortal(hero, true) then
+                            result = Control.CastSpell(HK_Q)
+                            break
                         end
                     end
                 end
+
             end
+            -- q
+
+            return result
         end
         function CHAMPION:Interrupter()
             INTERRUPTER = LocalCore:__Interrupter()
-            INTERRUPTER:OnInterrupt(function(enemy, activeSpell)
-                if MENU.eset.interrupt:Value() and SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.5, r = 0 } ) then
+            INTERRUPTER:OnInterrupt(function(enemy)
+                if MENU.eset.interrupt:Value() and SPELLS:IsReady(_E, { q = 0.75, w = 0, e = 0.5, r = 0 } ) and enemy.pos:ToScreen().onScreen and myHero.pos:DistanceTo(enemy.pos) < 550 + myHero.boundingRadius + enemy.boundingRadius - 35 then
                     Control.CastSpell(HK_E, enemy)
                 end
             end)
