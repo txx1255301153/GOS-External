@@ -1,4 +1,4 @@
-local GamsteronOrbVer = 0.0773
+local GamsteronOrbVer = 0.0774
 local LocalCore, Menu, MenuItem, Cursor, Items, Spells, Damage, ObjectManager, TargetSelector, HealthPrediction, Orbwalker, HoldPositionButton
 local AttackSpeedData = { windup = myHero.attackData.windUpTime, anim = myHero.attackData.animationTime, tickwindup = os.clock(), tickanim = os.clock() }
 
@@ -868,7 +868,7 @@ do
 		local mePos = myHero.pos
 		for i = 1, GameHeroCount() do
 			local hero = GameHero(i)
-			if hero and hero.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(hero) and not ObjectManager:IsHeroImmortal(hero, true) then
+			if hero and hero.team == LocalCore.TEAM_ENEMY and LocalCore:IsValidTarget(hero) and hero.pos:ToScreen().onScreen and not ObjectManager:IsHeroImmortal(hero, true) then
 				local herorange = range
 				if myHero.charName == "Caitlyn" and LocalCore:HasBuff(hero, "caitlynyordletrapinternal") then
 					herorange = herorange + 600
@@ -925,10 +925,12 @@ do
 			local pos = _G.mousePos
 			for i = 1, #enemyList do
 				local unit = enemyList[i]
-				local distance = LocalCore:GetDistance(pos, unit.pos)
-				if distance < 150 and distance < num then
-					self.SelectedTarget = unit
-					num = distance
+				if unit and unit.valid and unit.pos:ToScreen().onScreen then
+					local distance = LocalCore:GetDistance(pos, unit.pos)
+					if distance < 150 and distance < num then
+						self.SelectedTarget = unit
+						num = distance
+					end
 				end
 			end
 			self.LastSelTick = GetTickCount()
@@ -936,7 +938,7 @@ do
 	end
 
 	function __TargetSelector:Draw()
-		if Menu.gsodraw.selected.enabled:Value() and LocalCore:IsValidTarget(self.SelectedTarget) then
+		if Menu.gsodraw.selected.enabled:Value() and LocalCore:IsValidTarget(self.SelectedTarget) and self.SelectedTarget.pos:ToScreen().onScreen then
 			DrawCircle(self.SelectedTarget.pos, Menu.gsodraw.selected.radius:Value(), Menu.gsodraw.selected.width:Value(), Menu.gsodraw.selected.color:Value())
 		end
 	end
