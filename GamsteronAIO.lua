@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.0791
+local GamsteronAIOVer = 0.0792
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -1141,7 +1141,7 @@ local AIO = {
     end,
     Vayne = function()
         require "MapPositionGOS"
-        local VayneVersion = "0.02 - fixed E, faster usage"
+        local VayneVersion = "0.03 - antimelee, antidash, interrupt etc."
         MENU = MenuElement({name = "Gamsteron Vayne", id = "Gamsteron_Vayne", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/vayne.png" })
         -- Q
         MENU:MenuElement({name = "Q settings", id = "qset", type = _G.MENU })
@@ -1177,6 +1177,7 @@ local AIO = {
         MENU:MenuElement({name = "Version " .. tostring(VayneVersion), type = _G.SPACE, id = "verspace"})
         CHAMPION = LocalCore:Class()
         function CHAMPION:__init()
+            _G.GamsteronMenuSpell.isaa:Value(false)
             self.LastReset = 0
             self.EData = { delay = 0.5, radius = 0, range = 550 - 35, speed = 2000, collision = false, type = _G.SPELLTYPE_LINE }
         end
@@ -1241,12 +1242,15 @@ local AIO = {
                 if not result and MENU.eset.dash:Value() then
                     for i = 1, LocalGameHeroCount() do
                         local hero = LocalGameHero(i)
-                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY and myHero.pos:DistanceTo(hero.pos) < 515 + myHero.boundingRadius + hero.boundingRadius then
+                        if LocalCore:IsValidTarget(hero) and hero.team == LocalCore.TEAM_ENEMY then
                             local path = hero.pathing
-                            if path and path.isDashing and hero.posTo and myHero.pos:DistanceTo(hero.posTo) < 500 and LocalCore:IsFacing(hero, myHero, 60) then
-                                Control.CastSpell(HK_E, hero)
-                                result = true
-                                break
+                            if path and path.isDashing and hero.posTo and myHero.pos:DistanceTo(hero.posTo) < 500 and LocalCore:IsFacing(hero, myHero, 75) then
+                                local extpos = hero.pos:Extended(hero.posTo, path.dashSpeed * (0.07+_G.LATENCY))
+                                if myHero.pos:DistanceTo(extpos) < 550 + myHero.boundingRadius + hero.boundingRadius then
+                                    Control.CastSpell(HK_E, hero)
+                                    result = true
+                                    break
+                                end
                             end
                         end
                     end
