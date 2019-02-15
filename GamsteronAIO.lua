@@ -1,4 +1,4 @@
-local GamsteronAIOVer = 0.0792
+local GamsteronAIOVer = 0.0793
 local LocalCore, MENU, CHAMPION, INTERRUPTER, ORB, TS, OB, DMG, SPELLS
 do
     if _G.GamsteronAIOLoaded == true then return end
@@ -52,6 +52,14 @@ do
 		return
 	end
 end
+
+local function IsGamsteronCollision(unit, radius, speed, delay)
+    if unit:GetCollision(radius, speed, delay) > 0 then
+        return true
+    end
+    return false
+end
+
 --locals
     local GetTickCount					= GetTickCount
     local myHero						= myHero
