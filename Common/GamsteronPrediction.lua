@@ -11,7 +11,7 @@ require('GamsteronCore')
 local Local_Core = _G.GamsteronCore
 
 -- AUTO UPDATER
-local UPDATER_Version = 0.142
+local UPDATER_Version = 0.143
 local UPDATER_ScriptName = "GamsteronPrediction"
 local UPDATER_success, UPDATER_version = Local_Core:AutoUpdate({
     version = UPDATER_Version,
@@ -27,6 +27,7 @@ local Menu, Orbwalker, TargetSelector, ObjectManager, Damage, Spells
 local Local_MathSqrt = _G.math.sqrt
 local Local_MathHuge = _G.math.huge
 local Local_MathMax = _G.math.max
+local Local_MathMin = _G.math.min
 local Local_OsClock = _G.os.clock
 local Local_TableInsert = _G.table.insert
 local Local_TableRemove = _G.table.remove
@@ -897,7 +898,7 @@ local function GetDashingPrediction(input, endPos, dashSpeed)
         local Pos = nil
         local t1, p1, t2, p2, dist = VectorMovementCollision(startPos, endPos, dashSpeed, from, speed, delay)
         t1, t2 = (t1 and 0 <= t1 and t1 <= (endT - startT - delay)) and t1 or nil, (t2 and 0 <= t2 and t2 <= (endT - startT - delay)) and t2 or nil
-        local t = t1 and t2 and min(t1, t2) or t1 or t2
+        local t = t1 and t2 and Local_MathMin(t1, t2) or t1 or t2
         if t then
             Pos = t == t1 and Vector(p1.x, 0, p1.y) or Vector(p2.x, 0, p2.y)
             return PredictionOutput({Input = input, Hitchance = _G.HITCHANCE_HIGH, CastPosition = Pos, UnitPosition = Pos})
