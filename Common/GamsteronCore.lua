@@ -1,185 +1,182 @@
-local GamsteronCoreVer = 0.109
+local GamsteronCoreVer = 0.111
 _G.GamsteronDebug = true
 --_G.FileDebug = io.open(SCRIPT_PATH .. "000TEST.txt", "wb")
 
 -- locals update START
-    local function DownloadFile(url, path)
-        DownloadFileAsync(url, path, function() end)
-        while not FileExist(path) do end
-    end
+local function DownloadFile(url, path)
+    DownloadFileAsync(url, path, function() end)
+    while not FileExist(path) do end
+end
 
-    local function Trim(s)
-        local from = s:match"^%s*()"
-        return from > #s and "" or s:match(".*%S", from)
-    end
+local function Trim(s)
+    local from = s:match"^%s*()"
+    return from > #s and "" or s:match(".*%S", from)
+end
 
-    local function ReadFile(path)
-        local result = {}
-        local file = io.open(path, "r")
-        if file then
-            for line in file:lines() do
-                local str = Trim(line)
-                if #str > 0 then
-                    table.insert(result, str)
-                end
+local function ReadFile(path)
+    local result = {}
+    local file = io.open(path, "r")
+    if file then
+        for line in file:lines() do
+            local str = Trim(line)
+            if #str > 0 then
+                table.insert(result, str)
             end
-            file:close()
         end
-        return result
+        file:close()
     end
+    return result
+end
 
-    local function AutoUpdate(args)
-        DownloadFile(args.versionUrl, args.versionPath)
-        local fileResult = ReadFile(args.versionPath)
-        local newVersion = tonumber(fileResult[1])
-        if newVersion > args.version then
-            DownloadFile(args.scriptUrl, args.scriptPath)
-            return true, newVersion
+local function AutoUpdate(args)
+    DownloadFile(args.versionUrl, args.versionPath)
+    local fileResult = ReadFile(args.versionPath)
+    local newVersion = tonumber(fileResult[1])
+    if newVersion > args.version then
+        DownloadFile(args.scriptUrl, args.scriptPath)
+        return true, newVersion
+    end
+    return false, args.version
+end
+
+do
+    if _G.GamsteronCoreLoaded == true then return end
+    
+    local success, version = AutoUpdate({
+        version = GamsteronCoreVer,
+        scriptPath = COMMON_PATH .. "GamsteronCore.lua",
+        scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
+        versionPath = COMMON_PATH .. "GamsteronCore.version",
+        versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.version"
+    })
+    
+    if success then
+        print("GamsteronCore updated to version " .. version .. ". Please Reload with 2x F6 !")
+        _G.GamsteronCoreUpdated = true
+        return
+    end
+end
+
+local MathSqrt = _G.math.sqrt
+local MathMax = _G.math.max
+local MathAbs = _G.math.abs
+local MathHuge = 99999999
+local MathPI = _G.math.pi
+local MathAtan = _G.math.atan
+local MathMin = _G.math.min
+local MathSin = _G.math.sin
+local MathCos = _G.math.cos
+local MathCeil = _G.math.ceil
+local TableInsert = _G.table.insert
+local TableRemove = _G.table.remove
+
+local myHero = _G.myHero
+local GetTickCount = _G.GetTickCount
+local GameTimer = _G.Game.Timer
+local GameParticleCount = _G.Game.ParticleCount
+local GameParticle = _G.Game.Particle
+local GameHeroCount = _G.Game.HeroCount
+local GameHero = _G.Game.Hero
+local GameMinionCount = _G.Game.MinionCount
+local GameMinion = _G.Game.Minion
+local GameTurretCount = _G.Game.TurretCount
+local GameTurret = _G.Game.Turret
+local GameWardCount = _G.Game.WardCount
+local GameWard = _G.Game.Ward
+local GameObjectCount = _G.Game.ObjectCount
+local GameObject = _G.Game.Object
+local GameMissileCount = _G.Game.MissileCount
+local GameMissile = _G.Game.Missile
+
+local Obj_HQ = "obj_HQ"
+local Structures =
+{
+    [Obj_AI_Barracks] = true,
+    [Obj_AI_Turret] = true,
+    [Obj_HQ] = true
+}
+
+local HeroesLoaded = false
+local HeroesLoad =
+{
+    Count = 0,
+    Heroes = {},
+    OnEnemyHeroLoadC = {},
+OnAllyHeroLoadC = {}}
+
+local AllyNexus = nil
+local EnemyNexus = nil
+local AllyInhibitors = {}
+local EnemyInhibitors = {}
+local AllyTurrets = {}
+local EnemyTurrets = {}
+local EnemyHeroes = {}
+local AllyHeroes = {}
+
+local OnLoadC = {}
+local TickActions = {}
+
+local Menu = MenuElement({name = "Gamsteron Core", id = "GamCore", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/GamsteronCore.png"})
+Menu:MenuElement({id = "ping", name = "Your Ping", value = 50, min = 0, max = 150, step = 1, callback = function(value) _G.LATENCY = value * 0.001 end})
+Menu:MenuElement({name = "Version " .. tostring(GamsteronCoreVer), type = _G.SPACE, id = "vercorespace"})
+_G.LATENCY = Menu.ping:Value() * 0.001
+
+local function Class()
+    local cls = {}
+    cls.__index = cls
+    return setmetatable(cls, {__call = function (c, ...)
+        local instance = setmetatable({}, cls)
+        if cls.__init then
+            cls.__init(instance, ...)
         end
-        return false, args.version
-    end
+        return instance
+    end})
+end
 
-    do
-        if _G.GamsteronCoreLoaded == true then return end
-
-        local success, version = AutoUpdate({
-            version = GamsteronCoreVer,
-            scriptPath = COMMON_PATH .. "GamsteronCore.lua",
-            scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
-            versionPath = COMMON_PATH .. "GamsteronCore.version",
-            versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.version"
-        })
-        
-        if success then
-            print("GamsteronCore updated to version " .. version .. ". Please Reload with 2x F6 !")
-            _G.GamsteronCoreUpdated = true
-            return
-        end
-    end
-
-    local MathSqrt                      = _G.math.sqrt
-    local MathMax                       = _G.math.max
-    local MathAbs                       = _G.math.abs
-    local MathHuge                      = 99999999
-    local MathPI                        = _G.math.pi
-    local MathAtan                      = _G.math.atan
-    local MathMin                       = _G.math.min
-    local MathSin                       = _G.math.sin
-    local MathCos                       = _G.math.cos
-    local MathCeil                      = _G.math.ceil
-    local TableInsert                   = _G.table.insert
-    local TableRemove                   = _G.table.remove
-
-    local myHero                        = _G.myHero
-    local GetTickCount                  = _G.GetTickCount
-    local GameTimer                     = _G.Game.Timer
-    local GameParticleCount             = _G.Game.ParticleCount
-    local GameParticle                  = _G.Game.Particle
-    local GameHeroCount                 = _G.Game.HeroCount
-    local GameHero                      = _G.Game.Hero
-    local GameMinionCount               = _G.Game.MinionCount
-    local GameMinion                    = _G.Game.Minion
-    local GameTurretCount               = _G.Game.TurretCount
-    local GameTurret                    = _G.Game.Turret
-    local GameWardCount                 = _G.Game.WardCount
-    local GameWard                      = _G.Game.Ward
-    local GameObjectCount               = _G.Game.ObjectCount
-    local GameObject                    = _G.Game.Object
-    local GameMissileCount              = _G.Game.MissileCount
-    local GameMissile                   = _G.Game.Missile
-
-    local Obj_HQ 						= "obj_HQ"
-    local Structures =
-    {
-        [Obj_AI_Barracks] = true,
-        [Obj_AI_Turret] = true,
-        [Obj_HQ] = true
-    }
-
-    local HeroesLoaded                  = false
-    local HeroesLoad                    =
-    {
-        Count                       = 0,
-        Heroes                      = {},
-        OnEnemyHeroLoadC            = {},
-        OnAllyHeroLoadC             = {}
-    }
-
-    local AllyNexus                     = nil
-    local EnemyNexus                    = nil
-    local AllyInhibitors                = {}
-    local EnemyInhibitors               = {}
-    local AllyTurrets                   = {}
-    local EnemyTurrets                  = {}
-    local EnemyHeroes                   = {}
-    local AllyHeroes                    = {}
-
-    local OnLoadC                       = {}
-    local TickActions                   = {}
-
-    local Menu = MenuElement({name = "Gamsteron Core", id = "GamCore", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/GamsteronCore.png" })
-    Menu:MenuElement({id = "ping", name = "Your Ping", value = 50, min = 0, max = 150, step = 1, callback = function(value) _G.LATENCY = value * 0.001 end })
-    Menu:MenuElement({name = "Version " .. tostring(GamsteronCoreVer), type = _G.SPACE, id = "vercorespace"})
-    _G.LATENCY = Menu.ping:Value() * 0.001
-
-    local function Class()
-        local cls = {}
-        cls.__index = cls
-        return setmetatable(cls, {__call = function (c, ...)
-            local instance = setmetatable({}, cls)
-            if cls.__init then
-                cls.__init(instance, ...)
-            end
-            return instance
-        end})
-    end
-
-    local __GamsteronCore = Class()
+local __GamsteronCore = Class()
 -- locals update END
 
 function __GamsteronCore:__init()
-    self.HEROES_SPELL                     = 0
-    self.HEROES_ATTACK                    = 1
-    self.HEROES_IMMORTAL                  = 2
-
-    self.TEAM_ALLY                        = myHero.team
-    self.TEAM_ENEMY                       = 300 - self.TEAM_ALLY
-    self.TEAM_JUNGLE                      = 300
-
-    self.MINION_TYPE_OTHER_MINION		    = 1
-    self.MINION_TYPE_MONSTER			    = 2
-    self.MINION_TYPE_LANE_MINION		    = 3
-
-    self.DAMAGE_TYPE_PHYSICAL			    = 0
-    self.DAMAGE_TYPE_MAGICAL			    = 1
-    self.DAMAGE_TYPE_TRUE				    = 2
-
-    self.ORBWALKER_MODE_NONE			    = -1
-    self.ORBWALKER_MODE_COMBO			    = 0
-    self.ORBWALKER_MODE_HARASS			= 1
-    self.ORBWALKER_MODE_LANECLEAR		    = 2
-    self.ORBWALKER_MODE_JUNGLECLEAR	    = 3
-    self.ORBWALKER_MODE_LASTHIT		    = 4
-    self.ORBWALKER_MODE_FLEE			    = 5
-
-    self.BaseTurrets                      =
+    self.HEROES_SPELL = 0
+    self.HEROES_ATTACK = 1
+    self.HEROES_IMMORTAL = 2
+    
+    self.TEAM_ALLY = myHero.team
+    self.TEAM_ENEMY = 300 - self.TEAM_ALLY
+    self.TEAM_JUNGLE = 300
+    
+    self.MINION_TYPE_OTHER_MINION = 1
+    self.MINION_TYPE_MONSTER = 2
+    self.MINION_TYPE_LANE_MINION = 3
+    
+    self.DAMAGE_TYPE_PHYSICAL = 0
+    self.DAMAGE_TYPE_MAGICAL = 1
+    self.DAMAGE_TYPE_TRUE = 2
+    
+    self.ORBWALKER_MODE_NONE = -1
+    self.ORBWALKER_MODE_COMBO = 0
+    self.ORBWALKER_MODE_HARASS = 1
+    self.ORBWALKER_MODE_LANECLEAR = 2
+    self.ORBWALKER_MODE_JUNGLECLEAR = 3
+    self.ORBWALKER_MODE_LASTHIT = 4
+    self.ORBWALKER_MODE_FLEE = 5
+    
+    self.BaseTurrets =
     {
         ["SRUAP_Turret_Order3"] = true,
         ["SRUAP_Turret_Order4"] = true,
         ["SRUAP_Turret_Chaos3"] = true,
         ["SRUAP_Turret_Chaos4"] = true
     }
-
-
-
-    self.Obj_AI_Bases                     =
+    
+    self.Obj_AI_Bases =
     {
         [Obj_AI_Hero] = true,
         [Obj_AI_Minion] = true,
         [Obj_AI_Turret] = true
     }
-
-    self.ChannelingBuffs                  =
+    
+    self.ChannelingBuffs =
     {
         ["Caitlyn"] = function(unit)
             return self:HasBuff(unit, "CaitlynAceintheHole")
@@ -248,8 +245,8 @@ function __GamsteronCore:__init()
             return self:HasBuff(unit, "XerathArcanopulseChargeUp") or self:HasBuff(unit, "XerathLocusOfPower2")
         end
     }
-
-    self.MinionsRange                     =
+    
+    self.MinionsRange =
     {
         ["SRU_ChaosMinionMelee"] = 110,
         ["SRU_ChaosMinionRanged"] = 550,
@@ -268,8 +265,8 @@ function __GamsteronCore:__init()
         ["HA_OrderMinionSiege"] = 300,
         ["HA_OrderMinionSuper"] = 170
     }
-
-    self.SpecialAutoAttackRanges          =
+    
+    self.SpecialAutoAttackRanges =
     {
         ["Caitlyn"] = function(target)
             if target ~= nil and self:HasBuff(target, "caitlynyordletrapinternal") then
@@ -278,8 +275,8 @@ function __GamsteronCore:__init()
             return 0
         end
     }
-
-    self.SpecialWindUpTimes               =
+    
+    self.SpecialWindUpTimes =
     {
         ["TwistedFate"] = function(unit, target)
             if self:HasBuff(unit, "BlueCardPreAttack") or self:HasBuff(unit, "RedCardPreAttack") or self:HasBuff(unit, "GoldCardPreAttack") then
@@ -288,8 +285,8 @@ function __GamsteronCore:__init()
             return nil
         end
     }
-
-    self.SpecialMissileSpeeds             =
+    
+    self.SpecialMissileSpeeds =
     {
         ["Caitlyn"] = function(unit, target)
             if self:HasBuff(unit, "caitlynheadshot") then
@@ -337,8 +334,8 @@ function __GamsteronCore:__init()
             return nil
         end
     }
-
-    self.TurretToMinionPercentMod         =
+    
+    self.TurretToMinionPercentMod =
     {
         ["SRU_ChaosMinionMelee"] = 0.43,
         ["SRU_ChaosMinionRanged"] = 0.68,
@@ -357,20 +354,20 @@ function __GamsteronCore:__init()
         ["HA_OrderMinionSiege"] = 0.14,
         ["HA_OrderMinionSuper"] = 0.05
     }
-
-    self.MinionIsMelee                    =
+    
+    self.MinionIsMelee =
     {
-        ["SRU_ChaosMinionMelee"] = true, ["SRU_ChaosMinionSuper"] = true,  ["SRU_OrderMinionMelee"] = true, ["SRU_OrderMinionSuper"] = true, ["HA_ChaosMinionMelee"] = true,
+        ["SRU_ChaosMinionMelee"] = true, ["SRU_ChaosMinionSuper"] = true, ["SRU_OrderMinionMelee"] = true, ["SRU_OrderMinionSuper"] = true, ["HA_ChaosMinionMelee"] = true,
         ["HA_ChaosMinionSuper"] = true, ["HA_OrderMinionMelee"] = true, ["HA_OrderMinionSuper"] = true
     }
-
-    self.NoAutoAttacks                    =
+    
+    self.NoAutoAttacks =
     {
         ["GravesAutoAttackRecoil"] = true,
         ["LeonaShieldOfDaybreakAttack"] = true
     }
-
-    self.SpecialAutoAttacks               =
+    
+    self.SpecialAutoAttacks =
     {
         ["CaitlynHeadshotMissile"] = true,
         ["GarenQAttack"] = true,
@@ -386,8 +383,8 @@ function __GamsteronCore:__init()
         ["XenZhaoThrust2"] = true,
         ["XenZhaoThrust3"] = true
     }
-
-    self.IsMelee                          =
+    
+    self.IsMelee =
     {
         ["Aatrox"] = true,
         ["Ahri"] = false,
@@ -531,8 +528,8 @@ function __GamsteronCore:__init()
         ["Zoe"] = false,
         ["Zyra"] = false
     }
-
-    self.SpecialMelees                    =
+    
+    self.SpecialMelees =
     {
         ["Elise"] = function()
             return myHero.range < 200
@@ -550,8 +547,8 @@ function __GamsteronCore:__init()
             return myHero.range < 200
         end
     }
-
-    self.Priorities                       =
+    
+    self.Priorities =
     {
         ["Aatrox"] = 3,
         ["Ahri"] = 4,
@@ -695,8 +692,8 @@ function __GamsteronCore:__init()
         ["Zoe"] = 4,
         ["Zyra"] = 2
     }
-
-    self.PriorityMultiplier               =
+    
+    self.PriorityMultiplier =
     {
         [1] = 1.6,
         [2] = 1.45,
@@ -704,8 +701,8 @@ function __GamsteronCore:__init()
         [4] = 1.15,
         [5] = 1
     }
-
-    self.StaticChampionDamageDatabase     =
+    
+    self.StaticChampionDamageDatabase =
     {
         ["Caitlyn"] = function(args)
             if self:HasBuff(args.From, "caitlynheadshot") then
@@ -729,12 +726,12 @@ function __GamsteronCore:__init()
         ["Draven"] = function(args)
             if self:HasBuff(args.From, "DravenSpinningAttack") then
                 local level = args.From:GetSpellData(_Q).level
-                args.RawPhysical = args.RawPhysical + 25 + 5 * level + (0.55 + 0.1 * level) * args.From.bonusDamage; 
+                args.RawPhysical = args.RawPhysical + 25 + 5 * level + (0.55 + 0.1 * level) * args.From.bonusDamage;
             end
             
         end,
         ["Graves"] = function(args)
-            local t = { 70, 71, 72, 74, 75, 76, 78, 80, 81, 83, 85, 87, 89, 91, 95, 96, 97, 100 };
+            local t = {70, 71, 72, 74, 75, 76, 78, 80, 81, 83, 85, 87, 89, 91, 95, 96, 97, 100};
             args.RawTotal = args.RawTotal * t[_G.SDK.Damage:GetMaxLevel(args.From)] * 0.01;
         end,
         ["Jinx"] = function(args)
@@ -749,9 +746,9 @@ function __GamsteronCore:__init()
             local level = args.From:GetSpellData(_E).level
             if level > 0 then
                 if self:HasBuff(args.From, "JudicatorRighteousFury") then
-                    args.RawMagical = args.RawMagical + 10+ 10* level + 0.3 * args.From.ap;
+                    args.RawMagical = args.RawMagical + 10 + 10 * level + 0.3 * args.From.ap;
                 else
-                    args.RawMagical = args.RawMagical + 5+ 5* level + 0.15 * args.From.ap;
+                    args.RawMagical = args.RawMagical + 5 + 5 * level + 0.15 * args.From.ap;
                 end
             end
         end,
@@ -769,7 +766,7 @@ function __GamsteronCore:__init()
                 elseif self:HasBuff(args.From, "threshqpassive3") then
                     damage = damage * 0.5;
                 elseif self:HasBuff(args.From, "threshqpassive2") then
-                    damage = damage * 1/3;
+                    damage = damage * 1 / 3;
                 else
                     damage = damage * 0.25;
                 end
@@ -809,8 +806,8 @@ function __GamsteronCore:__init()
             end
         end
     }
-
-    self.VariableChampionDamageDatabase   =
+    
+    self.VariableChampionDamageDatabase =
     {
         ["Jhin"] = function(args)
             if self:HasBuff(args.From, "jhinpassiveattackbuff") then
@@ -848,8 +845,8 @@ function __GamsteronCore:__init()
             end
         end
     }
-
-    self.StaticItemDamageDatabase         =
+    
+    self.StaticItemDamageDatabase =
     {
         [1043] = function(args)
             args.RawPhysical = args.RawPhysical + 15;
@@ -874,7 +871,7 @@ function __GamsteronCore:__init()
         end,
         [3087] = function(args)
             if self:GetBuffCount(args.From, "itemstatikshankcharge") == 100 then
-                local t = { 50, 50, 50, 50, 50, 56, 61, 67, 72, 77, 83, 88, 94, 99, 104, 110, 115, 120 };
+                local t = {50, 50, 50, 50, 50, 56, 61, 67, 72, 77, 83, 88, 94, 99, 104, 110, 115, 120};
                 args.RawMagical = args.RawMagical + (1 + (args.TargetIsMinion and 1.2 or 0)) * t[_G.SDK.Damage:GetMaxLevel(args.From)];
             end
         end,
@@ -883,7 +880,7 @@ function __GamsteronCore:__init()
         end,
         [3094] = function(args)
             if self:GetBuffCount(args.From, "itemstatikshankcharge") == 100 then
-                local t = { 50, 50, 50, 50, 50, 58, 66, 75, 83, 92, 100, 109, 117, 126, 134, 143, 151, 160 };
+                local t = {50, 50, 50, 50, 50, 58, 66, 75, 83, 92, 100, 109, 117, 126, 134, 143, 151, 160};
                 args.RawMagical = args.RawMagical + t[_G.SDK.Damage:GetMaxLevel(args.From)];
             end
         end,
@@ -899,8 +896,8 @@ function __GamsteronCore:__init()
             args.CalculatedMagical = args.CalculatedMagical + 15;
         end
     }
-
-    self.VariableItemDamageDatabase       =
+    
+    self.VariableItemDamageDatabase =
     {
         [1041] = function(args)
             if args.Target.team == self.TEAM_JUNGLE then
@@ -908,8 +905,8 @@ function __GamsteronCore:__init()
             end
         end
     }
-
-    self.AllowMovement                    =
+    
+    self.AllowMovement =
     {
         ["Kaisa"] = function(unit)
             return self:HasBuff(unit, "KaisaE")
@@ -930,8 +927,8 @@ function __GamsteronCore:__init()
             return self:HasBuff(unit, "XerathArcanopulseChargeUp")
         end
     }
-
-    self.DisableAutoAttack                =
+    
+    self.DisableAutoAttack =
     {
         ["Urgot"] = function(unit)
             return self:HasBuff(unit, "UrgotW")
@@ -955,8 +952,8 @@ function __GamsteronCore:__init()
             return false
         end
     }
-
-    self.ItemSlots                        =
+    
+    self.ItemSlots =
     {
         ITEM_1,
         ITEM_2,
@@ -966,63 +963,62 @@ function __GamsteronCore:__init()
         ITEM_6,
         ITEM_7
     }
-
-    self.AutoAttackResets                 =
+    
+    self.AutoAttackResets =
     {
-        ["Blitzcrank"] = { Slot = _E, toggle = true },
-        ["Camille"] = { Slot = _Q },
-        ["Chogath"] = { Slot = _E, toggle = true },
-        ["Darius"] = { Slot = _W, toggle = true },
-        ["DrMundo"] = { Slot = _E },
-        ["Elise"] = { Slot = _W, Name = "EliseSpiderW"},
-        ["Fiora"] = { Slot = _E },
-        ["Garen"] = { Slot = _Q , toggle = true },
-        ["Graves"] = { Slot = _E },
-        ["Kassadin"] = { Slot = _W, toggle = true },
-        ["Illaoi"] = { Slot = _W },
-        ["Jax"] = { Slot = _W, toggle = true },
-        ["Jayce"] = { Slot = _W, Name = "JayceHyperCharge"},
-        ["Katarina"] = { Slot = _E },
-        ["Kindred"] = { Slot = _Q },
-        ["Leona"] = { Slot = _Q, toggle = true },
-        ["Lucian"] = { Slot = _E },
-        ["MasterYi"] = { Slot = _W },
-        ["Mordekaiser"] = { Slot = _Q, toggle = true },
-        ["Nautilus"] = { Slot = _W },
-        ["Nidalee"] = { Slot = _Q, Name = "Takedown", toggle = true },
-        ["Nasus"] = { Slot = _Q, toggle = true },
-        ["RekSai"] = { Slot = _Q, Name = "RekSaiQ" },
-        ["Renekton"] = { Slot = _W, toggle = true },
-        ["Rengar"] = { Slot = _Q },
-        ["Riven"] = { Slot = _Q },
-        ["Sejuani"] = { Slot = _W },
-        ["Sivir"] = { Slot = _W },
-        ["Trundle"] = { Slot = _Q, toggle = true },
-        ["Vayne"] = { Slot = _Q, toggle = true },
-        ["Vi"] = { Slot = _E, toggle = true },
-        ["Volibear"] = { Slot = _Q, toggle = true },
-        ["MonkeyKing"] = { Slot = _Q, toggle = true },
-        ["XinZhao"] = { Slot = _Q, toggle = true },
-        ["Yorick"] = { Slot = _Q, toggle = true }
-    }
-
-    self.UNDYING_BUFFS                    =
+        ["Blitzcrank"] = {Slot = _E, toggle = true},
+        ["Camille"] = {Slot = _Q},
+        ["Chogath"] = {Slot = _E, toggle = true},
+        ["Darius"] = {Slot = _W, toggle = true},
+        ["DrMundo"] = {Slot = _E},
+        ["Elise"] = {Slot = _W, Name = "EliseSpiderW"},
+        ["Fiora"] = {Slot = _E},
+        ["Garen"] = {Slot = _Q, toggle = true},
+        ["Graves"] = {Slot = _E},
+        ["Kassadin"] = {Slot = _W, toggle = true},
+        ["Illaoi"] = {Slot = _W},
+        ["Jax"] = {Slot = _W, toggle = true},
+        ["Jayce"] = {Slot = _W, Name = "JayceHyperCharge"},
+        ["Katarina"] = {Slot = _E},
+        ["Kindred"] = {Slot = _Q},
+        ["Leona"] = {Slot = _Q, toggle = true},
+        ["Lucian"] = {Slot = _E},
+        ["MasterYi"] = {Slot = _W},
+        ["Mordekaiser"] = {Slot = _Q, toggle = true},
+        ["Nautilus"] = {Slot = _W},
+        ["Nidalee"] = {Slot = _Q, Name = "Takedown", toggle = true},
+        ["Nasus"] = {Slot = _Q, toggle = true},
+        ["RekSai"] = {Slot = _Q, Name = "RekSaiQ"},
+        ["Renekton"] = {Slot = _W, toggle = true},
+        ["Rengar"] = {Slot = _Q},
+        ["Riven"] = {Slot = _Q},
+        ["Sejuani"] = {Slot = _W},
+        ["Sivir"] = {Slot = _W},
+        ["Trundle"] = {Slot = _Q, toggle = true},
+        ["Vayne"] = {Slot = _Q, toggle = true},
+        ["Vi"] = {Slot = _E, toggle = true},
+        ["Volibear"] = {Slot = _Q, toggle = true},
+        ["MonkeyKing"] = {Slot = _Q, toggle = true},
+        ["XinZhao"] = {Slot = _Q, toggle = true},
+    ["Yorick"] = {Slot = _Q, toggle = true}}
+    
+    self.UNDYING_BUFFS =
     {
-        ["zhonyasringshield"]           = 100,
-        ["JudicatorIntervention"]       = 100,
-        ["TaricR"]                      = 100,
-        ["kindredrnodeathbuff"]         = 15,
-        ["ChronoShift"]                 = 15,
-        ["chronorevive"]                = 15,
-        ["UndyingRage"]                 = 15,
-        ["FioraW"]                      = 100,
-        ["aatroxpassivedeath"]          = 100,
-        ["VladimirSanguinePool"]        = 100,
-        ["KogMawIcathianSurprise"]      = 100,
-        ["KarthusDeathDefiedBuff"]      = 100
+        ["zhonyasringshield"] = 100,
+        ["JudicatorIntervention"] = 100,
+        ["TaricR"] = 100,
+        ["kindredrnodeathbuff"] = 15,
+        ["ChronoShift"] = 15,
+        ["chronorevive"] = 15,
+        ["UndyingRage"] = 15,
+        ["FioraW"] = 100,
+        ["aatroxpassivedeath"] = 100,
+        ["VladimirSanguinePool"] = 100,
+        ["KogMawIcathianSurprise"] = 100,
+        ["KarthusDeathDefiedBuff"] = 100
     }
     
-    self.ATTACK_SPELLS                    =
+    self.ATTACK_SPELLS =
     {
         ["CaitlynHeadshotMissile"] = true,
         ["GarenQAttack"] = true,
@@ -1101,13 +1097,13 @@ end
 
 function __GamsteronCore:ProjectOn(p, p1, p2)
     local isOnSegment, pointSegment, pointLine
-    local px,pz = p.x, (p.z or p.y)
-    local ax,az = p1.x, (p1.z or p1.y)
-    local bx,bz = p2.x, (p2.z or p2.y)
+    local px, pz = p.x, (p.z or p.y)
+    local ax, az = p1.x, (p1.z or p1.y)
+    local bx, bz = p2.x, (p2.z or p2.y)
     local bxax = bx - ax
     local bzaz = bz - az
     local t = ((px - ax) * bxax + (pz - az) * bzaz) / (bxax * bxax + bzaz * bzaz)
-    local pointLine = { x = ax + t * bxax, y = az + t * bzaz }
+    local pointLine = {x = ax + t * bxax, y = az + t * bzaz}
     if t < 0 then
         isOnSegment = false
         pointSegment = p1
@@ -1139,14 +1135,14 @@ function __GamsteronCore:CastSpell(spell, unit, castPos)
 end
 
 function __GamsteronCore:Join(t1, t2, t3, t4, t5, t6)
-	local t = {}
+    local t = {}
     for i = 1, #t1 do TableInsert(t, t1[i]) end
     for i = 1, #t2 do TableInsert(t, t2[i]) end
     if t3 then for i = 1, #t3 do TableInsert(t, t3[i]) end end
     if t4 then for i = 1, #t4 do TableInsert(t, t4[i]) end end
     if t5 then for i = 1, #t5 do TableInsert(t, t5[i]) end end
     if t6 then for i = 1, #t6 do TableInsert(t, t6[i]) end end
-	return t
+return t
 end
 
 function __GamsteronCore:HasBuff(unit, name)
@@ -1161,7 +1157,7 @@ function __GamsteronCore:HasBuff(unit, name)
 end
 
 function __GamsteronCore:To2D(vec)
-    return { x = vec.x, y = vec.z or vec.y }
+    return {x = vec.x, y = vec.z or vec.y}
 end
 
 function __GamsteronCore:GetDistance(vec1, vec2)
@@ -1222,18 +1218,18 @@ end
 
 function __GamsteronCore:IsImmobile(unit, delay)
     -- http://leagueoflegends.wikia.com/wiki/Types_of_Crowd_Control
-        --ok
-        --STUN = 5
-        --SNARE = 11
-        --SUPRESS = 24
-        --KNOCKUP = 29
-        --good
-        --FEAR = 21 -> fiddle Q, ...
-        --CHARM = 22 -> ahri E, ...
-        --not good
-        --TAUNT = 8 -> rammus E, ... can move too fast + anyway will detect attack
-        --SLOW = 10 -> can move too fast -> nasus W, zilean E are ok. Rylai item, ... not good
-        --KNOCKBACK = 30 -> alistar W, lee sin R, ... - no no
+    --ok
+    --STUN = 5
+    --SNARE = 11
+    --SUPRESS = 24
+    --KNOCKUP = 29
+    --good
+    --FEAR = 21 -> fiddle Q, ...
+    --CHARM = 22 -> ahri E, ...
+    --not good
+    --TAUNT = 8 -> rammus E, ... can move too fast + anyway will detect attack
+    --SLOW = 10 -> can move too fast -> nasus W, zilean E are ok. Rylai item, ... not good
+    --KNOCKBACK = 30 -> alistar W, lee sin R, ... - no no
     for i = 0, unit.buffCount do
         local buff = unit:GetBuff(i)
         if buff and buff.count > 0 and buff.duration > delay then
@@ -1265,78 +1261,78 @@ end
 
 function __GamsteronCore:GetBuffCount(unit, name)
     name = name:lower()
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.count > 0 and buff.name:lower() == name then
-			return buff.count
-		end
-	end
-	return -1
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff and buff.count > 0 and buff.name:lower() == name then
+            return buff.count
+        end
+    end
+    return - 1
 end
 
 function __GamsteronCore:HasItem(unit, id)
-	for i = 1, #self.ItemSlots do
-		local slot = self.ItemSlots[i]
-		local item = unit:GetItemData(slot)
-		if item then
-			local itemID = item.itemID
-			if itemID > 0 and itemID == id then
-				return true
-			end
-		end
-	end
+    for i = 1, #self.ItemSlots do
+        local slot = self.ItemSlots[i]
+        local item = unit:GetItemData(slot)
+        if item then
+            local itemID = item.itemID
+            if itemID > 0 and itemID == id then
+                return true
+            end
+        end
+    end
 end
 
 function __GamsteronCore:TotalShieldHealth(target)
-	local result = target.health + target.shieldAD + target.shieldAP
-	if target.charName == "Blitzcrank" then
-		if not self:HasBuff(target, "manabarriercooldown") and not self:HasBuff(target, "manabarrier") then
-			result = result + target.mana * 0.5
-		end
-	end
-	return result
+    local result = target.health + target.shieldAD + target.shieldAP
+    if target.charName == "Blitzcrank" then
+        if not self:HasBuff(target, "manabarriercooldown") and not self:HasBuff(target, "manabarrier") then
+            result = result + target.mana * 0.5
+        end
+    end
+    return result
 end
 
 function __GamsteronCore:IsChanneling(unit)
-	if self.ChannelingBuffs[unit.charName] ~= nil then
-		return self.ChannelingBuffs[unit.charName](unit)
-	end
-	return false
+    if self.ChannelingBuffs[unit.charName] ~= nil then
+        return self.ChannelingBuffs[unit.charName](unit)
+    end
+    return false
 end
 
 function __GamsteronCore:IsValidTarget(target)
-	if target == nil or target.networkID == nil then
-		return false
-	end
-	if self.Obj_AI_Bases[target.type] ~= nil then
-		if not target.valid then
-			return false
-		end
-	end
-	if not target.alive or target.dead or (not target.visible) or (not target.isTargetable) then
-		return false
-	end
-	return true
+    if target == nil or target.networkID == nil then
+        return false
+    end
+    if self.Obj_AI_Bases[target.type] ~= nil then
+        if not target.valid then
+            return false
+        end
+    end
+    if not target.alive or target.dead or (not target.visible) or (not target.isTargetable) then
+        return false
+    end
+    return true
 end
 
 function __GamsteronCore:GetAutoAttackRange(from, target)
     local result = from.range
     local name = from.charName
-	if from.type == Obj_AI_Minion then
-		result = self.MinionsRange[name] ~= nil and self.MinionsRange[name] or 0
-	elseif from.type == Obj_AI_Turret then
-		result = 775
-	end
-	result = result + from.boundingRadius + (target ~= nil and (target.boundingRadius - 20) or 35)
-	if target.type == Obj_AI_Hero and self.SpecialAutoAttackRanges[name] ~= nil then
-		result = result + self.SpecialAutoAttackRanges[name](target)
-	end
-	return result
+    if from.type == Obj_AI_Minion then
+        result = self.MinionsRange[name] ~= nil and self.MinionsRange[name] or 0
+    elseif from.type == Obj_AI_Turret then
+        result = 775
+    end
+    result = result + from.boundingRadius + (target ~= nil and (target.boundingRadius - 20) or 35)
+    if target.type == Obj_AI_Hero and self.SpecialAutoAttackRanges[name] ~= nil then
+        result = result + self.SpecialAutoAttackRanges[name](target)
+    end
+    return result
 end
 
 function __GamsteronCore:IsInAutoAttackRange(from, target, extrarange)
     local range = extrarange or 0
-	return self:IsInRange(from.pos, target.pos, self:GetAutoAttackRange(from, target) + range)
+    return self:IsInRange(from.pos, target.pos, self:GetAutoAttackRange(from, target) + range)
 end
 
 function __GamsteronCore:RadianToDegree(angle)
@@ -1363,6 +1359,7 @@ function __GamsteronCore:Polar(v1)
 end
 
 function __GamsteronCore:AngleBetween(vec1, vec2)
+    if vec1 == nil or vec2 == nil then return 100000 end
     local theta = self:Polar(vec1) - self:Polar(vec2)
     if theta < 0 then
         theta = theta + 360
@@ -1384,11 +1381,11 @@ function __GamsteronCore:EqualDirection(vec1, vec2)
 end
 
 function __GamsteronCore:Normalized(vec1, vec2)
-    local vec = { x = vec1.x - vec2.x, y = (vec1.z or vec1.y) - (vec2.z or vec2.y) }
+    local vec = {x = vec1.x - vec2.x, y = (vec1.z or vec1.y) - (vec2.z or vec2.y)}
     local length = MathSqrt(vec.x * vec.x + vec.y * vec.y)
     if length > 0 then
         local inv = 1.0 / length
-        return { x = (vec.x * inv), y = (vec.y * inv) }
+        return {x = (vec.x * inv), y = (vec.y * inv)}
     end
     return nil
 end
@@ -1397,7 +1394,7 @@ function __GamsteronCore:Extended(vec, dir, range)
     if dir == nil then return vec end
     local vecy = vec.z or vec.y
     local diry = dir.z or dir.y
-    return { x = vec.x + dir.x * range, y = vecy + diry * range }
+    return {x = vec.x + dir.x * range, y = vecy + diry * range}
 end
 
 function __GamsteronCore:OnEnemyHeroLoad(cb)
@@ -1520,7 +1517,7 @@ end
 _G.GamsteronCore = __GamsteronCore()
 
 _G.TickAction = function(cb, remainingTime)
-    TableInsert(TickActions, { cb, GameTimer() + remainingTime })
+    TableInsert(TickActions, {cb, GameTimer() + remainingTime})
 end
 
 function AddLoadCallback(cb)
