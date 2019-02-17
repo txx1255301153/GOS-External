@@ -11,7 +11,7 @@ require('GamsteronCore')
 local Local_Core = _G.GamsteronCore
 
 -- AUTO UPDATER
-local UPDATER_Version = 0.143
+local UPDATER_Version = 0.144
 local UPDATER_ScriptName = "GamsteronPrediction"
 local UPDATER_success, UPDATER_version = Local_Core:AutoUpdate({
     version = UPDATER_Version,
@@ -604,7 +604,7 @@ _G.COLLISION_ALLYHERO = 1
 _G.COLLISION_ENEMYHERO = 2
 _G.COLLISION_YASUOWALL = 3
 
-local function GetCollision(from, toPositions, speed, delay, radius, collisionTypes, skipID)
+local function GetCollision(from, to, speed, delay, radius, collisionTypes, skipID)
     if DebugMode then
         assert(from, "from nil")
         assert(toPositions, "toPositions nil")
@@ -642,40 +642,38 @@ local function GetCollision(from, toPositions, speed, delay, radius, collisionTy
             checkYasuoWall = true
         end
     end
-    for i, to in pairs(toPositions) do
-        for k, object in pairs(objects) do
-            local NetworkID = object.networkID
-            if not collisionObjects[NetworkID] then
-                local objectPos = object.pos
-                local pointLine, isOnSegment = ClosestPointOnLineSegment(objectPos, from, to)
-                if isOnSegment and IsInRange(objectPos, pointLine, radius + 35 + object.boundingRadius) then
+    for k, object in pairs(objects) do
+        local NetworkID = object.networkID
+        if not collisionObjects[NetworkID] then
+            local objectPos = object.pos
+            local pointLine, isOnSegment = ClosestPointOnLineSegment(objectPos, from, to)
+            if isOnSegment and IsInRange(objectPos, pointLine, radius + 15 + object.boundingRadius) then
+                collisionObjects[NetworkID] = object
+                collisionCount = collisionCount + 1
+            elseif object.pathing.hasMovePath then
+                objectPos = object:GetPrediction(speed, delay)
+                pointLine, isOnSegment = ClosestPointOnLineSegment(objectPos, from, to)
+                if isOnSegment and IsInRange(objectPos, pointLine, radius + 15 + object.boundingRadius) then
                     collisionObjects[NetworkID] = object
                     collisionCount = collisionCount + 1
-                elseif object.pathing.hasMovePath then
-                    objectPos = object:GetPrediction(speed, delay)
-                    pointLine, isOnSegment = ClosestPointOnLineSegment(objectPos, from, to)
-                    if isOnSegment and IsInRange(objectPos, pointLine, radius + 35 + object.boundingRadius) then
-                        collisionObjects[NetworkID] = object
-                        collisionCount = collisionCount + 1
-                    end
                 end
             end
         end
-        if checkYasuoWall and IsYasuoWall() then
-            local Pos = Yasuo.Wall.pos
-            local ExtraWidth = 70
-            local Width = ExtraWidth + 300 + 50 * Yasuo.Level
-            local Direction = Perpendicular(Normalized(Pos, Yasuo.StartPos))
-            local StartPos = Extended(Pos, Direction, Width / 2)
-            local EndPos = Extended(StartPos, Direction, -Width)
-            local IntersectionResult = Intersection(StartPos, EndPos, to, from)
-            if IntersectionResult.Intersects then
-                local t = _G.Game.Timer() + (GetDistance(IntersectionResult.Point, from) / speed + delay)
-                if t < Yasuo.CastTime + 4 then
-                    isWall = true
-                    collisionCount = collisionCount + 1
-                    collisionObjects[Yasuo.Wall.networkID] = Yasuo.Wall
-                end
+    end
+    if checkYasuoWall and IsYasuoWall() then
+        local Pos = Yasuo.Wall.pos
+        local ExtraWidth = 70
+        local Width = ExtraWidth + 300 + 50 * Yasuo.Level
+        local Direction = Perpendicular(Normalized(Pos, Yasuo.StartPos))
+        local StartPos = Extended(Pos, Direction, Width / 2)
+        local EndPos = Extended(StartPos, Direction, -Width)
+        local IntersectionResult = Intersection(StartPos, EndPos, to, from)
+        if IntersectionResult.Intersects then
+            local t = _G.Game.Timer() + (GetDistance(IntersectionResult.Point, from) / speed + delay)
+            if t < Yasuo.CastTime + 4 then
+                isWall = true
+                collisionCount = collisionCount + 1
+                collisionObjects[Yasuo.Wall.networkID] = Yasuo.Wall
             end
         end
     end
@@ -918,7 +916,7 @@ local function GetStandardPrediction(input, slowDuration, moveSpeed, unitpath)
         assert(moveSpeed, "moveSpeed nil")
         assert(unitpath, "unitpath nil")
     end
-    local Radius = input.RealRadius * 0.8
+    local Radius = input.RealRadius * 0.6 -- Draven W, Garen Q = no hit that why * 0.6
     local extradelay = 0; if input.Speed ~= Local_MathHuge then extradelay = (GetDistance(input.From.pos, input.Unit.pos) / input.Speed) end
     local delay = input.Delay + extradelay
     local pLenght = GetPathLenght(unitpath)
@@ -1037,7 +1035,7 @@ function GetGamsteronPrediction(unit, args, from)
         end
     end
     if input.Collision and output.Hitchance ~= _G.HITCHANCE_IMPOSSIBLE then
-        local isWall, collisionObjects, collisionCount = GetCollision(input.From.pos, {unit.pos, output.CastPosition, output.UnitPosition}, input.Speed, input.Delay, input.Radius, input.CollisionTypes, unit.networkID)
+        local isWall, collisionObjects, collisionCount = GetCollision(input.From.pos, output.CastPosition, input.Speed, input.Delay, input.Radius, input.CollisionTypes, unit.networkID)
         if isWall or collisionCount > input.MaxCollision then
             output.Hitchance = _G.HITCHANCE_COLLISION
             output.CollisionObjects = {}
@@ -1047,7 +1045,8 @@ function GetGamsteronPrediction(unit, args, from)
         end
     end
     if output.Hitchance >= _G.HITCHANCE_COLLISION then
-        output.CastPosition = Vector({x = output.CastPosition.x, y = unit.pos.y, z = output.CastPosition.z})
+        --output.CastPosition = Vector({x = output.CastPosition.x, y = unit.pos.y, z = output.CastPosition.z})
+        output.CastPosition = Vector(output.CastPosition.x, 0, output.CastPosition.z)
         if not output.CastPosition:ToScreen().onScreen then
             if input.Type == _G.SPELLTYPE_LINE then
                 output.CastPosition = input.From.pos:Extended(output.CastPosition, 600)
