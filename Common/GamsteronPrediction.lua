@@ -11,7 +11,7 @@ require('GamsteronCore')
 local Local_Core = _G.GamsteronCore
 
 -- AUTO UPDATER
-local UPDATER_Version = 0.144
+local UPDATER_Version = 0.145
 local UPDATER_ScriptName = "GamsteronPrediction"
 local UPDATER_success, UPDATER_version = Local_Core:AutoUpdate({
     version = UPDATER_Version,
@@ -614,6 +614,9 @@ local function GetCollision(from, to, speed, delay, radius, collisionTypes, skip
         assert(collisionTypes, "collisionTypes nil")
         assert(skipID, "skipID nil")
     end
+    from = from + (from - to):Normalized() * 35
+    local toradius = radius + 35
+    to = to + (to - from):Normalized() * toradius
     local isWall, collisionObjects, collisionCount = false, {}, 0
     local checkYasuoWall = false
     local objects = {}
