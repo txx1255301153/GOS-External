@@ -1,5 +1,127 @@
-KogMaw = function()
-        local KogMawVersion = 0.01
+ require('GamsteronPrediction')
+    if _G.GamsteronPredictionUpdated then
+        return
+    end
+    
+    require('GamsteronCore')
+    if _G.GamsteronCoreUpdated then return end
+    LocalCore = _G.GamsteronCore
+    
+    local success, version = LocalCore:AutoUpdate({
+        version = GamsteronAIOVer,
+        scriptPath = SCRIPT_PATH .. "GamsteronAIO.lua",
+        scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronAIO.lua",
+        versionPath = SCRIPT_PATH .. "GamsteronAIO.version",
+        versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronAIO.version"
+    })
+    if success then
+        print("GamsteronAIO updated to version " .. version .. ". Please Reload with 2x F6 !")
+        _G.GamsteronAIOUpdated = true
+        return
+    end
+end
+--locals
+local GetTickCount = GetTickCount
+local myHero = myHero
+local LocalCharName = myHero.charName
+local LocalVector = Vector
+local LocalOsClock = os.clock
+local LocalCallbackAdd = Callback.Add
+local LocalCallbackDel = Callback.Del
+local LocalDrawLine = Draw.Linek
+local LocalDrawColor = Draw.Color
+local LocalDrawCircle = Draw.Circle
+local LocalDrawText = Draw.Text
+local LocalControlIsKeyDown = Control.IsKeyDown
+local LocalControlMouseEvent = Control.mouse_event
+local LocalControlSetCursorPos = Control.SetCursorPos
+local LocalControlKeyUp = Control.KeyUp
+local LocalControlKeyDown = Control.KeyDown
+local LocalGameCanUseSpell = Game.CanUseSpell
+local LocalGameLatency = Game.Latency
+local LocalGameTimer = Game.Timer
+local LocalGameParticleCount = Game.ParticleCount
+local LocalGameParticle = Game.Particle
+local LocalGameHeroCount = Game.HeroCount
+local LocalGameHero = Game.Hero
+local LocalGameMinionCount = Game.MinionCount
+local LocalGameMinion = Game.Minion
+local LocalGameTurretCount = Game.TurretCount
+local LocalGameTurret = Game.Turret
+local LocalGameWardCount = Game.WardCount
+local LocalGameWard = Game.Ward
+local LocalGameObjectCount = Game.ObjectCount
+local LocalGameObject = Game.Object
+local LocalGameMissileCount = Game.MissileCount
+local LocalGameMissile = Game.Missile
+local LocalGameIsChatOpen = Game.IsChatOpen
+local LocalGameIsOnTop = Game.IsOnTop
+local STATE_UNKNOWN = STATE_UNKNOWN
+local STATE_ATTACK = STATE_ATTACK
+local STATE_WINDUP = STATE_WINDUP
+local STATE_WINDDOWN = STATE_WINDDOWN
+local ITEM_1 = ITEM_1
+local ITEM_2 = ITEM_2
+local ITEM_3 = ITEM_3
+local ITEM_4 = ITEM_4
+local ITEM_5 = ITEM_5
+local ITEM_6 = ITEM_6
+local ITEM_7 = ITEM_7
+local _Q = _Q
+local _W = _W
+local _E = _E
+local _R = _R
+local MOUSEEVENTF_RIGHTDOWN = MOUSEEVENTF_RIGHTDOWN
+local MOUSEEVENTF_RIGHTUP = MOUSEEVENTF_RIGHTUP
+local Obj_AI_Barracks = Obj_AI_Barracks
+local Obj_AI_Hero = Obj_AI_Hero
+local Obj_AI_Minion = Obj_AI_Minion
+local Obj_AI_Turret = Obj_AI_Turret
+local Obj_HQ = "obj_HQ"
+local pairs = pairs
+local LocalMathCeil = math.ceil
+local LocalMathMax = math.max
+local LocalMathMin = math.min
+local LocalMathSqrt = math.sqrt
+local LocalMathRandom = math.random
+local LocalMathHuge = math.huge
+local LocalMathAbs = math.abs
+local LocalStringSub = string.sub
+local LocalStringLen = string.len
+local EPSILON = 1E-12
+local TEAM_ALLY = myHero.team
+local TEAM_ENEMY = 300 - TEAM_ALLY
+local TEAM_JUNGLE = 300
+local ORBWALKER_MODE_NONE = -1
+local ORBWALKER_MODE_COMBO = 0
+local ORBWALKER_MODE_HARASS = 1
+local ORBWALKER_MODE_LANECLEAR = 2
+local ORBWALKER_MODE_JUNGLECLEAR = 3
+local ORBWALKER_MODE_LASTHIT = 4
+local ORBWALKER_MODE_FLEE = 5
+local DAMAGE_TYPE_PHYSICAL = 0
+local DAMAGE_TYPE_MAGICAL = 1
+local DAMAGE_TYPE_TRUE = 2
+local function CheckWall(from, to, distance)
+    local pos1 = to + (to - from):Normalized() * 50
+    local pos2 = pos1 + (to - from):Normalized() * (distance - 50)
+    local point1 = Point(pos1.x, pos1.z)
+    local point2 = Point(pos2.x, pos2.z)
+    if MapPosition:intersectsWall(LineSegment(point1, point2)) or (MapPosition:inWall(point1) and MapPosition:inWall(point2)) then
+        return true
+    end
+    return false
+end
+local function CastSpell(spell, unit, spelldata, hitchance)
+    if LocalCore:IsValidTarget(unit) then
+        local HitChance = hitchance or 3
+        local Pred = GetGamsteronPrediction(unit, spelldata, myHero)
+        if Pred.Hitchance >= HitChance then
+            return LocalCore:CastSpell(spell, nil, Pred.CastPosition)
+        end
+    end
+    return false
+end
         Menu = MenuElement({name = "Gamsteron KogMaw", id = "Gamsteron_KogMaw", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/kog.png"})
         -- Q
         Menu:MenuElement({name = "Q settings", id = "qset", type = _G.MENU})
