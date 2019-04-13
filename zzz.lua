@@ -132,6 +132,6 @@ Tristana = function()
                     end
                 end
  
-        end)
+        end
     end
 end)
