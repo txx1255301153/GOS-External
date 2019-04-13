@@ -10,7 +10,7 @@ do
         ["Morgana"] = true,
         ["Karthus"] = true,
         ["KogMaw"] = true,
-        ["Vayne"] = true,
+        ["Tristana"] = true,
         ["Brand"] = true,
         ["Ezreal"] = true,
         ["Varus"] = true,
@@ -1141,7 +1141,7 @@ local AIO = {
             return true
         end
     end,
-    Vayne = function()
+    Tristana = function()
         require "MapPositionGOS"
         local VayneVersion = "0.03 - antimelee, antidash, interrupt etc."
         Menu = MenuElement({name = "Gamsteron Vayne", id = "Gamsteron_Vayne", type = _G.MENU, leftIcon = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Icons/vayne.png"})
@@ -1233,7 +1233,7 @@ local AIO = {
                         _G.table.sort(meleeHeroes, function(a, b) return a.health + (a.totalDamage * 2) + (a.attackSpeed * 100) > b.health + (b.totalDamage * 2) + (b.attackSpeed * 100) end)
                         local meleeTarget = meleeHeroes[1]
                         if LocalCore:IsFacing(meleeTarget, myHero, 60) then
-                            Control.CastSpell(HK_E, meleeTarget)
+                            Control.CastSpell(HK_R, meleeTarget)
                             result = true
                         end
                     end
