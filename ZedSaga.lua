@@ -931,7 +931,7 @@ Combo = function()
     
 		Control.CastSpell(HK_R,target)
 		shadow2 = myHero.pos
-	end
+
 
 	
 	if Saga.Combo.UseW:Value() and Game.CanUseSpell(0) == 0 and myHero:GetSpellData(_W).toggleState == 0 then
