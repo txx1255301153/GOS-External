@@ -1218,7 +1218,7 @@ local AIO = {
             -- r
             
             -- e
-            if not result and SPELLS:IsReady(_E, {q = 0.75, w = 0, e = 0.75, r = 0}) then
+            if not result and SPELLS:IsReady(_R, {q = 0.75, w = 0, e = 0.75, r = 0}) then
                 
                 -- e antiMelee
                 if Menu.eset.melee:Value() then
