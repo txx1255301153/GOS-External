@@ -928,7 +928,7 @@ Combo = function()
     local target = GetTarget(Q.range + W.range)
     if target then
 	SIGroup(target)
-    if Saga.Combo.UseR:Value() and target.pos:DistanceTo() < R.range and Game.CanUseSpell(3) == 0  and ComboDamage(target) > target.health and myHero:GetSpellData(_R).toggleState == 0 then
+    
 		Control.CastSpell(HK_R,target)
 		shadow2 = myHero.pos
 	end
