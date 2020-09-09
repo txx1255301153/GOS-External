@@ -8,7 +8,7 @@ do
 	if _G.SDK and _G.SDK.Orbwalker then return end
 
 	if not FileExist(COMMON_PATH .. "GamsteronCore.lua") then
-		DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua", COMMON_PATH .. "GamsteronCore.lua", function() end)
+		DownloadFileAsync("https://raw.githubusercontent.com/txx1255301153/GOS-External/master/Common/GamsteronCore.lua", COMMON_PATH .. "GamsteronCore.lua", function() end)
 		while not FileExist(COMMON_PATH .. "GamsteronCore.lua") do end
 	end
 
@@ -19,9 +19,9 @@ do
 	local success, version = LocalCore:AutoUpdate({
 		version = GamsteronOrbVer,
 		scriptPath = SCRIPT_PATH .. "GamsteronOrbwalker.lua",
-		scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.lua",
+		scriptUrl = "https://raw.githubusercontent.com/txx1255301153/GOS-External/master/GamsteronOrbwalker.lua",
 		versionPath = SCRIPT_PATH .. "GamsteronOrbwalker.version",
-		versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/GamsteronOrbwalker.version"
+		versionUrl = "https://raw.githubusercontent.com/txx1255301153/GOS-External/master/GamsteronOrbwalker.version"
 	})
 	if success then
 		print("GamsteronOrbwalker updated to version " .. version .. ". Please Reload with 2x F6 !")
