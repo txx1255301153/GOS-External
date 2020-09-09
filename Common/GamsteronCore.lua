@@ -45,9 +45,9 @@ do
     local success, version = AutoUpdate({
         version = GamsteronCoreVer,
         scriptPath = COMMON_PATH .. "GamsteronCore.lua",
-        scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua",
+        scriptUrl = "https://raw.githubusercontent.com/txx1255301153/GOS-External/master/Common/GamsteronCore.lua",
         versionPath = COMMON_PATH .. "GamsteronCore.version",
-        versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.version"
+        versionUrl = "https://raw.githubusercontent.com/txx1255301153/GOS-External/master/Common/GamsteronCore.version"
     })
     
     if success then
