@@ -4,7 +4,7 @@ _G.GamsteronPredictionLoaded = true
 
 -- REQUIRE CORE
 if not _G.FileExist(COMMON_PATH .. "GamsteronCore.lua") then
-    _G.DownloadFileAsync("https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/GamsteronCore.lua", _G.COMMON_PATH .. "GamsteronCore.lua", function() end)
+    _G.DownloadFileAsync("https://raw.githubusercontent.com/txx1255301153/GOS-External/master/Common/GamsteronCore.lua", _G.COMMON_PATH .. "GamsteronCore.lua", function() end)
     while not _G.FileExist(_G.COMMON_PATH .. "GamsteronCore.lua") do end
 end
 require('GamsteronCore')
@@ -16,9 +16,9 @@ local UPDATER_ScriptName = "GamsteronPrediction"
 local UPDATER_success, UPDATER_version = Local_Core:AutoUpdate({
     version = UPDATER_Version,
     scriptPath = _G.COMMON_PATH .. UPDATER_ScriptName .. ".lua",
-    scriptUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/" .. UPDATER_ScriptName .. ".lua",
+    scriptUrl = "https://raw.githubusercontent.com/txx1255301153/GOS-External/master/Common/" .. UPDATER_ScriptName .. ".lua",
     versionPath = _G.COMMON_PATH .. UPDATER_ScriptName .. ".version",
-    versionUrl = "https://raw.githubusercontent.com/gamsteron/GOS-External/master/Common/" .. UPDATER_ScriptName .. ".version"
+    versionUrl = "https://raw.githubusercontent.com/txx1255301153/GOS-External/master/Common/" .. UPDATER_ScriptName .. ".version"
 })
 if UPDATER_success then _G.print("GamsteronPrediction updated to version " .. UPDATER_version .. ". Please Reload with 2x F6 !"); return end
 
